@@ -1,0 +1,1 @@
+sed -i 's/<div className="fixed inset-0 bg-slate-900\/60 backdrop-blur-xs flex items-center justify-center z-50 p-4" onClick={() => setSelectedMember(null)}>/<div className="fixed inset-0 bg-slate-900\/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">/g' src/components/FamilyTreeVisualizer.tsx

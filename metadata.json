@@ -1,0 +1,6 @@
+{
+  "name": "آل الوفائي والعطائي",
+  "description": "بوابة متكاملة لعرض وإدارة شجرة عائلة آل الوفائي والعطائي (حمص/ سوريا) وتوثيق صلات الرحم وأخبار العائلة ونسبها.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

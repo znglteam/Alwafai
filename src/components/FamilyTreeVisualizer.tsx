@@ -734,46 +734,30 @@ export default function FamilyTreeVisualizer({
 
   if (!isApprovedMember) {
     return (
-      <div className="min-h-[450px] flex flex-col items-center justify-center bg-white border border-slate-100 rounded-3xl p-8 md:p-12 shadow-sm text-center space-y-6 dir-rtl max-w-2xl mx-auto my-8">
-        <div className="w-24 h-24 mx-auto rounded-2xl overflow-hidden shadow-sm bg-indigo-50 flex items-center justify-center border border-indigo-100">
+      <div className="min-h-[480px] flex flex-col items-center justify-center bg-white border border-slate-100 rounded-3xl p-8 md:p-12 shadow-sm text-center space-y-6 dir-rtl max-w-2xl mx-auto my-8">
+        <div className="flex items-center justify-center w-full">
           <img 
             src="/family_logo.png" 
             alt="شعار آل الوفائي والعطائي" 
-            className="w-full h-full object-cover"
+            className="w-64 h-64 md:w-80 md:h-80 object-contain hover:scale-105 transition-transform duration-300 drop-shadow-sm"
             referrerPolicy="no-referrer"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              const fallback = e.currentTarget.parentElement?.querySelector('.fallback-icon');
-              if (fallback) {
-                fallback.classList.remove('hidden');
-              }
-            }}
           />
-          <div className="fallback-icon text-indigo-600">
-            <Network size={44} />
-          </div>
-        </div>
-        <div className="space-y-3">
-          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-relaxed">
-            موقع آل الوفائي والعطائي ( حمص/ سوريا )
-          </h2>
-          <div className="h-1 w-20 bg-indigo-600 mx-auto rounded-full"></div>
         </div>
         
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-xs pt-4">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-xs pt-2">
           <button
             onClick={onOpenAuth}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <LogIn size={14} />
             تسجيل الدخول
           </button>
           <button
             onClick={onOpenAuth}
-            className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-extrabold text-xs px-5 py-3 rounded-xl transition-all flex items-center justify-center gap-1.5"
+            className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-extrabold text-xs px-5 py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <UserPlus size={14} />
-            تسجيل حساب جديد
+            طلب حساب جديد
           </button>
         </div>
       </div>

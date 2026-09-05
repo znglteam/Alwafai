@@ -738,8 +738,14 @@ export default function App() {
             )}
           </div>
 
-          {/* Center Column: Header Title */}
-          <div className="text-center py-1 md:py-0 flex flex-col items-center">
+          {/* Center Column: Header Title with Family Crest */}
+          <div className="text-center py-1 md:py-0 flex items-center justify-center gap-2.5">
+            <img 
+              src="/family_logo.png" 
+              alt="شعار آل الوفائي والعطائي" 
+              className="w-9 h-9 md:w-10 md:h-10 object-contain drop-shadow-xs"
+              referrerPolicy="no-referrer"
+            />
             <h1 className="text-lg md:text-xl font-extrabold text-slate-800 font-serif tracking-wide">
               عائلة آل الوفائي والعطائي
             </h1>

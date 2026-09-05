@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "FamilyMember": {
+      "title": "FamilyMember",
+      "description": "Represents a member in the family tree",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fullName": { "type": "string" },
+        "gender": { "type": "string", "enum": ["male", "female"] },
+        "isAlive": { "type": "boolean" },
+        "generation": { "type": "number" },
+        "order": { "type": "number" },
+        "parentId": { "type": "string" },
+        "motherId": { "type": "string" },
+        "spouseIds": { "type": "array" },
+        "childrenIds": { "type": "array" },
+        "updatedAt": { "type": "string" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["id", "fullName", "gender"]
+    },
+    "FamilyRequest": {
+      "title": "FamilyRequest",
+      "description": "Registration or modification requests",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "fullName": { "type": "string" },
+        "phone": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "type", "status", "fullName"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Log of actions and changes made to the tree",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "userId", "action", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/family_data/{documentId}": {
+      "schema": "FamilyMember",
+      "description": "Main family tree synchronized collection and app state"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Log of changes and actions for admin review"
+    }
+  }
+}

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { FamilyMember, RegistrationRequest, NewsItem, FamilyPhoto, FamilyMessage, MemberComment, UserSession } from '../types';
+import { LiveChangeLog } from '../utils/firebaseService';
 
 const ARAB_COUNTRIES = [
   "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
 ];
-import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, TrendingUp, Mars, Venus, Upload } from 'lucide-react';
+import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, TrendingUp, Mars, Venus, Upload, Activity, History } from 'lucide-react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
 
@@ -15,6 +16,7 @@ interface AdminPanelProps {
   photos: FamilyPhoto[];
   messages: FamilyMessage[];
   currentSession: UserSession;
+  auditLogs?: LiveChangeLog[];
   onApproveRequest: (requestId: string, fatherId: string | null) => void;
   onRejectRequest: (requestId: string) => void;
   onAddNews: (newsItem: Omit<NewsItem, 'id' | 'createdAt'>) => void;
@@ -37,6 +39,7 @@ export default function AdminPanel({
   photos,
   messages,
   currentSession,
+  auditLogs = [],
   onApproveRequest,
   onRejectRequest,
   onAddNews,
@@ -52,7 +55,7 @@ export default function AdminPanel({
   onDeleteMessage
 }: AdminPanelProps) {
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'requests' | 'tree' | 'news' | 'photos' | 'messages' | 'stats'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'tree' | 'news' | 'photos' | 'messages' | 'stats' | 'logs'>('requests');
 
   // Photo Comments UI State
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
@@ -313,6 +316,15 @@ export default function AdminPanel({
           }`}
         >
           إحصائيات العائلة
+        </button>
+        <button
+          onClick={() => setActiveTab('logs')}
+          className={`pb-3 px-6 text-sm font-bold transition-all border-b-2 -mb-[2px] flex items-center gap-1.5 ${
+            activeTab === 'logs' ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Activity size={14} className="text-amber-500" />
+          <span>سجل التغييرات الحي ({auditLogs.length})</span>
         </button>
       </div>
 
@@ -1482,6 +1494,75 @@ export default function AdminPanel({
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* Tab 7: Real-time Live Change Logs */}
+        {activeTab === 'logs' && (
+          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6 animate-fade-in">
+            <div className="border-b border-slate-100 pb-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <History size={20} className="text-amber-600" />
+                  سجل التغييرات والتعديلات الحية
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  تتبع فوري ومباشر لجميع التغييرات التي يجريها الأعضاء والمسؤولون على شجرة العائلة وبياناتها السحابية.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 text-xs px-3 py-1.5 rounded-xl border border-emerald-200/60 font-bold self-start">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                <span>المزامنة السحابية متصلة ونشطة</span>
+              </div>
+            </div>
+
+            {auditLogs.length === 0 ? (
+              <div className="text-center py-12 space-y-3">
+                <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mx-auto">
+                  <Activity size={24} />
+                </div>
+                <p className="text-sm font-bold text-slate-700">لا توجد عمليات مسجلة حتى الآن</p>
+                <p className="text-xs text-slate-400">أي تعديل يجريه أي فرد أو الآدمن على الشجرة سيظهر هنا فوراً بلحظتها.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {auditLogs.map((log) => (
+                  <div 
+                    key={log.id} 
+                    className="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-amber-200 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-right"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-extrabold text-slate-800 bg-white border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs">
+                          {log.userName}
+                        </span>
+                        <span className="text-xs font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">
+                          {log.action}
+                        </span>
+                        {log.targetMemberName && (
+                          <span className="text-xs text-slate-600 font-medium">
+                            على: <strong className="text-indigo-600">{log.targetMemberName}</strong>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 font-medium">
+                        {log.details}
+                        {log.userPhone && ` • هاتف: ${log.userPhone}`}
+                      </p>
+                    </div>
+
+                    <div className="text-[11px] text-slate-400 shrink-0 font-mono">
+                      {new Date(log.timestamp).toLocaleString('ar-SA', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: 'numeric',
+                        month: 'short'
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

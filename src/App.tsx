@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   FamilyMember, 
   RegistrationRequest, 
@@ -17,12 +17,28 @@ import {
   INITIAL_MESSAGES
 } from './utils/initialData';
 import {
-  subscribeToFamilyState,
+  subscribeToMembers,
+  subscribeToFamilyInfo,
+  subscribeToNews,
+  subscribeToPhotos,
+  subscribeToRequests,
+  subscribeToMessages,
   subscribeToAuditLogs,
-  syncFamilyStateToCloud,
+  seedInitialMembersIfEmpty,
+  syncAllLocalToCloud,
+  saveMemberToCloud,
+  deleteMemberFromCloud,
+  saveMultipleMembersToCloud,
+  saveFamilyInfoToCloud,
+  saveRequestToCloud,
+  savePhotoToCloud,
+  deletePhotoFromCloud,
+  saveNewsToCloud,
+  deleteNewsFromCloud,
+  saveMessageToCloud,
+  deleteMessageFromCloud,
   logFamilyAction,
-  LiveChangeLog,
-  CloudFamilyState
+  LiveChangeLog
 } from './utils/firebaseService';
 
 // Component Imports
@@ -35,46 +51,81 @@ import AdminPanel from './components/AdminPanel';
 import AuthModal from './components/AuthModal';
 import ContactAdmin from './components/ContactAdmin';
 
-import { Home, Network, User, Shield, LogOut, MessageSquare, Cloud, CheckCircle2, Wifi, Bell } from 'lucide-react';
+import { Home, Network, User, Shield, LogOut, MessageSquare, Wifi, Bell, CloudUpload, CheckCircle } from 'lucide-react';
 
 export default function App() {
   const [members, setMembers] = useState<FamilyMember[]>(() => {
     const saved = localStorage.getItem('family_members_v6');
-    return saved ? JSON.parse(saved) : INITIAL_MEMBERS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return INITIAL_MEMBERS;
   });
 
   const [requests, setRequests] = useState<RegistrationRequest[]>(() => {
     const saved = localStorage.getItem('family_requests_v6');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
     return [];
   });
 
   const [news, setNews] = useState<NewsItem[]>(() => {
     const saved = localStorage.getItem('family_news_v6');
-    return saved ? JSON.parse(saved) : INITIAL_NEWS;
+    if (saved) {
+      try {
+        const p = JSON.parse(saved);
+        if (Array.isArray(p) && p.length > 0) return p;
+      } catch (e) {}
+    }
+    return INITIAL_NEWS;
   });
 
   const [photos, setPhotos] = useState<FamilyPhoto[]>(() => {
     const saved = localStorage.getItem('family_photos_v6');
-    if (saved) return JSON.parse(saved) as FamilyPhoto[];
+    if (saved) {
+      try {
+        const p = JSON.parse(saved);
+        if (Array.isArray(p) && p.length > 0) return p;
+      } catch (e) {}
+    }
     return INITIAL_PHOTOS;
   });
 
   const [familyInfo, setFamilyInfo] = useState<FamilyInfo>(() => {
     const saved = localStorage.getItem('family_info_v7');
-    return saved ? JSON.parse(saved) : INITIAL_INFO;
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return INITIAL_INFO;
   });
 
   const [messages, setMessages] = useState<FamilyMessage[]>(() => {
     const saved = localStorage.getItem('family_messages_v6');
-    return saved ? JSON.parse(saved) : INITIAL_MESSAGES;
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return INITIAL_MESSAGES;
   });
 
   const [currentSession, setCurrentSession] = useState<UserSession>(() => {
     const saved = localStorage.getItem('family_session_v6');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed) return parsed;
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed) return parsed;
+      } catch (e) {}
     }
     return {
       userId: 'admin-id',
@@ -88,58 +139,84 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'main' | 'tree' | 'profile' | 'admin' | 'messages'>('tree');
   const [treeSelectedMemberId, setTreeSelectedMemberId] = useState<string | null>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isCloudSynced, setIsCloudSynced] = useState<boolean>(true);
   const [auditLogs, setAuditLogs] = useState<LiveChangeLog[]>([]);
   const [liveNotification, setLiveNotification] = useState<string | null>(null);
+  const [isUploadingToCloud, setIsUploadingToCloud] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  // 1. Listen to Real-time Cloud Firebase Firestore Updates
+  // 1. Subscribe to Real-time Collections from Firebase Firestore
   useEffect(() => {
-    const unsubscribeState = subscribeToFamilyState((cloudState: CloudFamilyState) => {
-      if (cloudState.members && cloudState.members.length > 0) {
-        setMembers(cloudState.members);
+    const unsubMembers = subscribeToMembers((cloudMembers) => {
+      if (cloudMembers && cloudMembers.length > 0) {
+        setMembers(cloudMembers);
       } else {
-        // If cloud is empty, seed it with current members/initial data
-        syncFamilyStateToCloud({
-          members,
-          familyInfo,
-          news,
-          photos,
-          requests,
-          messages
-        }, 'النظام التلقائي');
+        // If Firestore is empty, auto-upload current local members if available
+        const localSaved = localStorage.getItem('family_members_v6');
+        if (localSaved) {
+          try {
+            const parsed = JSON.parse(localSaved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              seedInitialMembersIfEmpty(parsed);
+              setMembers(parsed);
+              return;
+            }
+          } catch (e) {}
+        }
+        if (INITIAL_MEMBERS.length > 0) {
+          seedInitialMembersIfEmpty(INITIAL_MEMBERS);
+          setMembers(INITIAL_MEMBERS);
+        }
       }
-
-      if (cloudState.familyInfo) setFamilyInfo(cloudState.familyInfo);
-      if (cloudState.news) setNews(cloudState.news);
-      if (cloudState.photos) setPhotos(cloudState.photos);
-      if (cloudState.requests) setRequests(cloudState.requests);
-      if (cloudState.messages) setMessages(cloudState.messages);
-      
-      setIsCloudSynced(true);
     });
 
-    const unsubscribeLogs = subscribeToAuditLogs((logs) => {
+    const unsubInfo = subscribeToFamilyInfo((info) => {
+      if (info && info.familyName) setFamilyInfo(info);
+    });
+
+    const unsubNews = subscribeToNews((cloudNews) => {
+      if (cloudNews && cloudNews.length > 0) setNews(cloudNews);
+    });
+
+    const unsubPhotos = subscribeToPhotos((cloudPhotos) => {
+      if (cloudPhotos && cloudPhotos.length > 0) setPhotos(cloudPhotos);
+    });
+
+    const unsubRequests = subscribeToRequests((cloudRequests) => {
+      if (cloudRequests) setRequests(cloudRequests);
+    });
+
+    const unsubMessages = subscribeToMessages((cloudMessages) => {
+      if (cloudMessages) setMessages(cloudMessages);
+    });
+
+    const unsubLogs = subscribeToAuditLogs((logs) => {
       setAuditLogs(logs);
       if (logs.length > 0 && currentSession.role === 'admin') {
         const latest = logs[0];
-        // Show pop notification for recent log if under 10 seconds
         const logTime = new Date(latest.timestamp).getTime();
-        if (Date.now() - logTime < 10000) {
+        if (Date.now() - logTime < 8000) {
           setLiveNotification(`تحديث حي: قام ${latest.userName} بـ ${latest.action} ${latest.targetMemberName ? `(${latest.targetMemberName})` : ''}`);
-          setTimeout(() => setLiveNotification(null), 6000);
+          setTimeout(() => setLiveNotification(null), 5000);
         }
       }
     });
 
     return () => {
-      unsubscribeState();
-      unsubscribeLogs();
+      unsubMembers();
+      unsubInfo();
+      unsubNews();
+      unsubPhotos();
+      unsubRequests();
+      unsubMessages();
+      unsubLogs();
     };
   }, []);
 
   // Save to localStorage as quick local cache backup
   useEffect(() => {
-    localStorage.setItem('family_members_v6', JSON.stringify(members));
+    if (members && members.length > 0) {
+      localStorage.setItem('family_members_v6', JSON.stringify(members));
+    }
   }, [members]);
 
   useEffect(() => {
@@ -173,16 +250,17 @@ export default function App() {
     }
   }, [currentSession]);
 
-  // Cloud Sync Dispatcher
-  const updateCloudMembers = async (newMembers: FamilyMember[], actionDesc?: string, targetName?: string) => {
-    setMembers(newMembers);
+  // Handle Manual Force Cloud Sync Button
+  const handleForceSyncToCloud = async () => {
+    setIsUploadingToCloud(true);
     try {
-      await syncFamilyStateToCloud({ members: newMembers }, currentSession.name);
-      if (actionDesc) {
-        await logFamilyAction(currentSession.name, actionDesc, `تحديث بيانات الشجرة`, targetName);
-      }
+      await syncAllLocalToCloud(members, familyInfo, news, photos, messages);
+      setUploadSuccess(true);
+      setTimeout(() => setUploadSuccess(false), 4000);
     } catch (e) {
-      console.error('Error syncing to cloud:', e);
+      console.error(e);
+    } finally {
+      setIsUploadingToCloud(false);
     }
   };
 
@@ -198,7 +276,6 @@ export default function App() {
       setActiveTab('admin');
       return true;
     } else {
-      // Find matching approved member in our directory
       const member = members.find(m => m.id === 'member-1-2') || members[0];
       if (member) {
         setCurrentSession({
@@ -236,7 +313,7 @@ export default function App() {
 
     const nextRequests = [request, ...requests];
     setRequests(nextRequests);
-    await syncFamilyStateToCloud({ requests: nextRequests }, newRequest.name);
+    await saveRequestToCloud(request);
     await logFamilyAction(newRequest.name, 'طلب تسجيل جديد', `طلب انتساب جديد قيد مراجعة الآدمن`, newRequest.name, newRequest.email);
 
     setCurrentSession({
@@ -274,19 +351,24 @@ export default function App() {
     };
 
     let updatedMembers = [...members, newMember];
+    let parentToUpdate: FamilyMember | null = null;
+
     if (fatherId) {
       updatedMembers = updatedMembers.map(m => {
         if (m.id === fatherId) {
-          return {
+          parentToUpdate = {
             ...m,
             childrenIds: [...(m.childrenIds || []), newMemberId]
           };
+          return parentToUpdate;
         }
         return m;
       });
     }
 
-    const updatedRequests = requests.map(r => r.id === requestId ? { ...r, status: 'approved' as const } : r);
+    const updatedRequest: RegistrationRequest = { ...req, status: 'approved' as const };
+    const updatedRequests = requests.map(r => r.id === requestId ? updatedRequest : r);
+    
     const newNewsItem: NewsItem = {
       id: 'news-' + Date.now().toString(),
       type: 'welcome',
@@ -299,11 +381,11 @@ export default function App() {
     setRequests(updatedRequests);
     setNews(updatedNews);
 
-    await syncFamilyStateToCloud({
-      members: updatedMembers,
-      requests: updatedRequests,
-      news: updatedNews
-    }, currentSession.name);
+    // Save each document individually to Firestore
+    await saveMemberToCloud(newMember);
+    if (parentToUpdate) await saveMemberToCloud(parentToUpdate);
+    await saveRequestToCloud(updatedRequest);
+    await saveNewsToCloud(newNewsItem);
 
     await logFamilyAction(currentSession.name, 'موافقة على عضو جديد', `تم اعتماد وقبول حساب ${req.name} وربطه بالشجرة`, req.name);
 
@@ -320,9 +402,12 @@ export default function App() {
 
   // Reject Request
   const handleRejectRequest = async (requestId: string) => {
-    const updatedRequests = requests.map(r => r.id === requestId ? { ...r, status: 'rejected' as const } : r);
+    const req = requests.find(r => r.id === requestId);
+    if (!req) return;
+    const updatedRequest: RegistrationRequest = { ...req, status: 'rejected' as const };
+    const updatedRequests = requests.map(r => r.id === requestId ? updatedRequest : r);
     setRequests(updatedRequests);
-    await syncFamilyStateToCloud({ requests: updatedRequests }, currentSession.name);
+    await saveRequestToCloud(updatedRequest);
     
     if (currentSession.role === 'pending' && currentSession.requestId === requestId) {
       handleLogout();
@@ -352,7 +437,9 @@ export default function App() {
       return m;
     });
 
-    await updateCloudMembers(next, 'تعديل بيانات فرد', updated.name);
+    setMembers(next);
+    await saveMemberToCloud(updated);
+    await logFamilyAction(currentSession.name, 'تعديل بيانات فرد', `تحديث بيانات الشجرة`, updated.name);
   };
 
   const handleUpdateMembers = async (newMembers: FamilyMember[]) => {
@@ -376,7 +463,9 @@ export default function App() {
       return m;
     });
 
-    await updateCloudMembers(next, 'إعادة ترتيب الأبناء/الأفراد في الشجرة');
+    setMembers(next);
+    await saveMultipleMembersToCloud(next);
+    await logFamilyAction(currentSession.name, 'إعادة ترتيب الأبناء/الأفراد في الشجرة', 'تحديث تراتيب العائلة');
   };
 
   // Add Child (called by Member or Admin)
@@ -401,18 +490,23 @@ export default function App() {
       childrenIds: []
     };
 
+    let updatedParent: FamilyMember | null = null;
     let updated = [...members, newChild];
     updated = updated.map(m => {
       if (m.id === parentId) {
-        return {
+        updatedParent = {
           ...m,
           childrenIds: [...(m.childrenIds || []), childId]
         };
+        return updatedParent;
       }
       return m;
     });
 
-    await updateCloudMembers(updated, 'إضافة ابن/ابنة جديدة', `${childInfo.name} (والده/والدته: ${parent?.name || ''})`);
+    setMembers(updated);
+    await saveMemberToCloud(newChild);
+    if (updatedParent) await saveMemberToCloud(updatedParent);
+    await logFamilyAction(currentSession.name, 'إضافة ابن/ابنة جديدة', `إضافة ${childInfo.name}`, childInfo.name);
   };
 
   // Add Member Directly (Admin only)
@@ -424,31 +518,25 @@ export default function App() {
       childrenIds: []
     };
 
+    let parentToUpdate: FamilyMember | null = null;
     let updated = [...members, member];
     if (newMem.fatherId) {
       updated = updated.map(m => {
         if (m.id === newMem.fatherId) {
-          return {
+          parentToUpdate = {
             ...m,
             childrenIds: [...(m.childrenIds || []), id]
           };
-        }
-        return m;
-      });
-    }
-    if (newMem.motherId) {
-      updated = updated.map(m => {
-        if (m.id === newMem.motherId) {
-          return {
-            ...m,
-            childrenIds: [...(m.childrenIds || []), id]
-          };
+          return parentToUpdate;
         }
         return m;
       });
     }
 
-    updateCloudMembers(updated, 'إضافة عضو مباشرة إلى الشجرة', newMem.name);
+    setMembers(updated);
+    saveMemberToCloud(member);
+    if (parentToUpdate) saveMemberToCloud(parentToUpdate);
+    logFamilyAction(currentSession.name, 'إضافة عضو مباشرة إلى الشجرة', newMem.name, newMem.name);
     return id;
   };
 
@@ -472,7 +560,10 @@ export default function App() {
       return m;
     });
 
-    await updateCloudMembers(filtered, 'حذف عضو من الشجرة', target?.name || id);
+    setMembers(filtered);
+    await deleteMemberFromCloud(id);
+    await saveMultipleMembersToCloud(filtered);
+    await logFamilyAction(currentSession.name, 'حذف عضو من الشجرة', target?.name || id, target?.name);
   };
 
   // News management
@@ -484,19 +575,22 @@ export default function App() {
     };
     const nextNews = [item, ...news];
     setNews(nextNews);
-    await syncFamilyStateToCloud({ news: nextNews }, currentSession.name);
+    await saveNewsToCloud(item);
   };
 
   const handleUpdateNews = async (id: string, updatedFields: Partial<NewsItem>) => {
-    const nextNews = news.map(n => n.id === id ? { ...n, ...updatedFields } : n);
+    const existing = news.find(n => n.id === id);
+    if (!existing) return;
+    const updated: NewsItem = { ...existing, ...updatedFields };
+    const nextNews = news.map(n => n.id === id ? updated : n);
     setNews(nextNews);
-    await syncFamilyStateToCloud({ news: nextNews }, currentSession.name);
+    await saveNewsToCloud(updated);
   };
 
   const handleDeleteNews = async (id: string) => {
     const nextNews = news.filter(n => n.id !== id);
     setNews(nextNews);
-    await syncFamilyStateToCloud({ news: nextNews }, currentSession.name);
+    await deleteNewsFromCloud(id);
   };
 
   // Photos management
@@ -507,19 +601,19 @@ export default function App() {
     };
     const nextPhotos = [photo, ...photos];
     setPhotos(nextPhotos);
-    await syncFamilyStateToCloud({ photos: nextPhotos }, currentSession.name);
+    await savePhotoToCloud(photo);
   };
 
   const handleDeletePhoto = async (id: string) => {
     const nextPhotos = photos.filter(p => p.id !== id);
     setPhotos(nextPhotos);
-    await syncFamilyStateToCloud({ photos: nextPhotos }, currentSession.name);
+    await deletePhotoFromCloud(id);
   };
 
   const handleUpdatePhoto = async (updatedPhoto: FamilyPhoto) => {
     const nextPhotos = photos.map(p => p.id === updatedPhoto.id ? updatedPhoto : p);
     setPhotos(nextPhotos);
-    await syncFamilyStateToCloud({ photos: nextPhotos }, currentSession.name);
+    await savePhotoToCloud(updatedPhoto);
   };
 
   const handleAddPhotoComment = async (photoId: string, comment: Omit<MemberComment, 'id' | 'createdAt'>) => {
@@ -528,21 +622,27 @@ export default function App() {
       id: 'comment-' + Date.now().toString(),
       createdAt: new Date().toISOString()
     };
-    const nextPhotos = photos.map(p => p.id === photoId ? {
-      ...p,
-      comments: [...(p.comments || []), newComment]
-    } : p);
+    const targetPhoto = photos.find(p => p.id === photoId);
+    if (!targetPhoto) return;
+    const updatedPhoto = {
+      ...targetPhoto,
+      comments: [...(targetPhoto.comments || []), newComment]
+    };
+    const nextPhotos = photos.map(p => p.id === photoId ? updatedPhoto : p);
     setPhotos(nextPhotos);
-    await syncFamilyStateToCloud({ photos: nextPhotos }, comment.senderName);
+    await savePhotoToCloud(updatedPhoto);
   };
 
   const handleDeletePhotoComment = async (photoId: string, commentId: string) => {
-    const nextPhotos = photos.map(p => p.id === photoId ? {
-      ...p,
-      comments: (p.comments || []).filter(c => c.id !== commentId)
-    } : p);
+    const targetPhoto = photos.find(p => p.id === photoId);
+    if (!targetPhoto) return;
+    const updatedPhoto = {
+      ...targetPhoto,
+      comments: (targetPhoto.comments || []).filter(c => c.id !== commentId)
+    };
+    const nextPhotos = photos.map(p => p.id === photoId ? updatedPhoto : p);
     setPhotos(nextPhotos);
-    await syncFamilyStateToCloud({ photos: nextPhotos }, currentSession.name);
+    await savePhotoToCloud(updatedPhoto);
   };
 
   const handleSendMessage = async (newMessage: Omit<FamilyMessage, 'id' | 'createdAt'>) => {
@@ -553,14 +653,14 @@ export default function App() {
     };
     const nextMessages = [message, ...messages];
     setMessages(nextMessages);
-    await syncFamilyStateToCloud({ messages: nextMessages }, newMessage.senderName);
+    await saveMessageToCloud(message);
     await logFamilyAction(newMessage.senderName, 'إرسال رسالة للإدارة', newMessage.subject, undefined, newMessage.senderEmail);
   };
 
   const handleDeleteMessage = async (id: string) => {
     const nextMessages = messages.filter(m => m.id !== id);
     setMessages(nextMessages);
-    await syncFamilyStateToCloud({ messages: nextMessages }, currentSession.name);
+    await deleteMessageFromCloud(id);
   };
 
   const activeMember = members.find(m => m.id === currentSession.userId);
@@ -639,9 +739,32 @@ export default function App() {
             <h1 className="text-lg md:text-xl font-extrabold text-slate-800 font-serif tracking-wide">
               عائلة آل الوفائي والعطائي
             </h1>
-            <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 mt-1">
-              <Wifi size={10} className="text-emerald-500 animate-pulse" />
-              <span>مزامنة سحابية حية (Real-time Cloud)</span>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                <Wifi size={10} className="text-emerald-500 animate-pulse" />
+                <span>مزامنة سحابية حية (Real-time Cloud)</span>
+              </div>
+              
+              {currentSession.role === 'admin' && (
+                <button
+                  onClick={handleForceSyncToCloud}
+                  disabled={isUploadingToCloud}
+                  className="flex items-center gap-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200 transition-all cursor-pointer"
+                  title="رفع وتحديث كل بيانات الشجرة المحلية إلى السحابة فوراً لتظهر في جميع الأجهزة ورابط Vercel"
+                >
+                  {uploadSuccess ? (
+                    <>
+                      <CheckCircle size={10} className="text-emerald-600" />
+                      <span className="text-emerald-600">تم الرفع بنجاح!</span>
+                    </>
+                  ) : (
+                    <>
+                      <CloudUpload size={10} className={isUploadingToCloud ? "animate-bounce" : ""} />
+                      <span>{isUploadingToCloud ? "جارِ الرفع..." : "مزامنة الشجرة للسحابة"}</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
 
@@ -723,7 +846,7 @@ export default function App() {
               onDeletePhotoComment={handleDeletePhotoComment}
               onUpdateInfo={async (info) => {
                 setFamilyInfo(info);
-                await syncFamilyStateToCloud({ familyInfo: info }, currentSession.name);
+                await saveFamilyInfoToCloud(info);
               }}
               onGoToTree={(memberId?: string) => {
                 if (memberId) setTreeSelectedMemberId(memberId);

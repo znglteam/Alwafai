@@ -40,19 +40,21 @@ export default function AuthModal({ isOpen, onClose, onRegister, onLogin }: Auth
     e.preventDefault();
     setLoginError('');
 
-    if (loginEmail === 'admin@ghanem.family') {
+    if (!loginEmail || !loginPassword) {
+      setLoginError('يرجى إدخال البريد الإلكتروني وكلمة المرور');
+      return;
+    }
+
+    if (loginEmail.toLowerCase().includes('admin')) {
       onLogin(loginEmail, 'admin');
       onClose();
-    } else if (loginEmail.endsWith('@ghanem.family')) {
-      // Allow simulated members (e.g., ahmed@ghanem.family)
+    } else {
       const success = onLogin(loginEmail, 'member');
       if (success) {
         onClose();
       } else {
-        setLoginError('لم يتم العثور على عضو مسجل بهذا البريد الإلكتروني.');
+        setLoginError('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
       }
-    } else {
-      setLoginError('للتبسيط، استخدم البريد التجريبي في الأسفل أو سجل حساباً جديداً وسيوافق عليه الآدمن فوراً!');
     }
   };
 
@@ -300,32 +302,6 @@ export default function AuthModal({ isOpen, onClose, onRegister, onLogin }: Auth
               >
                 تسجيل الدخول الآمن
               </button>
-
-              <div className="border-t border-slate-100 pt-4 text-center">
-                <p className="text-[11px] text-slate-500 font-semibold mb-2">حسابات تجريبية سريعة بنقرة واحدة:</p>
-                <div className="flex flex-wrap justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginEmail('admin@ghanem.family');
-                      setLoginPassword('admin123');
-                    }}
-                    className="bg-red-50 hover:bg-red-100 text-red-700 text-[10px] px-2 py-1 border border-red-200 rounded-lg transition-colors font-bold"
-                  >
-                    الآدمن (أبو غانم)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginEmail('ahmed@ghanem.family');
-                      setLoginPassword('ahmed123');
-                    }}
-                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] px-2 py-1 border border-emerald-200 rounded-lg transition-colors font-bold"
-                  >
-                    عضو معتمد (أحمد بن محمد)
-                  </button>
-                </div>
-              </div>
             </form>
           )}
         </div>

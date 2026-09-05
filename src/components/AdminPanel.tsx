@@ -204,7 +204,7 @@ export default function AdminPanel({
       specialization: newMemSpecialization || 'غير محدد',
       isAlive: newMemIsAlive,
       deathYear: newMemIsAlive ? null : newMemDeath,
-      bio: newMemBio || `فرد من عائلة آل غانم الكرام.`,
+      bio: newMemBio || `فرد من أفراد العائلة الكرام.`,
       avatar: newMemAvatar || undefined,
       maritalStatus: newMemMaritalStatus,
       spouseName: newMemMaritalStatus === "متزوج" ? (newMemSpouse || null) : null,

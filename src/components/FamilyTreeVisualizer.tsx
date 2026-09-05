@@ -604,7 +604,6 @@ export default function FamilyTreeVisualizer({
   // Recursive Tree Node Renderer
   const renderTreeNode = (node: FamilyMember, depth: number = 0) => {
     const children = membersByFather[node.id] || [];
-    const isCollapsed = !expandedBranches[node.id];
     const hasChildren = children.length > 0;
     const isFemale = node.gender === 'female' || isFemaleName(node.name);
 
@@ -668,17 +667,6 @@ export default function FamilyTreeVisualizer({
                 {getDescendantsCount(node.id)}
               </div>
             )}
-            {/* Collapser Button next to avatar for members with children */}
-            {hasChildren && (
-              <button 
-                type="button"
-                onClick={(e) => toggleBranch(node.id, e)}
-                className="absolute top-1/2 -left-7 -translate-y-1/2 w-6 h-6 rounded-full bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 hover:border-indigo-300 transition-all shadow-xs flex items-center justify-center shrink-0 z-30 cursor-pointer active:scale-95"
-                title={isCollapsed ? "اضغط لإظهار الأبناء (+)" : "اضغط لإخفاء الأبناء (-)"}
-              >
-                {isCollapsed ? <Plus size={12} className="stroke-[2.5]" /> : <Minus size={12} className="stroke-[2.5]" />}
-              </button>
-            )}
           </div>
 
           {/* Under Avatar: First Name */}
@@ -693,7 +681,7 @@ export default function FamilyTreeVisualizer({
         </div>
 
         {/* Children Render */}
-        {hasChildren && !isCollapsed && (
+        {hasChildren && (
           <div className="flex flex-col items-center w-full">
             {/* Vertical connector from parent to horizontal line */}
             <div className="w-[2px] h-6 bg-indigo-300"></div>

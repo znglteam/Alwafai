@@ -50,8 +50,9 @@ import MemberProfileEdit from './components/MemberProfileEdit';
 import AdminPanel from './components/AdminPanel';
 import AuthModal from './components/AuthModal';
 import ContactAdmin from './components/ContactAdmin';
+import UserProfileModal from './components/UserProfileModal';
 
-import { Home, Network, User, Shield, LogOut, MessageSquare, Wifi, Bell, CloudUpload, CheckCircle } from 'lucide-react';
+import { Home, Network, User, Shield, LogOut, MessageSquare, Wifi, Bell, CloudUpload, CheckCircle, LogIn, UserPlus } from 'lucide-react';
 
 export default function App() {
   const [members, setMembers] = useState<FamilyMember[]>(() => {
@@ -138,7 +139,8 @@ export default function App() {
   // UI state
   const [activeTab, setActiveTab] = useState<'main' | 'tree' | 'profile' | 'admin' | 'messages'>('tree');
   const [treeSelectedMemberId, setTreeSelectedMemberId] = useState<string | null>(null);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [auditLogs, setAuditLogs] = useState<LiveChangeLog[]>([]);
   const [liveNotification, setLiveNotification] = useState<string | null>(null);
   const [isUploadingToCloud, setIsUploadingToCloud] = useState(false);
@@ -178,7 +180,9 @@ export default function App() {
     });
 
     const unsubPhotos = subscribeToPhotos((cloudPhotos) => {
-      if (cloudPhotos && cloudPhotos.length > 0) setPhotos(cloudPhotos);
+      if (cloudPhotos && cloudPhotos.length > 0) {
+        setPhotos(cloudPhotos);
+      }
     });
 
     const unsubRequests = subscribeToRequests((cloudRequests) => {
@@ -741,44 +745,53 @@ export default function App() {
             </h1>
           </div>
 
-          {/* Left Column: User Profile Controls */}
-          <div className="flex items-center justify-center md:justify-end gap-3">
-            <button
-              onClick={() => {
-                if (currentSession.role === 'guest') {
-                  setIsAuthOpen(true);
-                } else if (currentSession.role === 'member') {
-                  setActiveTab('profile');
-                } else {
-                  setActiveTab('admin');
-                }
-              }}
-              className="relative group p-2.5 rounded-full hover:bg-slate-100 transition-colors border border-slate-200/60 flex items-center justify-center bg-slate-50 text-slate-700 hover:text-indigo-600"
-              title={currentSession.role !== 'guest' ? `الملف الشخصي: ${currentSession.name}` : "تسجيل الدخول / إنشاء حساب"}
-            >
-              <User size={18} />
-              {currentSession.role !== 'guest' && (
-                <span className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white ${
-                  currentSession.role === 'admin' ? 'bg-emerald-500' : 'bg-indigo-500'
-                }`} />
-              )}
-            </button>
-
-            {currentSession.role !== 'guest' && (
-              <div className="hidden lg:block text-right">
-                <span className="block text-[9px] text-slate-400 font-bold leading-none">مرحباً بك</span>
-                <span className="text-xs font-bold text-slate-700 truncate max-w-[120px] block">{currentSession.name}</span>
+          {/* Left Column: User Profile Controls & Auth Buttons */}
+          <div className="flex items-center justify-center md:justify-end gap-2">
+            {currentSession.role === 'guest' ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setAuthMode('login')}
+                  className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-xs cursor-pointer"
+                  title="تسجيل الدخول للحساب"
+                >
+                  <LogIn size={14} />
+                  <span>تسجيل الدخول</span>
+                </button>
+                <button
+                  onClick={() => setAuthMode('register')}
+                  className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-all shadow-xs cursor-pointer"
+                  title="تقديم طلب انضمام / إنشاء حساب جديد"
+                >
+                  <UserPlus size={14} />
+                  <span>طلب حساب جديد</span>
+                </button>
               </div>
-            )}
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="relative group p-2.5 rounded-full hover:bg-slate-100 transition-colors border border-slate-200/60 flex items-center justify-center bg-slate-50 text-slate-700 hover:text-indigo-600 cursor-pointer"
+                  title={`الملف الشخصي: ${currentSession.name}`}
+                >
+                  <User size={18} />
+                  <span className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white ${
+                    currentSession.role === 'admin' ? 'bg-emerald-500' : 'bg-indigo-500'
+                  }`} />
+                </button>
 
-            {currentSession.role !== 'guest' && (
-              <button
-                onClick={handleLogout}
-                className="bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 p-2.5 rounded-full transition-colors border border-slate-200/50"
-                title="تسجيل الخروج"
-              >
-                <LogOut size={16} />
-              </button>
+                <div className="hidden lg:block text-right">
+                  <span className="block text-[9px] text-slate-400 font-bold leading-none">مرحباً بك</span>
+                  <span className="text-xs font-bold text-slate-700 truncate max-w-[120px] block">{currentSession.name}</span>
+                </div>
+
+                <button
+                  onClick={handleLogout}
+                  className="bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 p-2.5 rounded-full transition-colors border border-slate-200/50"
+                  title="تسجيل الخروج"
+                >
+                  <LogOut size={16} />
+                </button>
+              </>
             )}
           </div>
 
@@ -825,7 +838,7 @@ export default function App() {
                 if (memberId) setTreeSelectedMemberId(memberId);
                 setActiveTab('tree');
               }}
-              onOpenAuth={() => setIsAuthOpen(true)}
+              onOpenAuth={() => setAuthMode('login')}
             />
           )}
 
@@ -835,7 +848,7 @@ export default function App() {
               initialSelectedMemberId={treeSelectedMemberId}
               onClearInitialSelection={() => setTreeSelectedMemberId(null)}
               isApprovedMember={currentSession.role === 'member' || currentSession.role === 'admin'}
-              onOpenAuth={() => setIsAuthOpen(true)}
+              onOpenAuth={() => setAuthMode('login')}
               isAdmin={currentSession.role === 'admin'}
               onAddMemberDirectly={handleAddMemberDirectly}
               onDeleteMember={handleDeleteMember}
@@ -898,10 +911,26 @@ export default function App() {
 
       {/* Auth Login/Register Modal */}
       <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
+        isOpen={authMode !== null}
+        initialMode={authMode || 'login'}
+        onClose={() => setAuthMode(null)}
         onRegister={handleRegister}
         onLogin={handleLogin}
+      />
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        currentSession={currentSession}
+        activeMember={activeMember}
+        onLogout={handleLogout}
+        onGoToTree={(id) => {
+          setActiveTab('tree');
+          if (id) setTreeSelectedMemberId(id);
+        }}
+        onGoToProfileEdit={() => setActiveTab('profile')}
+        onGoToAdmin={() => setActiveTab('admin')}
       />
 
       {/* Floating Contact Admin Button */}

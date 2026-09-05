@@ -61,7 +61,7 @@ export default function ContactAdmin({ currentSession, onSendMessage }: ContactA
           <CheckCircle className="mx-auto text-emerald-600" size={48} />
           <h3 className="text-lg font-bold">تم إرسال رسالتك بنجاح!</h3>
           <p className="text-xs text-emerald-700 leading-relaxed max-w-md mx-auto">
-            شكراً لتواصلك مع إدارة عائلة غانم. ستتم مراجعة طلبك أو الملفات المرفقة وتثبيتها في لوحة التحكم أو ألبوم الصور من قبل الآدمن قريباً.
+            شكراً لتواصلك مع إدارة العائلة. ستتم مراجعة طلبك أو الملفات المرفقة وتثبيتها في لوحة التحكم أو ألبوم الصور من قبل الآدمن قريباً.
           </p>
           <button
             onClick={() => setSubmitted(false)}

@@ -262,18 +262,21 @@ export default function MainPage({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
           <div>
             <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <Image className="text-amber-600" size={22} />
-              أعيان العائلة وكبارها
+              <Image className="text-indigo-600" size={22} />
+              ألبوم صور العائلة واللقاءات
             </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              معرض الصور التذكارية لأعيان ولقاءات واجتماعات العائلة المباركة
+            </p>
           </div>
           
           {isAdmin && (
             <button
               onClick={() => setShowAddPhoto(!showAddPhoto)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 self-start"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 self-start shadow-sm"
             >
               <Plus size={16} />
-              إضافة صورة جديدة للجريدة
+              {showAddPhoto ? 'إغلاق النموذج' : 'إضافة صورة جديدة للألبوم'}
             </button>
           )}
         </div>

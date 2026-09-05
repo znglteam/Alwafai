@@ -535,7 +535,7 @@ export default function FamilyTreeVisualizer({
     e.stopPropagation();
     setExpandedBranches(prev => ({
       ...prev,
-      [id]: prev[id] === false ? true : false
+      [id]: !prev[id]
     }));
   };
 
@@ -604,7 +604,7 @@ export default function FamilyTreeVisualizer({
   // Recursive Tree Node Renderer
   const renderTreeNode = (node: FamilyMember, depth: number = 0) => {
     const children = membersByFather[node.id] || [];
-    const isCollapsed = expandedBranches[node.id] === false;
+    const isCollapsed = !expandedBranches[node.id];
     const hasChildren = children.length > 0;
     const isFemale = node.gender === 'female' || isFemaleName(node.name);
 

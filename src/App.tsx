@@ -734,38 +734,11 @@ export default function App() {
             )}
           </div>
 
-          {/* Center Column: Header Title & Cloud Live Indicator */}
+          {/* Center Column: Header Title */}
           <div className="text-center py-1 md:py-0 flex flex-col items-center">
             <h1 className="text-lg md:text-xl font-extrabold text-slate-800 font-serif tracking-wide">
               عائلة آل الوفائي والعطائي
             </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                <Wifi size={10} className="text-emerald-500 animate-pulse" />
-                <span>مزامنة سحابية حية (Real-time Cloud)</span>
-              </div>
-              
-              {currentSession.role === 'admin' && (
-                <button
-                  onClick={handleForceSyncToCloud}
-                  disabled={isUploadingToCloud}
-                  className="flex items-center gap-1 text-[10px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200 transition-all cursor-pointer"
-                  title="رفع وتحديث كل بيانات الشجرة المحلية إلى السحابة فوراً لتظهر في جميع الأجهزة ورابط Vercel"
-                >
-                  {uploadSuccess ? (
-                    <>
-                      <CheckCircle size={10} className="text-emerald-600" />
-                      <span className="text-emerald-600">تم الرفع بنجاح!</span>
-                    </>
-                  ) : (
-                    <>
-                      <CloudUpload size={10} className={isUploadingToCloud ? "animate-bounce" : ""} />
-                      <span>{isUploadingToCloud ? "جارِ الرفع..." : "مزامنة الشجرة للسحابة"}</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
           </div>
 
           {/* Left Column: User Profile Controls */}

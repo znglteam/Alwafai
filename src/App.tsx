@@ -807,7 +807,7 @@ export default function App() {
       </nav>
 
       {/* Main Body Grid */}
-      <main id="main-content" className="max-w-7xl mx-auto px-4 w-full flex-1 pt-2 md:pt-3">
+      <main id="main-content" className="max-w-7xl mx-auto px-4 w-full flex-1 pt-1">
         
         {/* Pending Request Status Notice Box (if pending) */}
         {currentSession.role === 'pending' && (

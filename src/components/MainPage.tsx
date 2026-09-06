@@ -164,25 +164,25 @@ export default function MainPage({
   };
 
   return (
-    <div id="main-page-container" className="py-2 space-y-6 dir-rtl text-right">
+    <div id="main-page-container" className="pt-0 pb-6 space-y-4 dir-rtl text-right">
       
       {/* Top Family Showcase: Logo & Bio/History directly underneath */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-5 md:p-7 shadow-xs space-y-4 max-w-4xl mx-auto">
+      <div className="bg-white border border-slate-100 rounded-3xl p-4 md:p-6 shadow-xs space-y-2 max-w-4xl mx-auto">
         
-        {/* Family Logo Centered (Enlarged and raised higher up) */}
-        <div className="flex flex-col items-center justify-center text-center pt-0 pb-1">
+        {/* Family Logo Centered (Enlarged and raised to the very top) */}
+        <div className="flex flex-col items-center justify-center text-center -mt-2 pb-0">
           <img 
             src="/family_logo.png" 
             alt="شعار آل الوفائي والعطائي" 
-            className="w-64 h-64 md:w-84 md:h-84 lg:w-96 lg:h-96 max-h-[380px] object-contain hover:scale-105 transition-transform duration-300 drop-shadow-sm"
+            className="w-72 h-72 sm:w-84 sm:h-84 md:w-[400px] md:h-[400px] lg:w-[480px] lg:h-[480px] max-h-[500px] object-contain hover:scale-102 transition-transform duration-300 drop-shadow-sm"
             referrerPolicy="no-referrer"
           />
         </div>
 
-        {/* Biography & History directly under the Logo (Raised higher) */}
-        <div className="space-y-3 pt-1 border-t border-slate-100/80">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <h3 className="text-lg md:text-xl font-bold text-slate-800 flex items-center gap-2">
+        {/* Biography & History directly under the Logo (Raised higher with minimal gap) */}
+        <div className="space-y-2.5 -mt-3 pt-2 border-t border-slate-100/80">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="text-lg md:text-xl font-bold text-[#414141] flex items-center gap-2">
               <History className="text-amber-600" size={20} />
               عن العائلة ونشأتها
             </h3>

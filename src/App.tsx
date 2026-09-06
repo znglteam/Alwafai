@@ -145,6 +145,7 @@ export default function App() {
   const [liveNotification, setLiveNotification] = useState<string | null>(null);
   const [isUploadingToCloud, setIsUploadingToCloud] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [isAdminSession, setIsAdminSession] = useState<boolean>(() => currentSession.role === 'admin');
 
   // 1. Subscribe to Real-time Collections from Firebase Firestore
   useEffect(() => {
@@ -277,6 +278,7 @@ export default function App() {
         email: 'admin@family.com',
         role: 'admin'
       });
+      setIsAdminSession(true);
       setActiveTab('admin');
       return true;
     } else {
@@ -288,6 +290,7 @@ export default function App() {
           email: email,
           role: 'member'
         });
+        setIsAdminSession(false);
         setActiveTab('tree');
         return true;
       }
@@ -302,6 +305,7 @@ export default function App() {
       email: '',
       role: 'guest'
     });
+    setIsAdminSession(false);
     setActiveTab('main');
   };
 
@@ -888,12 +892,14 @@ export default function App() {
 
       </main>
 
-      {/* Collapsible interactive role testing simulator */}
-      <RoleSimulator
-        currentSession={currentSession}
-        onChangeSession={setCurrentSession}
-        pendingCount={requests.filter(r => r.status === 'pending').length}
-      />
+      {/* Collapsible interactive role testing simulator - Admin Only */}
+      {isAdminSession && (
+        <RoleSimulator
+          currentSession={currentSession}
+          onChangeSession={setCurrentSession}
+          pendingCount={requests.filter(r => r.status === 'pending').length}
+        />
+      )}
 
       {/* Auth Login/Register Modal */}
       <AuthModal
@@ -919,25 +925,27 @@ export default function App() {
         onGoToAdmin={() => setActiveTab('admin')}
       />
 
-      {/* Floating Contact Admin Button */}
-      <button
-        onClick={() => {
-          if (activeTab === 'messages') {
-            setActiveTab('main');
-          } else {
-            setActiveTab('messages');
-          }
-        }}
-        className={`fixed bottom-6 left-6 z-40 flex items-center gap-2 px-4 py-3 rounded-full shadow-lg border text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95 ${
-          activeTab === 'messages'
-            ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-600 shadow-rose-200'
-            : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-indigo-100'
-        }`}
-        id="floating-contact-btn"
-      >
-        <MessageSquare size={15} />
-        <span>{activeTab === 'messages' ? 'العودة للرئيسية' : 'مراسلة الإدارة'}</span>
-      </button>
+      {/* Floating Contact Admin Button - Visible ONLY to Logged-in Members and Admins */}
+      {currentSession.role !== 'guest' && (
+        <button
+          onClick={() => {
+            if (activeTab === 'messages') {
+              setActiveTab('main');
+            } else {
+              setActiveTab('messages');
+            }
+          }}
+          className={`fixed bottom-6 left-6 z-40 flex items-center gap-2 px-4 py-3 rounded-full shadow-lg border text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer ${
+            activeTab === 'messages'
+              ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-600 shadow-rose-200'
+              : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-indigo-100'
+          }`}
+          id="floating-contact-btn"
+        >
+          <MessageSquare size={15} />
+          <span>{activeTab === 'messages' ? 'العودة للرئيسية' : 'مراسلة الإدارة'}</span>
+        </button>
+      )}
 
     </div>
   );

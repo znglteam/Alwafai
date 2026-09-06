@@ -9,7 +9,7 @@ interface RoleSimulatorProps {
 }
 
 export default function RoleSimulator({ currentSession, onChangeSession, pendingCount }: RoleSimulatorProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   const roles: { role: UserRole; label: string; icon: any; color: string; desc: string }[] = [
     {

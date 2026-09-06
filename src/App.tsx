@@ -688,16 +688,28 @@ export default function App() {
       <NewsTicker news={news} />
 
       {/* Main Navbar */}
-      <nav id="main-nav" className={`bg-white border-b border-slate-200 py-3.5 px-4 sticky ${news && news.length > 0 ? 'top-11' : 'top-0'} z-30 shadow-xs text-right`}>
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+      <nav id="main-nav" className={`bg-white border-b border-slate-200/90 py-3 px-4 md:px-6 sticky ${news && news.length > 0 ? 'top-11' : 'top-0'} z-30 shadow-xs text-right`}>
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
           
-          {/* Nav Tabs (Only for logged-in members & admins) */}
-          <div className="flex flex-wrap items-center justify-center md:justify-start gap-1.5 md:gap-2">
+          {/* Right Column (RTL Start): Prestigious Family Title & Location Badge */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2.5 text-center sm:text-right">
+              <h1 className="text-xl md:text-2xl font-bold font-serif text-[#414141] tracking-wide leading-none">
+                آل الوفائي والعطائي
+              </h1>
+              <span className="inline-flex items-center justify-center self-center sm:self-auto text-[11px] font-bold text-slate-500 bg-slate-100/90 px-2.5 py-0.5 rounded-full border border-slate-200/80 whitespace-nowrap">
+                سوريا / حمص
+              </span>
+            </div>
+          </div>
+
+          {/* Center Column: Nav Tabs (Visible for logged-in members & admins) */}
+          <div className="flex flex-wrap items-center justify-center gap-1.5 md:gap-2">
             {currentSession.role !== 'guest' && (
               <button
                 onClick={() => setActiveTab('main')}
                 className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'main' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  activeTab === 'main' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 <Home size={14} />
@@ -710,7 +722,7 @@ export default function App() {
               <button
                 onClick={() => setActiveTab('tree')}
                 className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'tree' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  activeTab === 'tree' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 <Network size={14} />
@@ -723,7 +735,7 @@ export default function App() {
               <button
                 onClick={() => setActiveTab('profile')}
                 className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'profile' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  activeTab === 'profile' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 <User size={14} />
@@ -736,7 +748,7 @@ export default function App() {
               <button
                 onClick={() => setActiveTab('admin')}
                 className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'admin' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  activeTab === 'admin' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
                 <Shield size={14} />
@@ -748,20 +760,13 @@ export default function App() {
             )}
           </div>
 
-          {/* Center Column: Header Title */}
-          <div className="text-center py-1 md:py-0 flex items-center justify-center">
-            <h1 className="text-lg md:text-xl font-extrabold text-slate-800 font-serif tracking-wide">
-              آل الوفائي والعطائي ( سوريا/ حمص )
-            </h1>
-          </div>
-
-          {/* Left Column: Auth buttons for Guests, or User Profile & Logout for logged-in users */}
-          <div className="flex items-center justify-center md:justify-end gap-2">
+          {/* Left Column (RTL End): Auth buttons for Guests, or User Profile & Logout for members */}
+          <div className="flex items-center justify-center md:justify-end gap-2 shrink-0">
             {currentSession.role === 'guest' ? (
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setAuthMode('login')}
-                  className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-xs cursor-pointer active:scale-95"
+                  className="flex items-center gap-1.5 bg-[#414141] hover:bg-[#333333] text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-xs cursor-pointer active:scale-95"
                 >
                   <LogIn size={14} />
                   <span>تسجيل الدخول</span>

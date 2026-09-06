@@ -70,7 +70,11 @@ export default function MainPage({
   const [selectedSpec, setSelectedSpec] = useState<string | null>(null);
 
   const getFullName = (m: FamilyMember) => {
-    return [m.name, m.fatherName, m.grandfatherName].filter(Boolean).join(' ');
+    const father = m.fatherId ? members.find(f => f.id === m.fatherId) : null;
+    const grandfather = father?.fatherId ? members.find(g => g.id === father.fatherId) : null;
+    const resolvedFather = (father?.name || m.fatherName || '').trim();
+    const resolvedGrandfather = ((grandfather?.name || father?.fatherName || m.grandfatherName) || '').trim();
+    return [m.name, resolvedFather, resolvedGrandfather].filter(Boolean).join(' ');
   };
 
   const countryStats = members.reduce((acc, member) => {

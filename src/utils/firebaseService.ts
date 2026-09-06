@@ -4,6 +4,7 @@ import {
   doc, 
   onSnapshot, 
   setDoc, 
+  deleteDoc,
   collection, 
   addDoc, 
   serverTimestamp, 
@@ -283,6 +284,17 @@ export async function saveRequestToCloud(req: RegistrationRequest) {
   }
 }
 
+// Delete request
+export async function deleteRequestFromCloud(requestId: string) {
+  try {
+    const ref = doc(db, 'family_requests', requestId);
+    await deleteDoc(ref);
+    console.log('Successfully deleted registration request from Firestore:', requestId);
+  } catch (err) {
+    console.error('Error deleting request from Firestore:', err);
+  }
+}
+
 // Save photo
 export async function savePhotoToCloud(photo: FamilyPhoto) {
   try {
@@ -297,9 +309,7 @@ export async function savePhotoToCloud(photo: FamilyPhoto) {
 export async function deletePhotoFromCloud(photoId: string) {
   try {
     const ref = doc(db, 'family_photos', photoId);
-    const batch = writeBatch(db);
-    batch.delete(ref);
-    await batch.commit();
+    await deleteDoc(ref);
   } catch (err) {
     console.error('Error deleting photo from Firestore:', err);
   }
@@ -319,9 +329,7 @@ export async function saveNewsToCloud(item: NewsItem) {
 export async function deleteNewsFromCloud(newsId: string) {
   try {
     const ref = doc(db, 'family_news', newsId);
-    const batch = writeBatch(db);
-    batch.delete(ref);
-    await batch.commit();
+    await deleteDoc(ref);
   } catch (err) {
     console.error('Error deleting news from Firestore:', err);
   }
@@ -341,9 +349,7 @@ export async function saveMessageToCloud(msg: FamilyMessage) {
 export async function deleteMessageFromCloud(msgId: string) {
   try {
     const ref = doc(db, 'family_messages', msgId);
-    const batch = writeBatch(db);
-    batch.delete(ref);
-    await batch.commit();
+    await deleteDoc(ref);
   } catch (err) {
     console.error('Error deleting message from Firestore:', err);
   }

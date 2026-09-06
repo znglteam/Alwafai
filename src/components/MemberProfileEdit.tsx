@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { FamilyMember } from "../types";
+import { FamilyMember, SpouseInfo, getMemberSpouses } from "../types";
 import EditRelativeModal from "./EditRelativeModal";
+import SpouseEditor from "./SpouseEditor";
+import ChildrenListEditor from "./ChildrenListEditor";
+import { isMemberFemale } from "../utils/marriageUtils";
 import {
   User,
   Award,
@@ -68,9 +71,13 @@ export default function MemberProfileEdit({
   const [avatarScale, setAvatarScale] = useState(member.avatarScale || 1);
   const [avatarX, setAvatarX] = useState(member.avatarX || 0);
   const [avatarY, setAvatarY] = useState(member.avatarY || 0);
+  const [spouses, setSpouses] = useState<SpouseInfo[]>(() => getMemberSpouses(member));
   const [spouseName, setSpouseName] = useState(member.spouseName || "");
   const [spouseId, setSpouseId] = useState<string | null>(member.spouseId || null);
-  const [childrenNamesText, setChildrenNamesText] = useState(member.childrenNamesText || "");
+  const [childrenList, setChildrenList] = useState<string[]>(() => {
+    if (!member.childrenNamesText) return [];
+    return member.childrenNamesText.split(/[,،\n]+/).map(s => s.trim()).filter(Boolean);
+  });
   const [maritalStatus, setMaritalStatus] = useState<"أعزب" | "مرتبط" | "متزوج" | "منفصل/ أرمل" | "( اختر )" | "">(member.maritalStatus || "");
   const [gender, setGender] = useState<"male" | "female">(
     member.gender || "male",
@@ -179,15 +186,24 @@ export default function MemberProfileEdit({
     setAvatarScale(member.avatarScale || 1);
     setAvatarX(member.avatarX || 0);
     setAvatarY(member.avatarY || 0);
+    setSpouses(getMemberSpouses(member));
     setSpouseName(member.spouseName || "");
     setSpouseId(member.spouseId || null);
-    setChildrenNamesText(member.childrenNamesText || "");
+    const parsed = member.childrenNamesText
+      ? member.childrenNamesText.split(/[,،\n]+/).map(s => s.trim()).filter(Boolean)
+      : [];
+    setChildrenList(parsed);
     setMaritalStatus(member.maritalStatus || "");
     setGender(member.gender || "male");
   }, [member]);
 
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault();
+    const effectiveSpouses = maritalStatus === "متزوج" ? spouses : [];
+    const formattedSpouseName = effectiveSpouses.map(s => s.name).filter(Boolean).join('، ') || null;
+    const formattedSpouseId = effectiveSpouses.find(s => s.id)?.id || null;
+    const formattedChildren = childrenList.map(s => s.trim()).filter(Boolean).join('، ');
+
     onUpdateMember({
       ...member,
       name,
@@ -203,9 +219,10 @@ export default function MemberProfileEdit({
       avatarScale,
       avatarX,
       avatarY,
-      spouseName: maritalStatus === "متزوج" ? (spouseName || null) : null,
-      spouseId: maritalStatus === "متزوج" ? (spouseId || null) : null,
-      childrenNamesText: gender === "female" ? (childrenNamesText || null) : null,
+      spouseName: formattedSpouseName,
+      spouseId: formattedSpouseId,
+      spouses: effectiveSpouses,
+      childrenNamesText: gender === "female" ? (formattedChildren || null) : null,
       maritalStatus,
       gender,
     });
@@ -569,68 +586,28 @@ export default function MemberProfileEdit({
               </select>
             </div>
 
-            {/* Spouse Name */}
+            {/* Spouse Editor */}
             {maritalStatus === 'متزوج' && (
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-500 mb-0.5">
-                  {gender === 'female' ? 'اسم الزوج' : 'اسم الزوجة'}
-                </label>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <input 
-                    type="checkbox" 
-                    id="profile-same-family-spouse"
-                    checked={spouseId !== undefined && spouseId !== null} 
-                    onChange={e => {
-                      if(e.target.checked) { setSpouseId(''); setSpouseName(''); }
-                      else { setSpouseId(null); setSpouseName(''); }
-                    }} 
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
-                  />
-                  <label htmlFor="profile-same-family-spouse" className="text-xs text-slate-600 font-bold cursor-pointer">من نفس العائلة؟</label>
-                </div>
-                {spouseId !== null && spouseId !== undefined ? (
-                  <select 
-                    value={spouseId || ''} 
-                    onChange={e => {
-                        const selectedSpouse = allMembers.find(m => m.id === e.target.value);
-                        setSpouseId(e.target.value);
-                        setSpouseName(selectedSpouse?.name || '');
-                    }}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-amber-50/20 border-amber-100 cursor-pointer"
-                  >
-                      <option value="" disabled>اختر {gender === 'female' ? 'الزوج' : 'الزوجة'}</option>
-                      {allMembers.filter(m => m.gender !== gender && m.id !== member.id).map(m => (
-                          <option key={m.id} value={m.id}>{m.name} ({m.gender === 'female' ? 'بنت' : 'بن'} {m.fatherName})</option>
-                      ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    placeholder={gender === 'female' ? 'اسم الزوج' : 'اسم الزوجة'}
-                    value={spouseName}
-                    onChange={(e) => setSpouseName(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-amber-50/20 border-amber-100"
-                  />
-                )}
+              <div className="pt-2">
+                <SpouseEditor
+                  gender={gender}
+                  memberName={name}
+                  currentMemberId={member.id}
+                  spouses={spouses}
+                  onChange={setSpouses}
+                  allMembers={allMembers}
+                />
               </div>
             )}
 
-            {/* Children names text (for females only) */}
+            {/* Children names (for females only) */}
             {gender === 'female' && (
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">
-                  أسماء الأبناء والبنات (نصوص مفصولة بفواصل)
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="أسماء الأبناء والبنات مفصولة بفواصل"
-                  value={childrenNamesText}
-                  onChange={(e) => setChildrenNamesText(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-amber-50/20 border-amber-100"
+                <ChildrenListEditor
+                  childrenList={childrenList}
+                  onChange={setChildrenList}
+                  title="الأبناء"
                 />
-                <span className="text-[10px] text-slate-400 block mt-0.5">
-                  أضيفي أسماء الأبناء والبنات مفصولة بفاصلة (،) لكي تظهر كنصوص توضيحية في ملفكِ الشخصي.
-                </span>
               </div>
             )}
 
@@ -731,24 +708,22 @@ export default function MemberProfileEdit({
                 
                 <div className="space-y-3">
                   <div className="bg-white border border-slate-100 p-4 rounded-2xl">
-                    <span className="text-[10px] font-bold text-slate-400 block mb-1">اسم الزوج</span>
+                    <span className="text-[10px] font-bold text-slate-400 block mb-1">
+                      {spouses.length > 1 ? `أسماء الأزواج (${spouses.length})` : 'اسم الزوج'}
+                    </span>
                     <p className="text-xs font-bold text-slate-700">
-                      {spouseName || "لم يتم تحديد اسم الزوج بعد (يمكنك تحديده من نموذج التعديل)"}
+                      {spouses.length > 0
+                        ? spouses.map(s => s.name).filter(Boolean).join('، ')
+                        : (spouseName || "لم يتم تحديد اسم الزوج بعد (يمكنك تحديده من نموذج التعديل)")}
                     </p>
                   </div>
 
                   <div className="bg-white border border-slate-100 p-4 rounded-2xl">
-                    <span className="text-[10px] font-bold text-slate-400 block mb-1">أسماء الأبناء والبنات</span>
+                    <span className="text-[10px] font-bold text-slate-400 block mb-1">الأبناء</span>
                     <p className="text-xs font-bold text-indigo-700 leading-relaxed font-bold">
-                      {childrenNamesText || "لم يتم تسجيل أسماء الأبناء والبنات بعد (يمكنك كتابتهم في نموذج التعديل)"}
+                      {childrenList.map(s => s.trim()).filter(Boolean).join('، ') || "لم يتم تسجيل أسماء الأبناء بعد"}
                     </p>
                   </div>
-                </div>
-
-                <div className="bg-indigo-50 border border-indigo-100/60 rounded-2xl p-4 text-right">
-                  <p className="text-[11px] text-indigo-800 leading-relaxed font-medium">
-                    💡 بصفتكِ إحدى إناث العائلة الكريمة، يمكنكِ إضافة أسماء أبنائك وبناتكِ وزوجكِ كنصوص توضيحية لملفكِ الشخصي، ولن يترتب عليها إنشاء ملفات مستقلة في شجرة العائلة.
-                  </p>
                 </div>
               </>
             ) : (
@@ -756,7 +731,7 @@ export default function MemberProfileEdit({
                 <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
                   <div>
                     <h3 className="text-sm font-bold text-slate-800">
-                      أولادك المسجلين ({myChildren.length})
+                      الأبناء ({myChildren.length})
                     </h3>
                     <p className="text-[10px] text-slate-500">
                       الأبناء والبنات المتصلين بنسبك مباركاً.
@@ -804,9 +779,9 @@ export default function MemberProfileEdit({
                   <span className="text-[9px] text-slate-400 mt-0.5 block">
                     سيصبح الاسم كاملاً:{" "}
                     {childName
-                      ? ((member.gender as string) === 'female' 
-                        ? `${childName} (ابن/بنت ${member.name} من زوجها ${member.spouseName || 'غير محدد'})`
-                        : `${childName} بن ${member.name} بن ${member.fatherName}`)
+                      ? (isMemberFemale(member) 
+                        ? `${childName} (${childGender === 'female' ? 'بنت' : 'ابن'} ${member.name} من زوجها ${member.spouseName || 'غير محدد'})`
+                        : `${childName} ${childGender === 'female' ? 'بنت' : 'بن'} ${member.name} بن ${member.fatherName || ''}`)
                       : "..."}
                   </span>
                 </div>

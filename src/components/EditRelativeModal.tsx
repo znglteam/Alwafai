@@ -9,6 +9,8 @@ interface Props {
 }
 
 export default function EditRelativeModal({ relative, onClose, onSave }: Props) {
+  const [name, setName] = useState(relative.name);
+  const [birthYear, setBirthYear] = useState<number | ''>(relative.birthYear || '');
   const [isAlive, setIsAlive] = useState(relative.isAlive);
   const [deathYear, setDeathYear] = useState<number | ''>(relative.deathYear || '');
   const [gender, setGender] = useState(relative.gender || 'male');
@@ -18,6 +20,8 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
     e.preventDefault();
     onSave({
       ...relative,
+      name: name.trim() || relative.name,
+      birthYear: birthYear !== '' ? Number(birthYear) : relative.birthYear,
       isAlive,
       deathYear: !isAlive && deathYear !== '' ? Number(deathYear) : null,
       gender: gender as 'male' | 'female',
@@ -33,6 +37,37 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
+          <div>
+            <label className="block font-bold text-slate-500 mb-1">الاسم الأول</label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-bold text-slate-500 mb-1">سنة الميلاد</label>
+              <input
+                type="number"
+                value={birthYear}
+                onChange={e => setBirthYear(e.target.value === '' ? '' : Number(e.target.value))}
+                placeholder="مثال: 1960"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block font-bold text-slate-500 mb-1">الجنس</label>
+              <select value={gender} onChange={e => setGender(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-600 outline-none">
+                <option value="male">ذكر</option>
+                <option value="female">أنثى</option>
+              </select>
+            </div>
+          </div>
+
           <div>
             <label className="block font-bold text-slate-500 mb-1">الحالة (على قيد الحياة؟)</label>
             <div className="flex gap-4">
@@ -53,14 +88,6 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
               <input type="number" value={deathYear} onChange={e => setDeathYear(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none" />
             </div>
           )}
-
-          <div>
-            <label className="block font-bold text-slate-500 mb-1">الجنس</label>
-            <select value={gender} onChange={e => setGender(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-600 outline-none">
-              <option value="male">ذكر</option>
-              <option value="female">أنثى</option>
-            </select>
-          </div>
 
           <div>
             <label className="block font-bold text-slate-500 mb-1">نبذة شخصية</label>

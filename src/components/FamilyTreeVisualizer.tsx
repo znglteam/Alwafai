@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { FamilyMember } from '../types';
+import { FamilyMember, SpouseInfo, getMemberSpouses } from '../types';
 import { Search, MapPin, Award, Heart, HelpCircle, Eye, EyeOff, User, GitCommit, ChevronDown, ChevronRight, Share2, CornerDownLeft, Network, LogIn, UserPlus, X, Trash2, Plus, Minus, ZoomIn, ZoomOut, Mars, Venus, Edit2, GripVertical, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
+import SpouseEditor from './SpouseEditor';
+import ChildrenListEditor from './ChildrenListEditor';
 
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -302,6 +304,7 @@ export default function FamilyTreeVisualizer({
   const [newMemDeathYear, setNewMemDeathYear] = useState<string>('');
   const [newMemDeathDate, setNewMemDeathDate] = useState('');
   const [newMemBio, setNewMemBio] = useState('');
+  const [newMemSpouses, setNewMemSpouses] = useState<SpouseInfo[]>([]);
   const [newMemSpouseName, setNewMemSpouseName] = useState('');
   const [newMemSpouseId, setNewMemSpouseId] = useState<string | null>(null);
   const [newMemMaritalStatus, setNewMemMaritalStatus] = useState<string>('');
@@ -310,7 +313,7 @@ export default function FamilyTreeVisualizer({
 
   const [isEditingFemaleFamilyText, setIsEditingFemaleFamilyText] = useState(false);
   const [editingFemaleMember, setEditingFemaleMember] = useState<FamilyMember | null>(null);
-  const [femaleChildrenNames, setFemaleChildrenNames] = useState('');
+  const [femaleChildrenList, setFemaleChildrenList] = useState<string[]>([]);
   const [femaleSpouseName, setFemaleSpouseName] = useState('');
 
   const [activeFullscreenMember, setActiveFullscreenMember] = useState<FamilyMember | null>(null);
@@ -321,7 +324,10 @@ export default function FamilyTreeVisualizer({
       const father = members.find(m => m.id === fatherId);
       if (father) {
         setNewMemFatherName(father.name);
-        setNewMemGrandfatherName(father.fatherName);
+        const resolvedGrandfather = father.fatherId 
+          ? (members.find(g => g.id === father.fatherId)?.name || father.fatherName || '')
+          : (father.fatherName || '');
+        setNewMemGrandfatherName(resolvedGrandfather);
       }
     } else {
       setNewMemFatherName('');
@@ -332,7 +338,10 @@ export default function FamilyTreeVisualizer({
   const handleAddChildDirectly = (parent: FamilyMember) => {
     if (isMemberFemale(parent)) {
       setEditingFemaleMember(parent);
-      setFemaleChildrenNames(parent.childrenNamesText || '');
+      const parsedList = parent.childrenNamesText
+        ? parent.childrenNamesText.split(/[,،\n]+/).map(s => s.trim()).filter(Boolean)
+        : [];
+      setFemaleChildrenList(parsedList.length > 0 ? parsedList : ['']);
       setFemaleSpouseName(parent.spouseName || '');
       setIsEditingFemaleFamilyText(true);
     } else {
@@ -341,7 +350,10 @@ export default function FamilyTreeVisualizer({
       setNewMemMotherId('');
       setNewMemFatherId(parent.id);
       setNewMemFatherName(parent.name);
-      setNewMemGrandfatherName(parent.grandfatherName || parent.name);
+      const resolvedGrandfather = parent.fatherId
+        ? (members.find(g => g.id === parent.fatherId)?.name || parent.fatherName || '')
+        : (parent.fatherName || '');
+      setNewMemGrandfatherName(resolvedGrandfather);
       setNewMemCountry(parent.country || '');
     }
   };
@@ -360,6 +372,10 @@ export default function FamilyTreeVisualizer({
     e.preventDefault();
     if (!onAddMemberDirectly) return;
 
+    const effectiveSpouses = newMemMaritalStatus === "متزوج" ? newMemSpouses : [];
+    const formattedSpouseName = effectiveSpouses.map(s => s.name).filter(Boolean).join('، ') || null;
+    const formattedSpouseId = effectiveSpouses.find(s => s.id)?.id || null;
+
     const newId = onAddMemberDirectly({
       name: newMemName,
       fatherId: newMemFatherId || null,
@@ -374,8 +390,9 @@ export default function FamilyTreeVisualizer({
       deathYear: (!newMemIsAlive && newMemDeathYear) ? Number(newMemDeathYear) : null,
       deathDate: (!newMemIsAlive && newMemDeathDate) ? newMemDeathDate : undefined,
       bio: newMemBio,
-      spouseName: newMemMaritalStatus === "متزوج" ? (newMemSpouseName || null) : null,
-      spouseId: newMemMaritalStatus === "متزوج" ? (newMemSpouseId || null) : null,
+      spouseName: formattedSpouseName,
+      spouseId: formattedSpouseId,
+      spouses: effectiveSpouses,
       maritalStatus: newMemMaritalStatus,
       avatar: newMemAvatar || undefined,
       gender: newMemGender
@@ -401,6 +418,7 @@ export default function FamilyTreeVisualizer({
     setNewMemDeathYear('');
     setNewMemDeathDate('');
     setNewMemBio('');
+    setNewMemSpouses([]);
     setNewMemSpouseName('');
     setNewMemSpouseId(null);
     setNewMemMaritalStatus('');
@@ -412,10 +430,15 @@ export default function FamilyTreeVisualizer({
     e.preventDefault();
     if (!editingFemaleMember || !onUpdateMember) return;
 
+    const formattedChildren = femaleChildrenList
+      .map(s => s.trim())
+      .filter(Boolean)
+      .join('، ');
+
     const updated = {
       ...editingFemaleMember,
       spouseName: femaleSpouseName.trim() || null,
-      childrenNamesText: femaleChildrenNames.trim() || null,
+      childrenNamesText: formattedChildren || null,
       // also ensure marital status is updated if they fill in the spouse name
       maritalStatus: (femaleSpouseName.trim() ? 'متزوج' : editingFemaleMember.maritalStatus) as any
     };
@@ -429,7 +452,7 @@ export default function FamilyTreeVisualizer({
 
     setIsEditingFemaleFamilyText(false);
     setEditingFemaleMember(null);
-    setFemaleChildrenNames('');
+    setFemaleChildrenList([]);
     setFemaleSpouseName('');
   };
 
@@ -461,8 +484,11 @@ export default function FamilyTreeVisualizer({
   const handleSaveMemberEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editForm && onUpdateMember) {
+      const { fatherName: resFather, grandfatherName: resGrandfather } = getResolvedLineage(editForm);
       const updatedForm = {
         ...editForm,
+        fatherName: resFather || editForm.fatherName,
+        grandfatherName: resGrandfather || editForm.grandfatherName,
         country: editForm.isAlive ? editForm.country : ''
       };
       onUpdateMember(updatedForm);
@@ -508,12 +534,35 @@ export default function FamilyTreeVisualizer({
     return map;
   }, [members, isSortedByAge]);
 
+  // Helper to resolve lineage (Father and Grandfather) directly from tree hierarchy if connected
+  const getResolvedLineage = (m: FamilyMember) => {
+    const father = m.fatherId ? members.find(f => f.id === m.fatherId) : null;
+    const grandfather = father?.fatherId ? members.find(g => g.id === father.fatherId) : null;
+    const resolvedFatherName = (father?.name || m.fatherName || '').trim();
+    const resolvedGrandfatherName = ((grandfather?.name || father?.fatherName || m.grandfatherName) || '').trim();
+    return { fatherName: resolvedFatherName, grandfatherName: resolvedGrandfatherName };
+  };
+
+  // Helper to build full Arabic patrilineal name
+  const getFullName = (m: FamilyMember) => {
+    const { fatherName: fName, grandfatherName: gName } = getResolvedLineage(m);
+    const connector = isMemberFemale(m) ? 'بنت' : 'بن';
+    return [
+      m.name,
+      fName ? `${connector} ${fName}` : '',
+      gName ? `بن ${gName}` : ''
+    ].filter(Boolean).join(' ');
+  };
+
   // Filtered directory members
   const filteredMembers = useMemo(() => {
     return members.filter(m => {
-      const fullName = `${m.name} بن ${m.fatherName} بن ${m.grandfatherName}`.toLowerCase();
+      const fullName = getFullName(m).toLowerCase();
       
       const matchesSearch = fullName.includes(searchQuery.toLowerCase()) ||
+        (m.name && m.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (m.fatherName && m.fatherName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (m.grandfatherName && m.grandfatherName.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (m.specialization && m.specialization.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (m.bio && m.bio.toLowerCase().includes(searchQuery.toLowerCase()));
       
@@ -541,7 +590,7 @@ export default function FamilyTreeVisualizer({
       e.preventDefault();
     }
     setExpandedBranches(prev => {
-      const current = prev[id] !== false;
+      const current = Boolean(prev[id]);
       return {
         ...prev,
         [id]: !current
@@ -598,11 +647,6 @@ export default function FamilyTreeVisualizer({
     }, 300);
   };
 
-  // Helper to build full Arabic patrilineal name
-  const getFullName = (m: FamilyMember) => {
-    return `${m.name} بن ${m.fatherName} بن ${m.grandfatherName}`;
-  };
-
   // Render initials badge if avatar isn't loaded
   const renderInitials = (name: string) => {
     return name.trim().slice(0, 2);
@@ -632,7 +676,7 @@ export default function FamilyTreeVisualizer({
     const children = membersByFather[node.id] || [];
     const hasChildren = children.length > 0;
     const isFemale = isMemberFemale(node);
-    const isExpanded = expandedBranches[node.id] !== false;
+    const isExpanded = Boolean(expandedBranches[node.id]);
 
     return (
       <div key={node.id} id={`node-card-${node.id}`} className="flex flex-col items-center relative transition-all duration-500">
@@ -848,6 +892,25 @@ export default function FamilyTreeVisualizer({
                 <GripVertical size={13} className={isReorderMode ? 'animate-pulse text-white' : 'text-slate-500'} />
                 {isReorderMode ? 'إنهاء إعادة الترتيب' : 'تعديل ترتيب الإخوة'}
               </button>
+            )}
+
+            {viewMode === 'tree' && (
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                <button
+                  onClick={expandAllBranches}
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg text-slate-600 hover:text-indigo-700 hover:bg-white transition-all cursor-pointer"
+                  title="فتح وتوسيع جميع فروع الشجرة"
+                >
+                  فتح الكل
+                </button>
+                <button
+                  onClick={collapseAllBranches}
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg text-slate-600 hover:text-indigo-700 hover:bg-white transition-all cursor-pointer"
+                  title="طي جميع فروع الشجرة"
+                >
+                  طي الكل
+                </button>
+              </div>
             )}
 
             {/* Toggle View Mode */}
@@ -1200,7 +1263,7 @@ export default function FamilyTreeVisualizer({
                   </div>
                   <div className="space-y-1">
                     <h3 className="text-lg font-bold text-slate-800">
-                      {selectedMember.name} {isMemberFemale(selectedMember) ? 'بنت' : 'بن'} {selectedMember.fatherName} بن {selectedMember.grandfatherName}
+                      {getFullName(selectedMember)}
                     </h3>
                   </div>
                 </div>
@@ -1265,30 +1328,48 @@ export default function FamilyTreeVisualizer({
                     </div>
                   </div>
 
-                  {/* Spouse if any */}
-                  {selectedMember.spouseName && (
-                    <div className="flex items-center gap-3 bg-amber-50/40 p-3 rounded-2xl border border-amber-100/60">
-                      <Heart className="text-amber-600 shrink-0" size={16} />
-                      <div className="space-y-0.5">
-                        <span className="block text-[10px] text-amber-500 font-bold">
-                          {isMemberFemale(selectedMember) ? 'الزوج' : 'الزوجة'}
-                        </span>
-                        {selectedMember.spouseId ? (
-                          <button 
-                            onClick={() => {
-                              const spouseObj = members.find(m => m.id === selectedMember.spouseId);
-                              if (spouseObj) setSelectedMember(spouseObj);
-                            }}
-                            className="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline text-right block w-full text-sm cursor-pointer"
-                          >
-                            {selectedMember.spouseName}
-                          </button>
-                        ) : (
-                          <span className="font-semibold text-slate-800">{selectedMember.spouseName}</span>
-                        )}
+                  {/* Spouses if any */}
+                  {(() => {
+                    const memberSpouses = getMemberSpouses(selectedMember);
+                    if (memberSpouses.length === 0 && !selectedMember.spouseName) return null;
+                    const isFemale = isMemberFemale(selectedMember);
+                    const spouseLabel = isFemale
+                      ? (memberSpouses.length > 1 ? `الأزواج (${memberSpouses.length})` : 'الزوج')
+                      : (memberSpouses.length > 1 ? `الزوجات (${memberSpouses.length})` : 'الزوجة');
+
+                    return (
+                      <div className="flex items-start gap-3 bg-amber-50/40 p-3 rounded-2xl border border-amber-100/60">
+                        <Heart className="text-amber-600 shrink-0 mt-1" size={16} />
+                        <div className="space-y-1.5 flex-1">
+                          <span className="block text-[10px] text-amber-500 font-bold">
+                            {spouseLabel}
+                          </span>
+                          <div className="space-y-1">
+                            {memberSpouses.map((sp, idx) => {
+                              const spouseObj = sp.id ? members.find(m => m.id === sp.id) : null;
+                              return (
+                                <div key={sp.id || idx} className="flex items-center justify-between text-xs">
+                                  {spouseObj ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedMember(spouseObj)}
+                                      className="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline text-right cursor-pointer"
+                                    >
+                                      {isMemberFemale(spouseObj)
+                                        ? `${spouseObj.name}${spouseObj.fatherName ? ` بنت ${spouseObj.fatherName}` : ''}`
+                                        : `${spouseObj.name}${spouseObj.fatherName ? ` بن ${spouseObj.fatherName}` : ''}`}
+                                    </button>
+                                  ) : (
+                                    <span className="font-semibold text-slate-800">{sp.name}</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
 
                 {/* Free Text Bio */}
@@ -1315,7 +1396,7 @@ export default function FamilyTreeVisualizer({
                       return (
                         <div className="space-y-2 border-t border-slate-100 pt-4 text-right">
                           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide font-extrabold text-slate-600">
-                            الأبناء والبنات ({namesList.length})
+                            الأبناء ({namesList.length})
                           </h4>
                           <div className="flex flex-wrap gap-1.5">
                             {namesList.map((name, idx) => (
@@ -1342,7 +1423,7 @@ export default function FamilyTreeVisualizer({
                     return (
                       <div className="space-y-2 border-t border-slate-100 pt-4 text-right">
                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide font-extrabold text-slate-600">
-                          {isFemale ? 'الأبناء والبنات' : 'الفرع والأبناء'} ({myChildren.length})
+                          الأبناء ({myChildren.length})
                         </h4>
                         <div className="flex flex-wrap gap-1.5">
                           {myChildren.map(child => (
@@ -1481,7 +1562,13 @@ export default function FamilyTreeVisualizer({
                         <button
                           type="button"
                           onClick={() => {
-                            setEditForm(selectedMember);
+                            const { fatherName: resFather, grandfatherName: resGrandfather } = getResolvedLineage(selectedMember);
+                            setEditForm({
+                              ...selectedMember,
+                              fatherName: resFather,
+                              grandfatherName: resGrandfather,
+                              spouses: getMemberSpouses(selectedMember)
+                            });
                             setIsEditingSelected(true);
                           }}
                           className="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-600 border border-amber-200 rounded-xl transition-all flex items-center justify-center gap-2 py-2 cursor-pointer text-xs font-bold"
@@ -1519,12 +1606,28 @@ export default function FamilyTreeVisualizer({
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">اسم الأب</label>
-                            <input type="text" required value={editForm.fatherName} onChange={e => setEditForm({...editForm, fatherName: e.target.value})} className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white" disabled={!!editForm.fatherId} />
+                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                              اسم الأب <span className="text-[9px] text-amber-700 font-normal">(مربوط بالشجرة)</span>
+                            </label>
+                            <input 
+                              type="text" 
+                              value={editForm.fatherName} 
+                              disabled 
+                              className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-slate-100 text-slate-500 cursor-not-allowed select-none" 
+                              title="اسم الأب مرتبط بالشجرة تلقائياً ولا يمكن تعديله يدوياً"
+                            />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">اسم الجد</label>
-                            <input type="text" required value={editForm.grandfatherName} onChange={e => setEditForm({...editForm, grandfatherName: e.target.value})} className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white" disabled={!!editForm.fatherId} />
+                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                              اسم الجد <span className="text-[9px] text-amber-700 font-normal">(مربوط بالشجرة)</span>
+                            </label>
+                            <input 
+                              type="text" 
+                              value={editForm.grandfatherName} 
+                              disabled 
+                              className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-slate-100 text-slate-500 cursor-not-allowed select-none" 
+                              title="اسم الجد مرتبط بالشجرة تلقائياً ولا يمكن تعديله يدوياً"
+                            />
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
@@ -1588,9 +1691,22 @@ export default function FamilyTreeVisualizer({
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                          <div>
+                          <div className="col-span-2">
                             <label className="block text-[10px] font-bold text-slate-500 mb-0.5">الحالة الاجتماعية</label>
-                            <select value={editForm.maritalStatus || ''} onChange={e => setEditForm({...editForm, maritalStatus: e.target.value as any, spouseName: e.target.value === 'متزوج' ? editForm.spouseName : null})} className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white cursor-pointer">
+                            <select
+                              value={editForm.maritalStatus || ''}
+                              onChange={e => {
+                                const newStatus = e.target.value as any;
+                                setEditForm({
+                                  ...editForm,
+                                  maritalStatus: newStatus,
+                                  spouses: newStatus === 'متزوج' ? (editForm.spouses || getMemberSpouses(editForm)) : [],
+                                  spouseName: newStatus === 'متزوج' ? editForm.spouseName : null,
+                                  spouseId: newStatus === 'متزوج' ? editForm.spouseId : null
+                                });
+                              }}
+                              className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white cursor-pointer"
+                            >
                               <option value="">( اختر )</option>
                               <option value="أعزب">أعزب</option>
                               <option value="مرتبط">مرتبط</option>
@@ -1598,44 +1714,28 @@ export default function FamilyTreeVisualizer({
                               <option value="منفصل/ أرمل">منفصل/ أرمل</option>
                             </select>
                           </div>
-                          {editForm.maritalStatus === 'متزوج' && (
-                            <div className="space-y-1">
-                              <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                                {editForm.gender === 'female' ? 'اسم الزوج' : 'اسم الزوجة'}
-                              </label>
-                              <div className="flex items-center gap-2 mb-1.5">
-                                <input 
-                                  type="checkbox" 
-                                  id="edit-same-family-spouse" 
-                                  checked={editForm.spouseId !== undefined && editForm.spouseId !== null} 
-                                  onChange={e => {
-                                    if(e.target.checked) setEditForm({...editForm, spouseId: '', spouseName: null})
-                                    else setEditForm({...editForm, spouseId: null, spouseName: null})
-                                  }} 
-                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
-                                />
-                                <label htmlFor="edit-same-family-spouse" className="text-[10px] text-slate-600 font-bold cursor-pointer">من نفس العائلة؟</label>
-                              </div>
-                              {editForm.spouseId !== null && editForm.spouseId !== undefined ? (
-                                <select 
-                                  value={editForm.spouseId || ''} 
-                                  onChange={e => {
-                                      const selectedSpouse = members.find(m => m.id === e.target.value);
-                                      setEditForm({ ...editForm, spouseId: e.target.value, spouseName: selectedSpouse?.name || null });
-                                  }}
-                                  className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white cursor-pointer"
-                                >
-                                    <option value="" disabled>اختر {editForm.gender === 'female' ? 'الزوج' : 'الزوجة'}</option>
-                                    {members.filter(m => m.gender !== editForm.gender && m.id !== editForm.id).map(m => (
-                                        <option key={m.id} value={m.id}>{m.name} (ابن/بنت {m.fatherName})</option>
-                                    ))}
-                                </select>
-                              ) : (
-                                <input type="text" value={editForm.spouseName || ''} onChange={e => setEditForm({...editForm, spouseName: e.target.value || null})} placeholder={editForm.gender === 'female' ? 'اسم الزوج' : 'اسم الزوجة'} className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white" />
-                              )}
-                            </div>
-                          )}
                         </div>
+
+                        {editForm.maritalStatus === 'متزوج' && (
+                          <div className="pt-1">
+                            <SpouseEditor
+                              gender={editForm.gender}
+                              memberName={editForm.name}
+                              currentMemberId={editForm.id}
+                              spouses={editForm.spouses || getMemberSpouses(editForm)}
+                              onChange={(newSpouses) => {
+                                setEditForm({
+                                  ...editForm,
+                                  spouses: newSpouses,
+                                  spouseName: newSpouses.map(s => s.name).filter(Boolean).join('، ') || null,
+                                  spouseId: newSpouses.find(s => s.id)?.id || null
+                                });
+                              }}
+                              allMembers={members}
+                              compact={true}
+                            />
+                          </div>
+                        )}
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-[10px] font-bold text-slate-500 mb-0.5">الحالة</label>
@@ -1954,51 +2054,17 @@ export default function FamilyTreeVisualizer({
                   </select>
                 </div>
 
-                {/* Spouse */}
+                {/* Spouse Editor */}
                 {newMemMaritalStatus === 'متزوج' && (
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-600 mb-0.5">
-                      {newMemGender === 'female' ? 'اسم الزوج' : 'اسم الزوجة'}
-                    </label>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <input 
-                        type="checkbox" 
-                        id="new-same-family-spouse"
-                        checked={newMemSpouseId !== undefined && newMemSpouseId !== null} 
-                        onChange={e => {
-                          if(e.target.checked) { setNewMemSpouseId(''); setNewMemSpouseName('');
-    setNewMemSpouseId(null); }
-                          else { setNewMemSpouseId(null); setNewMemSpouseName('');
-    setNewMemSpouseId(null); }
-                        }} 
-                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
-                      />
-                      <label htmlFor="new-same-family-spouse" className="text-[10px] text-slate-600 font-bold cursor-pointer">من نفس العائلة؟</label>
-                    </div>
-                    {newMemSpouseId !== null && newMemSpouseId !== undefined ? (
-                      <select 
-                        value={newMemSpouseId || ''} 
-                        onChange={e => {
-                            const selectedSpouse = members.find(m => m.id === e.target.value);
-                            setNewMemSpouseId(e.target.value);
-                            setNewMemSpouseName(selectedSpouse?.name || '');
-                        }}
-                        className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
-                      >
-                          <option value="" disabled>اختر {newMemGender === 'female' ? 'الزوج' : 'الزوجة'}</option>
-                          {members.filter(m => m.gender !== newMemGender).map(m => (
-                              <option key={m.id} value={m.id}>{m.name} (ابن/بنت {m.fatherName})</option>
-                          ))}
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        placeholder={newMemGender === 'female' ? 'اسم الزوج' : 'اسم الزوجة'}
-                        value={newMemSpouseName}
-                        onChange={e => setNewMemSpouseName(e.target.value)}
-                        className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                      />
-                    )}
+                  <div className="pt-1">
+                    <SpouseEditor
+                      gender={newMemGender}
+                      memberName={newMemName}
+                      currentMemberId={undefined}
+                      spouses={newMemSpouses}
+                      onChange={setNewMemSpouses}
+                      allMembers={members}
+                    />
                   </div>
                 )}
               </div>
@@ -2182,12 +2248,6 @@ export default function FamilyTreeVisualizer({
 
             {/* Modal Form Content */}
             <form onSubmit={handleSaveFemaleFamilyText} className="p-6 space-y-4 text-xs md:text-sm">
-              <div className="bg-indigo-50 border border-indigo-100/60 rounded-2xl p-4">
-                <p className="text-[11px] text-indigo-800 leading-relaxed font-medium">
-                  💡 بصفتها إحدى إناث العائلة الكريمة، يتم تسجيل أسماء الأبناء والبنات والزوج كنصوص توضيحية فقط تظهر في ملفها الشخصي، وتجنب إنشاء ملفات مستقلة في شجرة العائلة.
-                </p>
-              </div>
-
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">اسم الزوج</label>
                 <input
@@ -2200,17 +2260,11 @@ export default function FamilyTreeVisualizer({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">أسماء الأبناء والبنات (نصوص مفصولة بفواصل)</label>
-                <textarea
-                  rows={3}
-                  placeholder="أسماء الأبناء والبنات مفصولة بفواصل"
-                  value={femaleChildrenNames}
-                  onChange={e => setFemaleChildrenNames(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                <ChildrenListEditor
+                  childrenList={femaleChildrenList}
+                  onChange={setFemaleChildrenList}
+                  title="الأبناء"
                 />
-                <span className="text-[10px] text-slate-400 block mt-1">
-                  يرجى فصل الأسماء بفاصلة (،) لكي تظهر كعناصر مستقلة في ملفها الشخصي.
-                </span>
               </div>
 
               {/* Form Actions */}

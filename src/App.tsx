@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   FamilyMember, 
   RegistrationRequest, 
@@ -31,6 +31,7 @@ import {
   saveMultipleMembersToCloud,
   saveFamilyInfoToCloud,
   saveRequestToCloud,
+  deleteRequestFromCloud,
   savePhotoToCloud,
   deletePhotoFromCloud,
   saveNewsToCloud,
@@ -53,6 +54,12 @@ import ContactAdmin from './components/ContactAdmin';
 import UserProfileModal from './components/UserProfileModal';
 
 import { Home, Network, User, Shield, LogOut, MessageSquare, Wifi, Bell, CloudUpload, CheckCircle, LogIn, UserPlus } from 'lucide-react';
+import { reconcileLineageAndMarriages, syncSpouseRelationships, isMemberFemale } from './utils/marriageUtils';
+
+// Reconcile fatherName, grandfatherName, childrenIds, and bidirectional spouses across all members
+const reconcileLineage = (list: FamilyMember[]): FamilyMember[] => {
+  return reconcileLineageAndMarriages(list);
+};
 
 export default function App() {
   const [members, setMembers] = useState<FamilyMember[]>(() => {
@@ -200,13 +207,13 @@ export default function App() {
           const cloudIds = new Set(cloudMembers.map(m => m.id));
           const missingInCloud = localMaxList.filter(m => !cloudIds.has(m.id));
           if (missingInCloud.length > 0) {
-            const merged = [...cloudMembers, ...missingInCloud];
+            const merged = reconcileLineage([...cloudMembers, ...missingInCloud]);
             setMembers(merged);
             seedInitialMembersIfEmpty(missingInCloud);
             return;
           }
         }
-        setMembers(cloudMembers);
+        setMembers(reconcileLineage(cloudMembers));
       } else {
         // If Firestore is empty, auto-upload from local backup or INITIAL_MEMBERS
         if (localMaxList.length > 0) {
@@ -440,76 +447,133 @@ export default function App() {
     await logFamilyAction(newRequest.name, 'طلب تسجيل جديد', `طلب انتساب جديد قيد مراجعة الآدمن`, newRequest.name, newRequest.email);
   };
 
-  // Approve a request
-  const handleApproveRequest = async (requestId: string, fatherId: string | null) => {
+  // Approve a request (either linking to existing tree member or creating a new tree node)
+  const handleApproveRequest = async (requestId: string, fatherId: string | null, existingMemberId?: string | null) => {
     const req = requests.find(r => r.id === requestId);
     if (!req) return;
 
-    const newMemberId = 'member-' + Date.now().toString();
-    const newMember: FamilyMember = {
-      id: newMemberId,
-      name: req.name,
-      fatherName: req.fatherName,
-      grandfatherName: req.grandfatherName,
-      birthYear: req.birthYear,
-      birthDate: req.birthDate,
-      deathDate: req.deathDate,
-      country: req.country,
-      specialization: req.specialization,
-      isAlive: req.isAlive,
-      bio: req.bio,
-      avatar: req.avatar,
-      spouseName: null,
-      fatherId: fatherId,
-      childrenIds: [],
-      registeredUserId: requestId,
-      email: req.email,
-      gender: req.gender || 'male'
-    };
+    let effectiveMemberId: string;
+    let memberFullName: string;
 
-    let updatedMembers = [...members, newMember];
-    let parentToUpdate: FamilyMember | null = null;
+    if (existingMemberId) {
+      const existing = members.find(m => m.id === existingMemberId);
+      if (!existing) return;
+      effectiveMemberId = existing.id;
 
-    if (fatherId) {
-      updatedMembers = updatedMembers.map(m => {
-        if (m.id === fatherId) {
-          parentToUpdate = {
-            ...m,
-            childrenIds: [...(m.childrenIds || []), newMemberId]
-          };
-          return parentToUpdate;
-        }
-        return m;
-      });
+      const updatedExisting: FamilyMember = {
+        ...existing,
+        registeredUserId: requestId,
+        email: req.email || existing.email,
+        country: req.country && req.country !== 'غير محدد' ? req.country : existing.country,
+        specialization: req.specialization && req.specialization !== 'غير محدد' ? req.specialization : existing.specialization,
+        birthYear: req.birthYear || existing.birthYear,
+        birthDate: req.birthDate || existing.birthDate,
+        bio: req.bio && req.bio !== 'عضو في العائلة.' ? req.bio : existing.bio,
+        avatar: req.avatar || existing.avatar,
+        gender: req.gender || existing.gender,
+        isAlive: req.isAlive !== undefined ? req.isAlive : existing.isAlive
+      };
+
+      const updatedMembers = members.map(m => m.id === existingMemberId ? updatedExisting : m);
+      const updatedRequest: RegistrationRequest = { ...req, status: 'approved' as const };
+      const updatedRequests = requests.map(r => r.id === requestId ? updatedRequest : r);
+
+      const isFemaleReq = (req.gender || existing.gender) === 'female';
+      const connectorReq = isFemaleReq ? 'بنت' : 'بن';
+      const fatherPartReq = (existing.fatherName || req.fatherName) ? ` ${connectorReq} ${existing.fatherName || req.fatherName}` : '';
+      const grandPartReq = (existing.grandfatherName || req.grandfatherName) ? ` بن ${existing.grandfatherName || req.grandfatherName}` : '';
+      memberFullName = `${existing.name}${fatherPartReq}${grandPartReq}`;
+
+      const newNewsItem: NewsItem = {
+        id: 'news-' + Date.now().toString(),
+        type: 'welcome',
+        content: `نرحب بالعضو الجديد في الموقع: ${memberFullName}`,
+        createdAt: new Date().toISOString()
+      };
+      const updatedNews = [newNewsItem, ...news];
+
+      setMembers(updatedMembers);
+      setRequests(updatedRequests);
+      setNews(updatedNews);
+
+      await saveMemberToCloud(updatedExisting);
+      await saveRequestToCloud(updatedRequest);
+      await saveNewsToCloud(newNewsItem);
+      await logFamilyAction(currentSession.name, 'ربط واعتماد حساب مسجل', `تم ربط حساب ${req.name} (${req.email}) مع الفرد الموجود بالشجرة: ${existing.name}`, existing.name);
+    } else {
+      const newMemberId = 'member-' + Date.now().toString();
+      effectiveMemberId = newMemberId;
+      const newMember: FamilyMember = {
+        id: newMemberId,
+        name: req.name,
+        fatherName: req.fatherName,
+        grandfatherName: req.grandfatherName,
+        birthYear: req.birthYear,
+        birthDate: req.birthDate,
+        deathDate: req.deathDate,
+        country: req.country,
+        specialization: req.specialization,
+        isAlive: req.isAlive,
+        bio: req.bio,
+        avatar: req.avatar,
+        spouseName: null,
+        fatherId: fatherId,
+        childrenIds: [],
+        registeredUserId: requestId,
+        email: req.email,
+        gender: req.gender || 'male'
+      };
+
+      let updatedMembers = [...members, newMember];
+      let parentToUpdate: FamilyMember | null = null;
+
+      if (fatherId) {
+        updatedMembers = updatedMembers.map(m => {
+          if (m.id === fatherId) {
+            parentToUpdate = {
+              ...m,
+              childrenIds: [...(m.childrenIds || []), newMemberId]
+            };
+            return parentToUpdate;
+          }
+          return m;
+        });
+      }
+
+      const updatedRequest: RegistrationRequest = { ...req, status: 'approved' as const };
+      const updatedRequests = requests.map(r => r.id === requestId ? updatedRequest : r);
+
+      const isFemaleReq = req.gender === 'female';
+      const connectorReq = isFemaleReq ? 'بنت' : 'بن';
+      const fatherPartReq = req.fatherName ? ` ${connectorReq} ${req.fatherName}` : '';
+      const grandPartReq = req.grandfatherName ? ` بن ${req.grandfatherName}` : '';
+      memberFullName = `${req.name}${fatherPartReq}${grandPartReq}`;
+
+      const newNewsItem: NewsItem = {
+        id: 'news-' + Date.now().toString(),
+        type: 'welcome',
+        content: `نرحب بالعضو الجديد في الموقع: ${memberFullName}`,
+        createdAt: new Date().toISOString()
+      };
+      const updatedNews = [newNewsItem, ...news];
+
+      setMembers(updatedMembers);
+      setRequests(updatedRequests);
+      setNews(updatedNews);
+
+      // Save each document individually to Firestore
+      await saveMemberToCloud(newMember);
+      if (parentToUpdate) await saveMemberToCloud(parentToUpdate);
+      await saveRequestToCloud(updatedRequest);
+      await saveNewsToCloud(newNewsItem);
+
+      await logFamilyAction(currentSession.name, 'موافقة على عضو جديد', `تم اعتماد وقبول حساب ${req.name} وإضافته للشجرة`, req.name);
     }
-
-    const updatedRequest: RegistrationRequest = { ...req, status: 'approved' as const };
-    const updatedRequests = requests.map(r => r.id === requestId ? updatedRequest : r);
-    
-    const newNewsItem: NewsItem = {
-      id: 'news-' + Date.now().toString(),
-      type: 'welcome',
-      content: `نرحب ترحيباً حاراً بانضمام العضو الجديد للشجرة المباركة: ${req.name} بن ${req.fatherName} بن ${req.grandfatherName} من بلد الإقامة ${req.country}!`,
-      createdAt: new Date().toISOString()
-    };
-    const updatedNews = [newNewsItem, ...news];
-
-    setMembers(updatedMembers);
-    setRequests(updatedRequests);
-    setNews(updatedNews);
-
-    // Save each document individually to Firestore
-    await saveMemberToCloud(newMember);
-    if (parentToUpdate) await saveMemberToCloud(parentToUpdate);
-    await saveRequestToCloud(updatedRequest);
-    await saveNewsToCloud(newNewsItem);
-
-    await logFamilyAction(currentSession.name, 'موافقة على عضو جديد', `تم اعتماد وقبول حساب ${req.name} وربطه بالشجرة`, req.name);
 
     if (currentSession.role === 'pending' && currentSession.requestId === requestId) {
       setCurrentSession({
-        userId: newMemberId,
-        name: `${req.name} بن ${req.fatherName} بن ${req.grandfatherName}`,
+        userId: effectiveMemberId,
+        name: memberFullName,
         email: req.email,
         role: 'member'
       });
@@ -531,55 +595,39 @@ export default function App() {
     }
   };
 
+  // Delete Request completely
+  const handleDeleteRequest = async (requestId: string) => {
+    const req = requests.find(r => r.id === requestId);
+    const updatedRequests = requests.filter(r => r.id !== requestId);
+    setRequests(updatedRequests);
+    await deleteRequestFromCloud(requestId);
+    await logFamilyAction(currentSession.name, 'حذف طلب تسجيل', `تم حذف طلب التسجيل للمستخدم: ${req?.name || requestId}`, req?.name);
+  };
+
+  // Revoke Request back to pending
+  const handleRevokeRequest = async (requestId: string) => {
+    const req = requests.find(r => r.id === requestId);
+    if (!req) return;
+    const updatedRequest: RegistrationRequest = { ...req, status: 'pending' as const };
+    const updatedRequests = requests.map(r => r.id === requestId ? updatedRequest : r);
+    setRequests(updatedRequests);
+    await saveRequestToCloud(updatedRequest);
+    await logFamilyAction(currentSession.name, 'إلغاء اعتماد طلب', `تم إعادة طلب ${req.name} إلى قيد الانتظار لإعادة ضبطه`, req.name);
+  };
+
   // Member profile updates
   const handleUpdateMember = async (updated: FamilyMember) => {
-    let next = members.map(m => m.id === updated.id ? updated : m);
-    
-    const childrenMap: Record<string, string[]> = {};
-    next.forEach(m => {
-      if (m.fatherId) {
-        if (!childrenMap[m.fatherId]) childrenMap[m.fatherId] = [];
-        childrenMap[m.fatherId].push(m.id);
-      }
-      if (m.motherId) {
-        if (!childrenMap[m.motherId]) childrenMap[m.motherId] = [];
-        childrenMap[m.motherId].push(m.id);
-      }
-    });
-    next = next.map(m => {
-      const correctChildren = childrenMap[m.id] || [];
-      if (JSON.stringify(m.childrenIds || []) !== JSON.stringify(correctChildren)) {
-        return { ...m, childrenIds: correctChildren };
-      }
-      return m;
-    });
-
+    const prevMember = members.find(m => m.id === updated.id);
+    const syncedWithSpouses = syncSpouseRelationships(members, updated, prevMember);
+    const next = reconcileLineageAndMarriages(syncedWithSpouses);
     setMembers(next);
-    await saveMemberToCloud(updated);
+    
+    await saveMultipleMembersToCloud(next);
     await logFamilyAction(currentSession.name, 'تعديل بيانات فرد', `تحديث بيانات الشجرة`, updated.name);
   };
 
   const handleUpdateMembers = async (newMembers: FamilyMember[]) => {
-    let next = [...newMembers];
-    const childrenMap: Record<string, string[]> = {};
-    next.forEach(m => {
-      if (m.fatherId) {
-        if (!childrenMap[m.fatherId]) childrenMap[m.fatherId] = [];
-        childrenMap[m.fatherId].push(m.id);
-      }
-      if (m.motherId) {
-        if (!childrenMap[m.motherId]) childrenMap[m.motherId] = [];
-        childrenMap[m.motherId].push(m.id);
-      }
-    });
-    next = next.map(m => {
-      const correctChildren = childrenMap[m.id] || [];
-      if (JSON.stringify(m.childrenIds || []) !== JSON.stringify(correctChildren)) {
-        return { ...m, childrenIds: correctChildren };
-      }
-      return m;
-    });
-
+    const next = reconcileLineage(newMembers);
     setMembers(next);
     await saveMultipleMembersToCloud(next);
     await logFamilyAction(currentSession.name, 'إعادة ترتيب الأبناء/الأفراد في الشجرة', 'تحديث تراتيب العائلة');
@@ -590,23 +638,21 @@ export default function App() {
     const childId = 'member-' + Date.now().toString();
     const parent = members.find(m => m.id === parentId);
     
-    const isMemberFemale = (member?: { gender?: string; name?: string } | null): boolean => {
-      if (!member) return false;
-      if (member.gender === 'female') return true;
-      if (member.gender === 'male') return false;
-      if (!member.name) return false;
-      const femaleNames = ['فاطمة', 'سارة', 'هند', 'سعاد', 'منى', 'ريم', 'حصة', 'نورة', 'أميرة', 'عائشة', 'فاطمه', 'ساره', 'مريم', 'زينب', 'خديجة', 'رندة', 'ليلى', 'رنا', 'رانية', 'هالة', 'سهى'];
-      const firstWord = member.name.trim().split(' ')[0];
-      return femaleNames.includes(firstWord);
-    };
-
     const isFemaleParent = isMemberFemale(parent);
+
+    const fatherNode = isFemaleParent ? null : parent;
+    const resolvedFatherName = fatherNode ? fatherNode.name : (childInfo.fatherName || '');
+    const resolvedGrandfatherName = fatherNode
+      ? (fatherNode.fatherId ? (members.find(g => g.id === fatherNode.fatherId)?.name || fatherNode.fatherName || '') : (fatherNode.fatherName || ''))
+      : (childInfo.grandfatherName || '');
 
     const newChild: FamilyMember = {
       ...childInfo,
       id: childId,
       fatherId: isFemaleParent ? null : parentId,
       motherId: isFemaleParent ? parentId : null,
+      fatherName: resolvedFatherName,
+      grandfatherName: resolvedGrandfatherName,
       childrenIds: []
     };
 
@@ -623,17 +669,25 @@ export default function App() {
       return m;
     });
 
-    setMembers(updated);
-    await saveMemberToCloud(newChild);
-    if (updatedParent) await saveMemberToCloud(updatedParent);
+    const reconciled = reconcileLineage(updated);
+    setMembers(reconciled);
+    await saveMultipleMembersToCloud(reconciled);
     await logFamilyAction(currentSession.name, 'إضافة ابن/ابنة جديدة', `إضافة ${childInfo.name}`, childInfo.name);
   };
 
   // Add Member Directly (Admin only)
   const handleAddMemberDirectly = (newMem: Omit<FamilyMember, 'id' | 'childrenIds'>): string => {
     const id = 'member-' + Date.now().toString();
+    const fatherNode = newMem.fatherId ? members.find(m => m.id === newMem.fatherId) : null;
+    const resolvedFatherName = fatherNode ? fatherNode.name : (newMem.fatherName || '');
+    const resolvedGrandfatherName = fatherNode
+      ? (fatherNode.fatherId ? (members.find(g => g.id === fatherNode.fatherId)?.name || fatherNode.fatherName || '') : (fatherNode.fatherName || ''))
+      : (newMem.grandfatherName || '');
+
     const member: FamilyMember = {
       ...newMem,
+      fatherName: resolvedFatherName,
+      grandfatherName: resolvedGrandfatherName,
       id,
       childrenIds: []
     };
@@ -653,9 +707,11 @@ export default function App() {
       });
     }
 
-    setMembers(updated);
-    saveMemberToCloud(member);
-    if (parentToUpdate) saveMemberToCloud(parentToUpdate);
+    const syncedWithSpouses = syncSpouseRelationships(updated, member, null);
+    const reconciled = reconcileLineageAndMarriages(syncedWithSpouses);
+    setMembers(reconciled);
+    saveMultipleMembersToCloud(reconciled);
+
     logFamilyAction(currentSession.name, 'إضافة عضو مباشرة إلى الشجرة', newMem.name, newMem.name);
     return id;
   };
@@ -795,6 +851,10 @@ export default function App() {
 
   const activeMember = members.find(m => m.id === currentSession.userId);
 
+  const effectiveNews = useMemo(() => {
+    return news || [];
+  }, [news]);
+
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-indigo-600 selection:text-white pb-12 text-right">
       
@@ -807,10 +867,10 @@ export default function App() {
       )}
 
       {/* Top News Ticker */}
-      <NewsTicker news={news} />
+      <NewsTicker news={effectiveNews} />
 
       {/* Main Navbar */}
-      <nav id="main-nav" className={`bg-white border-b border-slate-200/90 py-3 px-4 md:px-6 sticky ${news && news.length > 0 ? 'top-11' : 'top-0'} z-30 shadow-xs text-right`}>
+      <nav id="main-nav" className={`bg-white border-b border-slate-200/90 py-3 px-4 md:px-6 sticky ${effectiveNews && effectiveNews.length > 0 ? 'top-11' : 'top-0'} z-30 shadow-xs text-right`}>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
           
           {/* Right Column (RTL Start): Prestigious Family Title & Location Badge */}
@@ -1014,6 +1074,8 @@ export default function App() {
               auditLogs={auditLogs}
               onApproveRequest={handleApproveRequest}
               onRejectRequest={handleRejectRequest}
+              onDeleteRequest={handleDeleteRequest}
+              onRevokeRequest={handleRevokeRequest}
               onAddNews={handleAddNews}
               onUpdateNews={handleUpdateNews}
               onDeleteNews={handleDeleteNews}

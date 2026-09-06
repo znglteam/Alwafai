@@ -5,7 +5,7 @@ import { LiveChangeLog } from '../utils/firebaseService';
 const ARAB_COUNTRIES = [
   "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
 ];
-import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, TrendingUp, Mars, Venus, Upload, Activity, History } from 'lucide-react';
+import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, TrendingUp, Mars, Venus, Upload, Activity, History, Link, AlertTriangle, RotateCcw, UserCheck } from 'lucide-react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
 
@@ -17,8 +17,10 @@ interface AdminPanelProps {
   messages: FamilyMessage[];
   currentSession: UserSession;
   auditLogs?: LiveChangeLog[];
-  onApproveRequest: (requestId: string, fatherId: string | null) => void;
+  onApproveRequest: (requestId: string, fatherId: string | null, existingMemberId?: string | null) => void;
   onRejectRequest: (requestId: string) => void;
+  onDeleteRequest?: (requestId: string) => void;
+  onRevokeRequest?: (requestId: string) => void;
   onAddNews: (newsItem: Omit<NewsItem, 'id' | 'createdAt'>) => void;
   onUpdateNews: (id: string, updatedFields: Partial<NewsItem>) => void;
   onDeleteNews: (id: string) => void;
@@ -43,6 +45,8 @@ export default function AdminPanel({
   auditLogs = [],
   onApproveRequest,
   onRejectRequest,
+  onDeleteRequest,
+  onRevokeRequest,
   onAddNews,
   onUpdateNews,
   onDeleteNews,
@@ -57,6 +61,8 @@ export default function AdminPanel({
   onRestoreMembers
 }: AdminPanelProps) {
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
+  const [requestToDelete, setRequestToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [validationError, setValidationError] = useState<{ reqId: string; msg: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'requests' | 'tree' | 'news' | 'photos' | 'messages' | 'stats' | 'logs'>('requests');
 
   // Photo Comments UI State
@@ -126,6 +132,9 @@ export default function AdminPanel({
   const [showAddPhoto, setShowAddPhoto] = useState(false);
 
   // Approve request linkage state
+  const [requestApprovalModes, setRequestApprovalModes] = useState<Record<string, 'existing' | 'new'>>({});
+  const [requestMemberLinks, setRequestMemberLinks] = useState<Record<string, string>>({});
+  const [memberSearchQueries, setMemberSearchQueries] = useState<Record<string, string>>({});
   const [requestFatherLinks, setRequestFatherLinks] = useState<Record<string, string>>({});
   const [fatherSearchQueries, setFatherSearchQueries] = useState<Record<string, string>>({});
 
@@ -209,12 +218,23 @@ export default function AdminPanel({
 
   const handleCreateMemberDirectly = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMemName || !newMemFatherName) return;
+    if (!newMemName) return;
+
+    let finalFatherName = newMemFatherName;
+    let finalGrandfatherName = newMemGrandName;
+    if (newMemFatherId) {
+      const father = members.find(m => m.id === newMemFatherId);
+      if (father) {
+        finalFatherName = father.name;
+        const { fatherName: resolvedGrandfather } = getResolvedLineage(father);
+        finalGrandfatherName = resolvedGrandfather || father.fatherName || '';
+      }
+    }
 
     onAddMemberDirectly({
       name: newMemName,
-      fatherName: newMemFatherName,
-      grandfatherName: newMemGrandName,
+      fatherName: finalFatherName,
+      grandfatherName: finalGrandfatherName,
       birthYear: newMemBirth === '' ? 0 : Number(newMemBirth),
       country: newMemIsAlive ? (newMemCountry || 'غير محدد') : '',
       specialization: newMemSpecialization || 'غير محدد',
@@ -247,16 +267,32 @@ export default function AdminPanel({
     setShowAddMember(false);
   };
 
+  const getResolvedLineage = (m: FamilyMember) => {
+    const father = m.fatherId ? members.find(f => f.id === m.fatherId) : null;
+    const grandfather = father?.fatherId ? members.find(g => g.id === father.fatherId) : null;
+    const resolvedFatherName = (father?.name || m.fatherName || '').trim();
+    const resolvedGrandfatherName = ((grandfather?.name || father?.fatherName || m.grandfatherName) || '').trim();
+    return { fatherName: resolvedFatherName, grandfatherName: resolvedGrandfatherName };
+  };
+
   const handleStartEdit = (member: FamilyMember) => {
     setEditingMemberId(member.id);
-    setEditForm({ ...member });
+    const { fatherName: resFather, grandfatherName: resGrandfather } = getResolvedLineage(member);
+    setEditForm({
+      ...member,
+      fatherName: resFather,
+      grandfatherName: resGrandfather
+    });
   };
 
   const handleSaveMemberEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editForm) {
+      const { fatherName: resFather, grandfatherName: resGrandfather } = getResolvedLineage(editForm);
       const updatedForm = {
         ...editForm,
+        fatherName: resFather || editForm.fatherName,
+        grandfatherName: resGrandfather || editForm.grandfatherName,
         country: editForm.isAlive ? editForm.country : ''
       };
       onUpdateMember(updatedForm);
@@ -408,26 +444,74 @@ export default function AdminPanel({
 
             <div className="space-y-4">
               {displayedRequests.map(req => {
-                const linkedFatherId = requestFatherLinks[req.id] || '';
                 const isPending = !req.status || req.status === 'pending';
                 const isApproved = req.status === 'approved';
                 const isRejected = req.status === 'rejected';
 
+                // Check if this request is linked to an existing active tree member
+                const linkedMember = members.find(m =>
+                  m.registeredUserId === req.id ||
+                  (m.email && req.email && m.email.trim().toLowerCase() === req.email.trim().toLowerCase())
+                );
+
+                // Auto match candidate in members tree
+                const reqName = (req.name || '').trim();
+                const reqFather = (req.fatherName || '').trim();
+                const autoMatchedMember = members.find(m => {
+                  if (!reqName) return false;
+                  if (reqFather && m.fatherName) {
+                    return m.name.trim() === reqName && m.fatherName.trim() === reqFather;
+                  }
+                  return m.name.trim() === reqName;
+                });
+
+                // Mode: 'existing' (link to tree node) or 'new' (create new node)
+                const currentMode = requestApprovalModes[req.id] || (autoMatchedMember ? 'existing' : 'new');
+                const selectedExistingMemberId = requestMemberLinks[req.id] || (autoMatchedMember?.id || '');
+                const linkedFatherId = requestFatherLinks[req.id] || '';
+
+                const memberQuery = (memberSearchQueries[req.id] || '').trim().toLowerCase();
+                const candidateExistingMembers = members
+                  .filter(m => {
+                    if (!memberQuery) return true;
+                    const fullName = `${m.name} ${m.fatherName || ''} ${m.grandfatherName || ''}`.toLowerCase();
+                    return fullName.includes(memberQuery);
+                  })
+                  .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+                const fatherQuery = (fatherSearchQueries[req.id] || '').trim().toLowerCase();
+                const candidateFathers = members
+                  .filter(m => {
+                    if (!fatherQuery) return true;
+                    const fullName = `${m.name} ${m.fatherName || ''} ${m.grandfatherName || ''}`.toLowerCase();
+                    return fullName.includes(fatherQuery);
+                  })
+                  .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+                const chosenExistingMember = members.find(m => m.id === selectedExistingMemberId);
+                const chosenFather = members.find(m => m.id === linkedFatherId);
+
                 return (
-                  <div key={req.id} className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4 shadow-sm hover:border-indigo-100 transition-colors">
+                  <div key={req.id} className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-sm hover:border-indigo-200 transition-colors">
                     {/* Header */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/50 pb-3">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/60 pb-3">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           {isPending && (
                             <span className="text-[10px] bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-bold">
                               معلق بانتظار قرارك
                             </span>
                           )}
-                          {isApproved && (
+                          {isApproved && linkedMember && (
                             <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
                               <Check size={12} />
-                              معتمد ومضاف للشجرة
+                              معتمد ومربوط مع: {linkedMember.name} {linkedMember.fatherName ? `بن ${linkedMember.fatherName}` : ''}
+                            </span>
+                          )}
+                          {isApproved && !linkedMember && (
+                            <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-300 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                              <AlertTriangle size={12} className="text-amber-600" />
+                              العضو المرتبط محذوف من الشجرة (حساب غير فعال)
                             </span>
                           )}
                           {isRejected && (
@@ -435,52 +519,132 @@ export default function AdminPanel({
                               طلب مرفوض
                             </span>
                           )}
-                          <span className="text-[10px] text-slate-400">
+                          <span className="text-[10px] text-slate-400 bg-white px-2 py-0.5 rounded-md border border-slate-100 font-medium">
                             {req.gender === 'female' ? 'أنثى' : 'ذكر'}
                           </span>
                         </div>
                         <h4 className="font-bold text-slate-800 text-base">
-                          {req.name} بن {req.fatherName} بن {req.grandfatherName}
+                          {req.name} {req.fatherName ? (req.gender === 'female' ? `بنت ${req.fatherName}` : `بن ${req.fatherName}`) : ''} {req.grandfatherName ? `بن ${req.grandfatherName}` : ''}
                         </h4>
                         <p className="text-xs text-slate-500">
-                          البريد الإلكتروني: <strong className="text-slate-800 font-mono">{req.email}</strong> {req.createdAt ? `| سُجّل في: ${new Date(req.createdAt).toLocaleDateString('ar-SA')}` : ''}
+                          البريد الإلكتروني: <strong className="text-slate-800 font-mono">{req.email}</strong> {req.createdAt ? ` | سُجّل في: ${new Date(req.createdAt).toLocaleDateString('ar-SA')}` : ''}
                         </p>
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-2">
+                      {/* Top Action Buttons */}
+                      <div className="flex flex-wrap items-center gap-2">
                         {isPending && (
                           <>
                             <button
+                              type="button"
                               onClick={() => onRejectRequest(req.id)}
-                              className="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1 font-semibold cursor-pointer"
+                              className="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs px-3 py-2 rounded-xl transition-all flex items-center gap-1 font-semibold cursor-pointer"
                             >
                               <X size={14} />
                               رفض الطلب
                             </button>
+                            {onDeleteRequest && (
+                              <button
+                                type="button"
+                                onClick={() => setRequestToDelete({ id: req.id, name: req.name })}
+                                className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs px-3 py-2 rounded-xl transition-all flex items-center gap-1 font-semibold cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                                حذف الطلب
+                              </button>
+                            )}
                             <button
-                              onClick={() => onApproveRequest(req.id, linkedFatherId || null)}
+                              type="button"
+                              onClick={() => {
+                                setValidationError(null);
+                                if (currentMode === 'existing') {
+                                  if (!selectedExistingMemberId) {
+                                    setValidationError({ reqId: req.id, msg: 'يرجى اختيار الفرد المراد ربط الحساب به من قائمة الشجرة أدناه.' });
+                                    return;
+                                  }
+                                  onApproveRequest(req.id, null, selectedExistingMemberId);
+                                } else {
+                                  onApproveRequest(req.id, linkedFatherId || null, null);
+                                }
+                              }}
                               className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-1 font-bold shadow-md shadow-emerald-600/10 cursor-pointer"
                             >
                               <Check size={14} />
-                              اعتماد وقبول الحساب
+                              اعتماد وتفعيل الحساب
                             </button>
                           </>
                         )}
+
+                        {isApproved && (
+                          <>
+                            {onRevokeRequest && (
+                              <button
+                                type="button"
+                                onClick={() => onRevokeRequest(req.id)}
+                                className="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1 font-bold cursor-pointer"
+                              >
+                                <RotateCcw size={13} />
+                                إلغاء الاعتماد والربط
+                              </button>
+                            )}
+                            {onDeleteRequest && (
+                              <button
+                                type="button"
+                                onClick={() => setRequestToDelete({ id: req.id, name: req.name })}
+                                className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1 font-bold cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                                حذف الطلب نهائياً
+                              </button>
+                            )}
+                          </>
+                        )}
+
                         {isRejected && (
-                          <button
-                            onClick={() => onApproveRequest(req.id, linkedFatherId || null)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-1 font-bold cursor-pointer"
-                          >
-                            <Check size={14} />
-                            إعادة الاعتماد والقبول
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => onApproveRequest(req.id, linkedFatherId || null, selectedExistingMemberId || null)}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-1 font-bold cursor-pointer"
+                            >
+                              <Check size={14} />
+                              إعادة الاعتماد والقبول
+                            </button>
+                            {onDeleteRequest && (
+                              <button
+                                type="button"
+                                onClick={() => setRequestToDelete({ id: req.id, name: req.name })}
+                                className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs px-3 py-2 rounded-xl transition-all flex items-center gap-1 font-semibold cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                                حذف الطلب
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
 
+                    {validationError?.reqId === req.id && (
+                      <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl flex items-center gap-2">
+                        <AlertTriangle size={15} className="text-rose-500 shrink-0" />
+                        <span>{validationError.msg}</span>
+                      </div>
+                    )}
+
+                    {/* Orphan Warning Banner for Approved Request with deleted member */}
+                    {isApproved && !linkedMember && (
+                      <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-xs text-amber-900 flex items-start gap-2.5 leading-relaxed">
+                        <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>تنبيه:</strong> تم حذف الفرد المرتبط بهذا الحساب سابقاً من شجرة العائلة.
+                          يمكنك النقر على <strong>"إلغاء الاعتماد والربط"</strong> لإعادة ربط الحساب بفرد آخر بالشجرة، أو النقر على <strong>"حذف الطلب نهائياً"</strong> لإزالته من هذه القائمة.
+                        </div>
+                      </div>
+                    )}
+
                     {/* Meta Detail Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-slate-600">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-slate-600 bg-white p-3.5 rounded-xl border border-slate-100">
                       <div>
                         <span className="block text-[10px] text-slate-400 font-bold mb-0.5">سنة الميلاد</span>
                         <span className="font-semibold text-slate-800">{req.birthYear ? `${req.birthYear}م` : "-"}</span>
@@ -507,80 +671,215 @@ export default function AdminPanel({
                       </div>
                     )}
 
-                    {/* Linking connection to tree */}
-                    {isPending && (() => {
-                      const searchQuery = (fatherSearchQueries[req.id] || '').trim().toLowerCase();
-                      const candidateMembers = members
-                        .filter(m => {
-                          if (!searchQuery) return true;
-                          const fullName = `${m.name} ${m.fatherName || ''} ${m.grandfatherName || ''}`.toLowerCase();
-                          return fullName.includes(searchQuery);
-                        })
-                        .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
-
-                      const selectedMember = members.find(m => m.id === linkedFatherId);
-
-                      return (
-                        <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4 space-y-3">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <label className="block text-xs font-extrabold text-amber-900">
-                              ربط نسب العضو بالوالد المناسب في شجرة العائلة:
-                            </label>
-                            <span className="text-[11px] text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-full font-medium self-start sm:self-auto">
-                              إجمالي أفراد الشجرة: {members.length} فرد
+                    {/* Siblings & Uncles/Aunts Submitted in Request */}
+                    {((req.siblings && req.siblings.length > 0) || (req.unclesAndAunts && req.unclesAndAunts.length > 0)) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {req.siblings && req.siblings.length > 0 && (
+                          <div className="bg-white border border-slate-200/70 p-3 rounded-xl space-y-1.5">
+                            <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                              <Users size={13} className="text-indigo-600" />
+                              أسماء الإخوة والأخوات ({req.siblings.length}):
                             </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {req.siblings.map((sib, i) => (
+                                <span key={i} className="inline-block bg-indigo-50 border border-indigo-100/80 text-indigo-900 text-xs px-2.5 py-1 rounded-lg font-medium">
+                                  {sib}
+                                </span>
+                              ))}
+                            </div>
                           </div>
+                        )}
 
-                          {/* Quick Live Search Box */}
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={fatherSearchQueries[req.id] || ''}
-                              onChange={e => setFatherSearchQueries({ ...fatherSearchQueries, [req.id]: e.target.value })}
-                              placeholder="🔍 ابحث بالاسم لتصفية قائمة الآباء في الشجرة..."
-                              className="w-full bg-white border border-amber-300/80 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
-                            />
-                            {fatherSearchQueries[req.id] && (
-                              <button
-                                type="button"
-                                onClick={() => setFatherSearchQueries({ ...fatherSearchQueries, [req.id]: '' })}
-                                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 hover:text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded"
-                              >
-                                مسح
-                              </button>
+                        {req.unclesAndAunts && req.unclesAndAunts.length > 0 && (
+                          <div className="bg-white border border-slate-200/70 p-3 rounded-xl space-y-1.5">
+                            <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                              <Users size={13} className="text-indigo-600" />
+                              أسماء الأعمام والعمات ({req.unclesAndAunts.length}):
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {req.unclesAndAunts.map((uncle, i) => (
+                                <span key={i} className="inline-block bg-amber-50 border border-amber-200/80 text-amber-900 text-xs px-2.5 py-1 rounded-lg font-medium">
+                                  {uncle}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Pending Linking Controls */}
+                    {isPending && (
+                      <div className="bg-white border border-indigo-100 rounded-2xl p-4 space-y-4 shadow-xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+                          <label className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                            <Link size={15} className="text-indigo-600" />
+                            طريقة ربط واعتماد الحساب بالشجرة:
+                          </label>
+                          
+                          {/* Mode Selection Pills */}
+                          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+                            <button
+                              type="button"
+                              onClick={() => setRequestApprovalModes({ ...requestApprovalModes, [req.id]: 'existing' })}
+                              className={`text-xs px-3 py-1 rounded-lg font-bold transition-all ${
+                                currentMode === 'existing'
+                                  ? 'bg-indigo-600 text-white shadow-xs'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              🔗 ربط مع فرد مسجل مسبقاً (بدون تكرار)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setRequestApprovalModes({ ...requestApprovalModes, [req.id]: 'new' })}
+                              className={`text-xs px-3 py-1 rounded-lg font-bold transition-all ${
+                                currentMode === 'new'
+                                  ? 'bg-indigo-600 text-white shadow-xs'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              ➕ إضافة كفرد جديد بالشجرة
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* MODE 1: Link to Existing Member in Tree */}
+                        {currentMode === 'existing' && (
+                          <div className="space-y-3 bg-indigo-50/50 border border-indigo-100/80 p-3.5 rounded-xl">
+                            {/* Auto-match recommendation */}
+                            {autoMatchedMember && (
+                              <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs text-emerald-800 flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  <UserCheck size={16} className="text-emerald-600 shrink-0" />
+                                  <span>
+                                    عُثر على تطابق في الشجرة: <strong>{autoMatchedMember.name} بن {autoMatchedMember.fatherName || ''} بن {autoMatchedMember.grandfatherName || ''}</strong>
+                                  </span>
+                                </div>
+                                {selectedExistingMemberId !== autoMatchedMember.id && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setRequestMemberLinks({ ...requestMemberLinks, [req.id]: autoMatchedMember.id })}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] px-2.5 py-1 rounded-lg font-bold shrink-0"
+                                  >
+                                    تحديد هذا العضو
+                                  </button>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Search existing members */}
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={memberSearchQueries[req.id] || ''}
+                                onChange={e => setMemberSearchQueries({ ...memberSearchQueries, [req.id]: e.target.value })}
+                                placeholder="🔍 ابحث بالاسم لتحديد الفرد من الشجرة لربط حسابه وتجنب التكرار..."
+                                className="w-full bg-white border border-indigo-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs"
+                              />
+                              {memberSearchQueries[req.id] && (
+                                <button
+                                  type="button"
+                                  onClick={() => setMemberSearchQueries({ ...memberSearchQueries, [req.id]: '' })}
+                                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 hover:text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded"
+                                >
+                                  مسح
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Existing Members Dropdown */}
+                            <select
+                              value={selectedExistingMemberId}
+                              onChange={e => setRequestMemberLinks({ ...requestMemberLinks, [req.id]: e.target.value })}
+                              className="w-full border border-indigo-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white cursor-pointer text-slate-800 font-medium shadow-xs"
+                            >
+                              <option value="">-- اختر الفرد المسجل في الشجرة لربط حسابه --</option>
+                              {candidateExistingMembers.map(m => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name} {m.fatherName ? `بن ${m.fatherName}` : ''} {m.grandfatherName ? `بن ${m.grandfatherName}` : ''} {m.birthYear ? `(مواليد ${m.birthYear}م)` : ''} {m.registeredUserId ? '✓ مربوط مسبقاً' : ''}
+                                </option>
+                              ))}
+                            </select>
+
+                            {/* Selection Preview */}
+                            {chosenExistingMember ? (
+                              <div className="bg-white border border-indigo-200 p-3 rounded-xl text-xs text-slate-700 flex items-center gap-2">
+                                <Check size={14} className="text-emerald-600 shrink-0" />
+                                <span>
+                                  سيتم تفعيل حساب <strong>{req.email}</strong> وربطه مباشرة مع بطاقة: <strong>{chosenExistingMember.name} بن {chosenExistingMember.fatherName || ''} بن {chosenExistingMember.grandfatherName || ''}</strong> دون إنشاء بطاقة مكررة.
+                                </span>
+                              </div>
+                            ) : (
+                              <p className="text-[11px] text-slate-500 leading-normal">
+                                💡 استخدام هذا الخيار يربط حساب التسجيل بالاسم الموجود مسبقاً في الشجرة ويمنع تكراره.
+                              </p>
                             )}
                           </div>
+                        )}
 
-                          {/* Members Dropdown */}
-                          <select
-                            value={linkedFatherId}
-                            onChange={e => setRequestFatherLinks({ ...requestFatherLinks, [req.id]: e.target.value })}
-                            className="w-full border border-amber-300 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white cursor-pointer text-slate-800 font-medium shadow-sm"
-                          >
-                            <option value="">-- تركه كفرد مستقل بدون والد (أو تعيينه لاحقاً) --</option>
-                            {candidateMembers.map(m => (
-                              <option key={m.id} value={m.id}>
-                                {m.name} {m.fatherName ? `بن ${m.fatherName}` : ''} {m.grandfatherName ? `بن ${m.grandfatherName}` : ''} {m.birthYear ? `(مواليد ${m.birthYear}م)` : ''}
-                              </option>
-                            ))}
-                          </select>
-
-                          {/* Active Selection or Guidance */}
-                          {selectedMember ? (
-                            <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
-                              <Check size={14} className="text-emerald-600 shrink-0" />
-                              <span>
-                                تم اختيار الوالد: <strong>{selectedMember.name} بن {selectedMember.fatherName || ''} بن {selectedMember.grandfatherName || ''}</strong> (سيضاف العضو كفرع تحت هذا الأب مباشرة).
+                        {/* MODE 2: Create New Member in Tree */}
+                        {currentMode === 'new' && (
+                          <div className="space-y-3 bg-amber-50/60 border border-amber-200/80 p-3.5 rounded-xl">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <label className="block text-xs font-extrabold text-amber-900">
+                                تحديد الوالد لإضافة الفرد كفرع جديد في الشجرة:
+                              </label>
+                              <span className="text-[11px] text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-full font-medium self-start sm:self-auto">
+                                إجمالي أفراد الشجرة: {members.length} فرد
                               </span>
                             </div>
-                          ) : (
-                            <p className="text-[11px] text-slate-500 leading-normal">
-                              💡 إذا لم تجد والد العضو في الشجرة بعد، يمكنك اعتماد الطلب كفرد مستقل، أو إضافة والده أولاً من تبويب <strong>"أفراد الشجرة"</strong> ثم ربطه.
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })()}
+
+                            {/* Search Fathers */}
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={fatherSearchQueries[req.id] || ''}
+                                onChange={e => setFatherSearchQueries({ ...fatherSearchQueries, [req.id]: e.target.value })}
+                                placeholder="🔍 ابحث بالاسم لتصفية قائمة الآباء في الشجرة..."
+                                className="w-full bg-white border border-amber-300/80 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-xs"
+                              />
+                              {fatherSearchQueries[req.id] && (
+                                <button
+                                  type="button"
+                                  onClick={() => setFatherSearchQueries({ ...fatherSearchQueries, [req.id]: '' })}
+                                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 hover:text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded"
+                                >
+                                  مسح
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Fathers Dropdown */}
+                            <select
+                              value={linkedFatherId}
+                              onChange={e => setRequestFatherLinks({ ...requestFatherLinks, [req.id]: e.target.value })}
+                              className="w-full border border-amber-300 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white cursor-pointer text-slate-800 font-medium shadow-xs"
+                            >
+                              <option value="">-- تركه كفرد مستقل بدون والد (أو تعيينه لاحقاً) --</option>
+                              {candidateFathers.map(m => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name} {m.fatherName ? `بن ${m.fatherName}` : ''} {m.grandfatherName ? `بن ${m.grandfatherName}` : ''} {m.birthYear ? `(مواليد ${m.birthYear}م)` : ''}
+                                </option>
+                              ))}
+                            </select>
+
+                            {chosenFather ? (
+                              <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
+                                <Check size={14} className="text-emerald-600 shrink-0" />
+                                <span>
+                                  تم اختيار الوالد: <strong>{chosenFather.name} بن {chosenFather.fatherName || ''} بن {chosenFather.grandfatherName || ''}</strong> (سيضاف العضو كفرع تحت هذا الأب مباشرة).
+                                </span>
+                              </div>
+                            ) : (
+                              <p className="text-[11px] text-slate-500 leading-normal">
+                                💡 إذا كان العضو مسجلاً مسبقاً في الشجرة، يرجى التبديل لخيار <strong>"ربط مع فرد مسجل مسبقاً"</strong> لمنع التكرار.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -725,9 +1024,13 @@ export default function AdminPanel({
                           }}
                           className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white cursor-pointer"
                         >
-                            <option value="" disabled>اختر {newMemGender === 'female' ? 'الزوج' : 'الزوجة'}</option>
-                            {members.filter(m => m.gender !== newMemGender).map(m => (
-                                <option key={m.id} value={m.id}>{m.name} ({m.gender === 'female' ? 'بنت' : 'بن'} {m.fatherName})</option>
+                            <option value="" disabled>اختر {isMemberFemale({ gender: newMemGender, name: newMemName }) ? 'الزوج' : 'الزوجة'}</option>
+                            {members
+                              .filter(m => (isMemberFemale({ gender: newMemGender, name: newMemName }) ? !isMemberFemale(m) : isMemberFemale(m)))
+                              .map(m => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name} {isMemberFemale(m) ? `بنت ${m.fatherName || ''}` : `بن ${m.fatherName || ''}`}
+                                </option>
                             ))}
                         </select>
                       ) : (
@@ -794,7 +1097,18 @@ export default function AdminPanel({
                     <label className="block text-xs font-bold text-slate-500 mb-1">ربط نسبه بالأب في الشجرة (هام جداً)</label>
                     <select
                       value={newMemFatherId}
-                      onChange={e => setNewMemFatherId(e.target.value)}
+                      onChange={e => {
+                        const fId = e.target.value;
+                        setNewMemFatherId(fId);
+                        if (fId) {
+                          const father = members.find(m => m.id === fId);
+                          if (father) {
+                            setNewMemFatherName(father.name);
+                            const { fatherName: resolvedGrandfather } = getResolvedLineage(father);
+                            setNewMemGrandName(resolvedGrandfather || father.fatherName || '');
+                          }
+                        }
+                      }}
                       className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white cursor-pointer text-slate-700"
                     >
                       <option value="">-- تركه كعميد مستقل في قمة الشجرة (بدون والد) --</option>
@@ -851,23 +1165,27 @@ export default function AdminPanel({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">اسم الأب</label>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">
+                      اسم الأب <span className="text-[10px] text-amber-700 font-normal">(مربوط بالشجرة)</span>
+                    </label>
                     <input
-                      type="text" required
+                      type="text"
                       value={editForm.fatherName}
-                      onChange={e => setEditForm({ ...editForm, fatherName: e.target.value })}
-                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white"
-                      disabled={!!editForm.fatherId}
+                      disabled
+                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-slate-100 text-slate-500 cursor-not-allowed select-none"
+                      title="اسم الأب مرتبط بالشجرة تلقائياً ولا يمكن تعديله يدوياً"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">اسم الجد</label>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">
+                      اسم الجد <span className="text-[10px] text-amber-700 font-normal">(مربوط بالشجرة)</span>
+                    </label>
                     <input
-                      type="text" required
+                      type="text"
                       value={editForm.grandfatherName}
-                      onChange={e => setEditForm({ ...editForm, grandfatherName: e.target.value })}
-                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white"
-                      disabled={!!editForm.fatherId}
+                      disabled
+                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-slate-100 text-slate-500 cursor-not-allowed select-none"
+                      title="اسم الجد مرتبط بالشجرة تلقائياً ولا يمكن تعديله يدوياً"
                     />
                   </div>
                 </div>
@@ -948,9 +1266,13 @@ export default function AdminPanel({
                           }}
                           className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white cursor-pointer"
                         >
-                            <option value="" disabled>اختر {editForm.gender === 'female' ? 'الزوج' : 'الزوجة'}</option>
-                            {members.filter(m => m.gender !== editForm.gender && m.id !== editForm.id).map(m => (
-                                <option key={m.id} value={m.id}>{m.name} ({m.gender === 'female' ? 'بنت' : 'بن'} {m.fatherName})</option>
+                            <option value="" disabled>اختر {isMemberFemale({ gender: editForm.gender, name: editForm.name }) ? 'الزوج' : 'الزوجة'}</option>
+                            {members
+                              .filter(m => (isMemberFemale({ gender: editForm.gender, name: editForm.name }) ? !isMemberFemale(m) : isMemberFemale(m)) && m.id !== editForm.id)
+                              .map(m => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name} {isMemberFemale(m) ? `بنت ${m.fatherName || ''}` : `بن ${m.fatherName || ''}`}
+                                </option>
                             ))}
                         </select>
                       ) : (
@@ -1732,6 +2054,41 @@ export default function AdminPanel({
             <div className="flex justify-end gap-3 pt-2">
               <button onClick={() => setMemberToDelete(null)} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold transition-colors">إلغاء</button>
               <button onClick={() => { onDeleteMember(memberToDelete); setMemberToDelete(null); }} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold transition-colors">نعم، احذف</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {requestToDelete && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 dir-rtl text-right">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center gap-2.5 text-rose-600 font-bold text-lg">
+              <Trash2 size={20} />
+              <h3>تأكيد حذف طلب التسجيل</h3>
+            </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              هل أنت متأكد من رغبتك في حذف طلب التسجيل الخاص بـ <strong>{requestToDelete.name}</strong> نهائياً من لوحة التحكم؟ لا يمكن التراجع عن هذه العملية.
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button 
+                type="button"
+                onClick={() => setRequestToDelete(null)} 
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold transition-colors cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button 
+                type="button"
+                onClick={() => { 
+                  if (onDeleteRequest) {
+                    onDeleteRequest(requestToDelete.id);
+                  }
+                  setRequestToDelete(null); 
+                }} 
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold transition-colors shadow-md shadow-rose-600/20 cursor-pointer"
+              >
+                نعم، احذف الطلب
+              </button>
             </div>
           </div>
         </div>

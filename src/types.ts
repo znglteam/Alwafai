@@ -6,6 +6,11 @@ export interface MemberComment {
   createdAt: string;
 }
 
+export interface SpouseInfo {
+  id?: string | null; // Member ID if spouse is from the same family tree
+  name: string; // Spouse full/display name
+}
+
 export interface FamilyMember {
   id: string;
   name: string; // First name
@@ -25,6 +30,7 @@ export interface FamilyMember {
   avatarY?: number;
   spouseName?: string | null;
   spouseId?: string | null;
+  spouses?: SpouseInfo[];
   childrenNamesText?: string | null;
   maritalStatus?: 'أعزب' | 'مرتبط' | 'متزوج' | 'منفصل/ أرمل' | '( اختر )' | '';
   fatherId?: string | null;
@@ -36,6 +42,17 @@ export interface FamilyMember {
   orderIndex?: number;
   comments?: MemberComment[];
 }
+
+export const getMemberSpouses = (m?: Partial<FamilyMember> | null): SpouseInfo[] => {
+  if (!m) return [];
+  if (m.spouses && Array.isArray(m.spouses) && m.spouses.length > 0) {
+    return m.spouses.filter(s => (s.name && s.name.trim()) || s.id);
+  }
+  if (m.spouseName || m.spouseId) {
+    return [{ id: m.spouseId || null, name: m.spouseName || '' }];
+  }
+  return [];
+};
 
 export interface RegistrationRequest {
   id: string;
@@ -57,6 +74,8 @@ export interface RegistrationRequest {
   gender?: 'male' | 'female';
   childrenNamesText?: string | null;
   maritalStatus?: 'أعزب' | 'مرتبط' | 'متزوج' | 'منفصل/ أرمل' | '( اختر )' | '';
+  siblings?: string[];
+  unclesAndAunts?: string[];
 }
 
 export interface NewsItem {

@@ -164,24 +164,24 @@ export default function MainPage({
   };
 
   return (
-    <div id="main-page-container" className="py-6 space-y-8 dir-rtl text-right">
+    <div id="main-page-container" className="py-2 space-y-6 dir-rtl text-right">
       
       {/* Top Family Showcase: Logo & Bio/History directly underneath */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-xs space-y-6 max-w-4xl mx-auto">
+      <div className="bg-white border border-slate-100 rounded-3xl p-5 md:p-7 shadow-xs space-y-4 max-w-4xl mx-auto">
         
-        {/* Family Logo Centered */}
-        <div className="flex flex-col items-center justify-center text-center pt-2 pb-4 border-b border-slate-100">
+        {/* Family Logo Centered (Enlarged and raised higher up) */}
+        <div className="flex flex-col items-center justify-center text-center pt-0 pb-1">
           <img 
             src="/family_logo.png" 
             alt="شعار آل الوفائي والعطائي" 
-            className="w-52 h-52 md:w-64 md:h-64 object-contain hover:scale-105 transition-transform duration-300 drop-shadow-sm"
+            className="w-64 h-64 md:w-84 md:h-84 lg:w-96 lg:h-96 max-h-[380px] object-contain hover:scale-105 transition-transform duration-300 drop-shadow-sm"
             referrerPolicy="no-referrer"
           />
         </div>
 
-        {/* Biography & History directly under the Logo */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        {/* Biography & History directly under the Logo (Raised higher) */}
+        <div className="space-y-3 pt-1 border-t border-slate-100/80">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <h3 className="text-lg md:text-xl font-bold text-slate-800 flex items-center gap-2">
               <History className="text-amber-600" size={20} />
               عن العائلة ونشأتها

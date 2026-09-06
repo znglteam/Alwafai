@@ -136,8 +136,8 @@ export default function App() {
     };
   });
 
-  // UI state
-  const [activeTab, setActiveTab] = useState<'main' | 'tree' | 'profile' | 'admin' | 'messages'>('tree');
+  // UI state - default to 'main' so visitors see the main landing page
+  const [activeTab, setActiveTab] = useState<'main' | 'tree' | 'profile' | 'admin' | 'messages'>('main');
   const [treeSelectedMemberId, setTreeSelectedMemberId] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -698,15 +698,19 @@ export default function App() {
               <Home size={14} />
               الرئيسية
             </button>
-            <button
-              onClick={() => setActiveTab('tree')}
-              className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all ${
-                activeTab === 'tree' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Network size={14} />
-              شجرة العائلة
-            </button>
+            
+            {/* Family Tree Tab - Visible ONLY to Approved Members & Admins */}
+            {(currentSession.role === 'member' || currentSession.role === 'admin') && (
+              <button
+                onClick={() => setActiveTab('tree')}
+                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all ${
+                  activeTab === 'tree' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Network size={14} />
+                شجرة العائلة
+              </button>
+            )}
 
             {/* Approved Member Tab */}
             {currentSession.role === 'member' && activeMember && (
@@ -738,41 +742,16 @@ export default function App() {
             )}
           </div>
 
-          {/* Center Column: Header Title with Family Crest */}
-          <div className="text-center py-1 md:py-0 flex items-center justify-center gap-2.5">
-            <img 
-              src="/family_logo.png" 
-              alt="شعار آل الوفائي والعطائي" 
-              className="w-9 h-9 md:w-10 md:h-10 object-contain drop-shadow-xs"
-              referrerPolicy="no-referrer"
-            />
+          {/* Center Column: Header Title */}
+          <div className="text-center py-1 md:py-0 flex items-center justify-center">
             <h1 className="text-lg md:text-xl font-extrabold text-slate-800 font-serif tracking-wide">
-              عائلة آل الوفائي والعطائي
+              آل الوفائي والعطائي ( سوريا/ حمص )
             </h1>
           </div>
 
-          {/* Left Column: User Profile Controls & Auth Buttons */}
+          {/* Left Column: User Profile Controls (Only for logged-in users) */}
           <div className="flex items-center justify-center md:justify-end gap-2">
-            {currentSession.role === 'guest' ? (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setAuthMode('login')}
-                  className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-all shadow-xs cursor-pointer"
-                  title="تسجيل الدخول للحساب"
-                >
-                  <LogIn size={14} />
-                  <span>تسجيل الدخول</span>
-                </button>
-                <button
-                  onClick={() => setAuthMode('register')}
-                  className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-all shadow-xs cursor-pointer"
-                  title="تقديم طلب انضمام / إنشاء حساب جديد"
-                >
-                  <UserPlus size={14} />
-                  <span>طلب حساب جديد</span>
-                </button>
-              </div>
-            ) : (
+            {currentSession.role !== 'guest' && (
               <>
                 <button
                   onClick={() => setIsProfileModalOpen(true)}
@@ -792,7 +771,7 @@ export default function App() {
 
                 <button
                   onClick={handleLogout}
-                  className="bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 p-2.5 rounded-full transition-colors border border-slate-200/50"
+                  className="bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 p-2.5 rounded-full transition-colors border border-slate-200/50 cursor-pointer"
                   title="تسجيل الخروج"
                 >
                   <LogOut size={16} />
@@ -844,7 +823,8 @@ export default function App() {
                 if (memberId) setTreeSelectedMemberId(memberId);
                 setActiveTab('tree');
               }}
-              onOpenAuth={() => setAuthMode('login')}
+              onOpenAuth={(mode) => setAuthMode(mode || 'login')}
+              onOpenRegister={() => setAuthMode('register')}
             />
           )}
 

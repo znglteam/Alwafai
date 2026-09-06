@@ -17,7 +17,8 @@ interface MainPageProps {
   onDeletePhotoComment: (photoId: string, commentId: string) => void;
   onUpdateInfo: (info: FamilyInfo) => void;
   onGoToTree: (memberId?: string) => void;
-  onOpenAuth: () => void;
+  onOpenAuth: (mode?: 'login' | 'register') => void;
+  onOpenRegister?: () => void;
 }
 
 export default function MainPage({
@@ -34,7 +35,8 @@ export default function MainPage({
   onDeletePhotoComment,
   onUpdateInfo,
   onGoToTree,
-  onOpenAuth
+  onOpenAuth,
+  onOpenRegister
 }: MainPageProps) {
   const [isEditingInfo, setIsEditingInfo] = useState(false);
   const [infoForm, setInfoForm] = useState<FamilyInfo>({ ...familyInfo });
@@ -164,7 +166,36 @@ export default function MainPage({
   return (
     <div id="main-page-container" className="py-6 space-y-10 dir-rtl text-right">
       
-
+      {/* Hero Section for Guests (Welcome & Auth Buttons in the Center) */}
+      {(isGuest || currentSession.role === 'guest') && (
+        <div className="flex flex-col items-center justify-center text-center py-8 px-4 bg-white border border-slate-100/80 rounded-3xl shadow-xs space-y-6 max-w-3xl mx-auto">
+          <div className="flex items-center justify-center w-full">
+            <img 
+              src="/family_logo.png" 
+              alt="شعار آل الوفائي والعطائي" 
+              className="w-56 h-56 md:w-72 md:h-72 object-contain hover:scale-105 transition-transform duration-300 drop-shadow-sm"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full max-w-xs pt-1">
+            <button
+              onClick={() => onOpenAuth('login')}
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm px-6 py-3.5 rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              <LogIn size={17} />
+              تسجيل الدخول
+            </button>
+            <button
+              onClick={() => onOpenRegister ? onOpenRegister() : onOpenAuth('register')}
+              className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold text-sm px-6 py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              <Plus size={17} />
+              طلب حساب جديد
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Grid: Bio / Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

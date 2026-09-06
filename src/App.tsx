@@ -688,26 +688,28 @@ export default function App() {
       <NewsTicker news={news} />
 
       {/* Main Navbar */}
-      <nav id="main-nav" className={`bg-white border-b border-slate-200 py-4 px-4 sticky ${news && news.length > 0 ? 'top-11' : 'top-0'} z-30 shadow-xs text-right`}>
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 items-center gap-4">
+      <nav id="main-nav" className={`bg-white border-b border-slate-200 py-3.5 px-4 sticky ${news && news.length > 0 ? 'top-11' : 'top-0'} z-30 shadow-xs text-right`}>
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
           
-          {/* Nav Tabs */}
+          {/* Nav Tabs (Only for logged-in members & admins) */}
           <div className="flex flex-wrap items-center justify-center md:justify-start gap-1.5 md:gap-2">
-            <button
-              onClick={() => setActiveTab('main')}
-              className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all ${
-                activeTab === 'main' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Home size={14} />
-              الرئيسية
-            </button>
+            {currentSession.role !== 'guest' && (
+              <button
+                onClick={() => setActiveTab('main')}
+                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
+                  activeTab === 'main' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Home size={14} />
+                الرئيسية
+              </button>
+            )}
             
             {/* Family Tree Tab - Visible ONLY to Approved Members & Admins */}
             {(currentSession.role === 'member' || currentSession.role === 'admin') && (
               <button
                 onClick={() => setActiveTab('tree')}
-                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all ${
+                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
                   activeTab === 'tree' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
@@ -720,7 +722,7 @@ export default function App() {
             {currentSession.role === 'member' && activeMember && (
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all ${
+                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
                   activeTab === 'profile' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
@@ -733,7 +735,7 @@ export default function App() {
             {currentSession.role === 'admin' && (
               <button
                 onClick={() => setActiveTab('admin')}
-                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all ${
+                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
                   activeTab === 'admin' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
@@ -753,9 +755,26 @@ export default function App() {
             </h1>
           </div>
 
-          {/* Left Column: User Profile Controls (Only for logged-in users) */}
+          {/* Left Column: Auth buttons for Guests, or User Profile & Logout for logged-in users */}
           <div className="flex items-center justify-center md:justify-end gap-2">
-            {currentSession.role !== 'guest' && (
+            {currentSession.role === 'guest' ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setAuthMode('login')}
+                  className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-xs cursor-pointer active:scale-95"
+                >
+                  <LogIn size={14} />
+                  <span>تسجيل الدخول</span>
+                </button>
+                <button
+                  onClick={() => setAuthMode('register')}
+                  className="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer active:scale-95"
+                >
+                  <UserPlus size={14} />
+                  <span>طلب حساب جديد</span>
+                </button>
+              </div>
+            ) : (
               <>
                 <button
                   onClick={() => setIsProfileModalOpen(true)}

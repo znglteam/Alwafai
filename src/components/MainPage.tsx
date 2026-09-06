@@ -164,127 +164,103 @@ export default function MainPage({
   };
 
   return (
-    <div id="main-page-container" className="py-6 space-y-10 dir-rtl text-right">
+    <div id="main-page-container" className="py-6 space-y-8 dir-rtl text-right">
       
-      {/* Hero Section for Guests (Welcome & Auth Buttons in the Center) */}
-      {(isGuest || currentSession.role === 'guest') && (
-        <div className="flex flex-col items-center justify-center text-center py-8 px-4 bg-white border border-slate-100/80 rounded-3xl shadow-xs space-y-6 max-w-3xl mx-auto">
-          <div className="flex items-center justify-center w-full">
-            <img 
-              src="/family_logo.png" 
-              alt="شعار آل الوفائي والعطائي" 
-              className="w-56 h-56 md:w-72 md:h-72 object-contain hover:scale-105 transition-transform duration-300 drop-shadow-sm"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 w-full max-w-xs pt-1">
-            <button
-              onClick={() => onOpenAuth('login')}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm px-6 py-3.5 rounded-2xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-            >
-              <LogIn size={17} />
-              تسجيل الدخول
-            </button>
-            <button
-              onClick={() => onOpenRegister ? onOpenRegister() : onOpenAuth('register')}
-              className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold text-sm px-6 py-3.5 rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-            >
-              <Plus size={17} />
-              طلب حساب جديد
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Grid: Bio / Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Top Family Showcase: Logo & Bio/History directly underneath */}
+      <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-xs space-y-6 max-w-4xl mx-auto">
         
-        {/* Biography and History */}
-        <div className="lg:col-span-12 space-y-6">
-          <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm relative">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <History className="text-amber-600" size={20} />
-                عن العائلة ونشأتها
-              </h3>
-              {isAdmin && !isEditingInfo && (
-                <button
-                  onClick={() => setIsEditingInfo(true)}
-                  className="text-xs bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 px-3 py-1.5 rounded-xl transition-all"
-                >
-                  تعديل النبذة والتاريخ
-                </button>
-              )}
-            </div>
+        {/* Family Logo Centered */}
+        <div className="flex flex-col items-center justify-center text-center pt-2 pb-4 border-b border-slate-100">
+          <img 
+            src="/family_logo.png" 
+            alt="شعار آل الوفائي والعطائي" 
+            className="w-52 h-52 md:w-64 md:h-64 object-contain hover:scale-105 transition-transform duration-300 drop-shadow-sm"
+            referrerPolicy="no-referrer"
+          />
+        </div>
 
-            {isEditingInfo ? (
-              <form onSubmit={handleSaveInfo} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">اسم العائلة</label>
-                  <input
-                    type="text"
-                    required
-                    value={infoForm.familyName}
-                    onChange={e => setInfoForm({ ...infoForm, familyName: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">نبذة قصيرة</label>
-                  <textarea
-                    rows={3}
-                    required
-                    value={infoForm.bio}
-                    onChange={e => setInfoForm({ ...infoForm, bio: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">تاريخ العائلة وجذورها</label>
-                  <textarea
-                    rows={5}
-                    required
-                    value={infoForm.history}
-                    onChange={e => setInfoForm({ ...infoForm, history: e.target.value })}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"
-                  />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setInfoForm({ ...familyInfo });
-                      setIsEditingInfo(false);
-                    }}
-                    className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl"
-                  >
-                    إلغاء
-                  </button>
-                  <button
-                    type="submit"
-                    className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold"
-                  >
-                    حفظ التعديلات
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="space-y-5">
-                <p className="text-slate-700 text-sm md:text-base leading-relaxed font-medium">
-                  {familyInfo.bio}
-                </p>
-                <div className="border-t border-dashed border-slate-100 pt-4">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">التفاصيل التاريخية والجغرافية</h4>
-                  <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-                    {familyInfo.history}
-                  </p>
-                </div>
-              </div>
+        {/* Biography & History directly under the Logo */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 className="text-lg md:text-xl font-bold text-slate-800 flex items-center gap-2">
+              <History className="text-amber-600" size={20} />
+              عن العائلة ونشأتها
+            </h3>
+            {isAdmin && !isEditingInfo && (
+              <button
+                onClick={() => setIsEditingInfo(true)}
+                className="text-xs bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-xl transition-all font-semibold cursor-pointer"
+              >
+                تعديل النبذة والتاريخ
+              </button>
             )}
           </div>
-        </div>
 
+          {isEditingInfo ? (
+            <form onSubmit={handleSaveInfo} className="space-y-4 pt-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">اسم العائلة</label>
+                <input
+                  type="text"
+                  required
+                  value={infoForm.familyName}
+                  onChange={e => setInfoForm({ ...infoForm, familyName: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">نبذة قصيرة</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={infoForm.bio}
+                  onChange={e => setInfoForm({ ...infoForm, bio: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">تاريخ العائلة وجذورها</label>
+                <textarea
+                  rows={5}
+                  required
+                  value={infoForm.history}
+                  onChange={e => setInfoForm({ ...infoForm, history: e.target.value })}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                />
+              </div>
+              <div className="flex gap-2 justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInfoForm({ ...familyInfo });
+                    setIsEditingInfo(false);
+                  }}
+                  className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold cursor-pointer shadow-sm"
+                >
+                  حفظ التعديلات
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-4 pt-1">
+              <p className="text-slate-700 text-sm md:text-base leading-relaxed font-medium">
+                {familyInfo.bio}
+              </p>
+              <div className="border-t border-dashed border-slate-100 pt-4">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">التفاصيل التاريخية والجغرافية</h4>
+                <p className="text-slate-600 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
+                  {familyInfo.history}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Photo Gallery Section */}

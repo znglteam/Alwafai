@@ -26,15 +26,6 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
   const [grandfatherName, setGrandfatherName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [birthYear, setBirthYear] = useState<number | ''>('');
-  const [birthDate, setBirthDate] = useState('');
-  const [country, setCountry] = useState('');
-  const [specialization, setSpecialization] = useState('');
-  const [bio, setBio] = useState('');
-  const [avatar, setAvatar] = useState('');
-  const [gender, setGender] = useState<'male' | 'female'>('male');
-  const [siblings, setSiblings] = useState<string[]>([]);
-  const [unclesAndAunts, setUnclesAndAunts] = useState<string[]>([]);
   const [regSuccess, setRegSuccess] = useState(false);
 
   useEffect(() => {
@@ -42,10 +33,6 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
       setCurrentMode(initialMode);
       setLoginError('');
       setRegSuccess(false);
-      if (initialMode === 'register') {
-        setSiblings([]);
-        setUnclesAndAunts([]);
-      }
     }
   }, [isOpen, initialMode]);
 
@@ -72,25 +59,22 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
     e.preventDefault();
     if (!name.trim() || !fatherName.trim() || !grandfatherName.trim() || !email.trim()) return;
 
-    const cleanedSiblings = siblings.map(s => s.trim()).filter(Boolean);
-    const cleanedUnclesAndAunts = unclesAndAunts.map(u => u.trim()).filter(Boolean);
-
     onRegister({
       name: name.trim(),
       fatherName: fatherName.trim(),
       grandfatherName: grandfatherName.trim(),
       email: email.trim().toLowerCase(),
       password: password || '',
-      birthYear: birthYear === '' ? 0 : Number(birthYear),
-      birthDate: birthDate || '',
-      country: country.trim() || 'غير محدد',
-      specialization: specialization.trim() || 'غير محدد',
-      bio: bio.trim() || 'عضو في العائلة.',
-      avatar: avatar.trim() || '',
+      birthYear: 0,
+      birthDate: '',
+      country: 'غير محدد',
+      specialization: 'غير محدد',
+      bio: 'عضو في العائلة.',
+      avatar: '',
       isAlive: true,
-      gender: gender || 'male',
-      siblings: cleanedSiblings,
-      unclesAndAunts: cleanedUnclesAndAunts
+      gender: 'male',
+      siblings: [],
+      unclesAndAunts: []
     });
 
     setRegSuccess(true);
@@ -214,213 +198,6 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Additional Details */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 mb-1">تاريخ الميلاد</label>
-                  <input
-                    type="date"
-                    value={birthDate}
-                    onChange={e => {
-                      const dateVal = e.target.value;
-                      setBirthDate(dateVal);
-                      if (dateVal) {
-                        const yr = new Date(dateVal).getFullYear();
-                        setBirthYear(yr);
-                      } else {
-                        setBirthYear('');
-                      }
-                    }}
-                    className="w-full border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 mb-1">الجنس</label>
-                  <select
-                    value={gender} onChange={e => setGender(e.target.value as 'male' | 'female')}
-                    className="w-full border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
-                  >
-                    <option value="male">ذكر</option>
-                    <option value="female">أنثى</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 mb-1">بلد الإقامة</label>
-                  <select
-                    value={country} onChange={e => setCountry(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
-                  >
-                    <option value="">بلد الإقامة...</option>
-                    {ARAB_COUNTRIES.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 mb-1">التخصص المهني</label>
-                  <input
-                    type="text" placeholder="التخصص أو المهنة"
-                    value={specialization} onChange={e => setSpecialization(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-600 bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* Helpful Note for Lineage & Acceptance */}
-              <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-3 flex items-start gap-2.5 text-amber-900 text-xs leading-relaxed">
-                <Info size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                <div className="space-y-0.5">
-                  <span className="font-bold text-amber-950 block">ملاحظة: كلما أضفت معلومات أكثر كلما ساعد هذا على قبول طلبك</span>
-                  <span className="text-[11px] text-amber-800/90 block">
-                    إضافة أسماء الإخوة والأعمام والعمات يساعد مسؤولي الشجرة في التعرف على فرعك ونسبك بدقة وسرعة اعتماد حسابك.
-                  </span>
-                </div>
-              </div>
-
-              {/* Siblings Multiple Inputs */}
-              <div className="bg-slate-50/70 border border-slate-200/80 p-3.5 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-200/60">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <Users size={14} className="text-indigo-600" />
-                    <span>أسماء الإخوة والأخوات</span>
-                    <span className="text-[10px] text-slate-400 font-normal">(اختياري)</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setSiblings([...siblings, ''])}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-xl transition-all border border-indigo-100 cursor-pointer active:scale-95"
-                  >
-                    <Plus size={12} />
-                    <span>إضافة أخ/أخت</span>
-                  </button>
-                </div>
-
-                {siblings.length === 0 ? (
-                  <p className="text-[11px] text-slate-400 text-center py-1">
-                    لم يتم تسجيل أسماء بعد. اضغط <span className="font-bold text-indigo-600">"إضافة أخ/أخت"</span> لإضافة خانة جديدة.
-                  </p>
-                ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5">
-                    {siblings.map((sib, index) => (
-                      <div key={index} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 hover:border-indigo-200 transition-colors">
-                        <span className="w-5 h-5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-bold flex items-center justify-center shrink-0">
-                          {index + 1}
-                        </span>
-                        <input
-                          type="text"
-                          value={sib}
-                          onChange={e => {
-                            const updated = [...siblings];
-                            updated[index] = e.target.value;
-                            setSiblings(updated);
-                          }}
-                          placeholder={`اسم الأخ أو الأخت (${index + 1})`}
-                          className="flex-1 text-xs border-0 focus:ring-0 focus:outline-none bg-transparent text-slate-800 placeholder:text-slate-400 font-medium"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setSiblings(siblings.filter((_, i) => i !== index))}
-                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
-                          title="حذف هذا الاسم"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Paternal Uncles & Aunts Multiple Inputs */}
-              <div className="bg-slate-50/70 border border-slate-200/80 p-3.5 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between pb-1 border-b border-slate-200/60">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <Users size={14} className="text-indigo-600" />
-                    <span>أسماء الأعمام والعمات</span>
-                    <span className="text-[10px] text-slate-400 font-normal">(إخوان وأخوات الأب - اختياري)</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setUnclesAndAunts([...unclesAndAunts, ''])}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-xl transition-all border border-indigo-100 cursor-pointer active:scale-95"
-                  >
-                    <Plus size={12} />
-                    <span>إضافة عم/عمة</span>
-                  </button>
-                </div>
-
-                {unclesAndAunts.length === 0 ? (
-                  <p className="text-[11px] text-slate-400 text-center py-1">
-                    لم يتم تسجيل أسماء بعد. اضغط <span className="font-bold text-indigo-600">"إضافة عم/عمة"</span> لإضافة خانة جديدة.
-                  </p>
-                ) : (
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5">
-                    {unclesAndAunts.map((uncle, index) => (
-                      <div key={index} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 hover:border-indigo-200 transition-colors">
-                        <span className="w-5 h-5 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-600 text-[10px] font-bold flex items-center justify-center shrink-0">
-                          {index + 1}
-                        </span>
-                        <input
-                          type="text"
-                          value={uncle}
-                          onChange={e => {
-                            const updated = [...unclesAndAunts];
-                            updated[index] = e.target.value;
-                            setUnclesAndAunts(updated);
-                          }}
-                          placeholder={`اسم العم أو العمة (${index + 1})`}
-                          className="flex-1 text-xs border-0 focus:ring-0 focus:outline-none bg-transparent text-slate-800 placeholder:text-slate-400 font-medium"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setUnclesAndAunts(unclesAndAunts.filter((_, i) => i !== index))}
-                          className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
-                          title="حذف هذا الاسم"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Photo Upload or URL */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">صورة الملف الشخصي</label>
-                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={e => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                          if (ev.target?.result) {
-                            setAvatar(ev.target.result as string);
-                          }
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    className="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 file:cursor-pointer"
-                  />
-                  {avatar && (
-                    <img src={avatar} alt="معاينة" className="w-8 h-8 rounded-full object-cover border border-slate-200 shrink-0" />
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">نبذة تعريفية</label>
-                <textarea
-                  rows={2} placeholder="اكتب نبذة مختصرة عن نفسك، دراستك، أو اهتماماتك..."
-                  value={bio} onChange={e => setBio(e.target.value)}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-600 bg-white"
-                />
               </div>
 
               <button

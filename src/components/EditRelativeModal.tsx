@@ -25,7 +25,7 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
       isAlive,
       deathYear: !isAlive && deathYear !== '' ? Number(deathYear) : null,
       gender: gender as 'male' | 'female',
-      bio
+      bio: bio !== '' ? bio : (relative.bio || '')
     });
   };
 

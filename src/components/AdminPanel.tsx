@@ -5,9 +5,10 @@ import { LiveChangeLog } from '../utils/firebaseService';
 const ARAB_COUNTRIES = [
   "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
 ];
-import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, TrendingUp, Mars, Venus, Upload, Activity, History, Link, AlertTriangle, RotateCcw, UserCheck } from 'lucide-react';
+import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, TrendingUp, Mars, Venus, Upload, Activity, History, Link, AlertTriangle, RotateCcw, UserCheck, Search } from 'lucide-react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
+import { findMatchingMemberInTree, getRankedCandidateMembers, getResolvedMemberLineage } from '../utils/memberMatching';
 
 interface AdminPanelProps {
   requests: RegistrationRequest[];
@@ -455,29 +456,15 @@ export default function AdminPanel({
                 );
 
                 // Auto match candidate in members tree
-                const reqName = (req.name || '').trim();
-                const reqFather = (req.fatherName || '').trim();
-                const autoMatchedMember = members.find(m => {
-                  if (!reqName) return false;
-                  if (reqFather && m.fatherName) {
-                    return m.name.trim() === reqName && m.fatherName.trim() === reqFather;
-                  }
-                  return m.name.trim() === reqName;
-                });
+                const autoMatchedMember = findMatchingMemberInTree(req, members);
 
                 // Mode: 'existing' (link to tree node) or 'new' (create new node)
                 const currentMode = requestApprovalModes[req.id] || (autoMatchedMember ? 'existing' : 'new');
                 const selectedExistingMemberId = requestMemberLinks[req.id] || (autoMatchedMember?.id || '');
                 const linkedFatherId = requestFatherLinks[req.id] || '';
 
-                const memberQuery = (memberSearchQueries[req.id] || '').trim().toLowerCase();
-                const candidateExistingMembers = members
-                  .filter(m => {
-                    if (!memberQuery) return true;
-                    const fullName = `${m.name} ${m.fatherName || ''} ${m.grandfatherName || ''}`.toLowerCase();
-                    return fullName.includes(memberQuery);
-                  })
-                  .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+                const memberQuery = (memberSearchQueries[req.id] || '').trim();
+                const candidateExistingMembersInfo = getRankedCandidateMembers(req, members, memberQuery);
 
                 const fatherQuery = (fatherSearchQueries[req.id] || '').trim().toLowerCase();
                 const candidateFathers = members
@@ -795,9 +782,9 @@ export default function AdminPanel({
                               className="w-full border border-indigo-200 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white cursor-pointer text-slate-800 font-medium shadow-xs"
                             >
                               <option value="">-- اختر الفرد المسجل في الشجرة لربط حسابه --</option>
-                              {candidateExistingMembers.map(m => (
-                                <option key={m.id} value={m.id}>
-                                  {m.name} {m.fatherName ? `بن ${m.fatherName}` : ''} {m.grandfatherName ? `بن ${m.grandfatherName}` : ''} {m.birthYear ? `(مواليد ${m.birthYear}م)` : ''} {m.registeredUserId ? '✓ مربوط مسبقاً' : ''}
+                              {candidateExistingMembersInfo.map(info => (
+                                <option key={info.member.id} value={info.member.id}>
+                                  {info.member.name} {info.resolvedFather ? `بن ${info.resolvedFather}` : ''} {info.resolvedGrandfather ? `بن ${info.resolvedGrandfather}` : ''} {info.member.birthYear ? `(مواليد ${info.member.birthYear}م)` : ''} {info.member.registeredUserId ? '✓ مربوط مسبقاً' : ''} {info.score > 70 ? `(⭐ تقارب عالي)` : ''}
                                 </option>
                               ))}
                             </select>

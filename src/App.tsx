@@ -55,6 +55,7 @@ import UserProfileModal from './components/UserProfileModal';
 
 import { Home, Network, User, Shield, LogOut, MessageSquare, Wifi, Bell, CloudUpload, CheckCircle, LogIn, UserPlus } from 'lucide-react';
 import { reconcileLineageAndMarriages, syncSpouseRelationships, isMemberFemale } from './utils/marriageUtils';
+import { findMatchingMemberInTree } from './utils/memberMatching';
 
 // Reconcile fatherName, grandfatherName, childrenIds, and bidirectional spouses across all members
 const reconcileLineage = (list: FamilyMember[]): FamilyMember[] => {
@@ -371,9 +372,8 @@ export default function App() {
         // Find the member record in the tree created for this approved user
         const member = members.find(m => 
           m.registeredUserId === req.id || 
-          (m.email && m.email.trim().toLowerCase() === cleanEmail) ||
-          (m.name.trim() === req.name.trim() && m.fatherName.trim() === req.fatherName.trim())
-        );
+          (m.email && m.email.trim().toLowerCase() === cleanEmail)
+        ) || findMatchingMemberInTree(req, members);
 
         if (member) {
           setCurrentSession({
@@ -455,9 +455,17 @@ export default function App() {
     let effectiveMemberId: string;
     let memberFullName: string;
 
+    // 1. Resolve existing member in tree (matching by person's own name in tree)
+    let targetExisting: FamilyMember | null = null;
     if (existingMemberId) {
-      const existing = members.find(m => m.id === existingMemberId);
-      if (!existing) return;
+      targetExisting = members.find(m => m.id === existingMemberId) || null;
+    }
+    if (!targetExisting && !fatherId) {
+      targetExisting = findMatchingMemberInTree(req, members);
+    }
+
+    if (targetExisting) {
+      const existing = targetExisting;
       effectiveMemberId = existing.id;
 
       const updatedExisting: FamilyMember = {
@@ -474,7 +482,7 @@ export default function App() {
         isAlive: req.isAlive !== undefined ? req.isAlive : existing.isAlive
       };
 
-      const updatedMembers = members.map(m => m.id === existingMemberId ? updatedExisting : m);
+      const updatedMembers = members.map(m => m.id === existing.id ? updatedExisting : m);
       const updatedRequest: RegistrationRequest = { ...req, status: 'approved' as const };
       const updatedRequests = requests.map(r => r.id === requestId ? updatedRequest : r);
 
@@ -499,7 +507,7 @@ export default function App() {
       await saveMemberToCloud(updatedExisting);
       await saveRequestToCloud(updatedRequest);
       await saveNewsToCloud(newNewsItem);
-      await logFamilyAction(currentSession.name, 'ربط واعتماد حساب مسجل', `تم ربط حساب ${req.name} (${req.email}) مع الفرد الموجود بالشجرة: ${existing.name}`, existing.name);
+      await logFamilyAction(currentSession.name, 'ربط واعتماد حساب مسجل', `تم ربط حساب ${req.name} (${req.email}) مع الفرد الموجود بالشجرة بنفس اسمه: ${existing.name}`, existing.name);
     } else {
       const newMemberId = 'member-' + Date.now().toString();
       effectiveMemberId = newMemberId;
@@ -849,7 +857,11 @@ export default function App() {
     await deleteMessageFromCloud(id);
   };
 
-  const activeMember = members.find(m => m.id === currentSession.userId);
+  const activeMember = members.find(m => 
+    m.id === currentSession.userId ||
+    (currentSession.userId && m.registeredUserId === currentSession.userId) ||
+    (currentSession.email && m.email && m.email.trim().toLowerCase() === currentSession.email.trim().toLowerCase())
+  );
 
   const effectiveNews = useMemo(() => {
     return news || [];

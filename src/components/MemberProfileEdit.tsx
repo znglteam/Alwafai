@@ -66,7 +66,7 @@ export default function MemberProfileEdit({
   const [isAlive, setIsAlive] = useState(member.isAlive);
   const [deathYear, setDeathYear] = useState(member.deathYear || 0);
   const [deathDate, setDeathDate] = useState(member.deathDate || "");
-  const [bio, setBio] = useState(member.bio);
+  const [bio, setBio] = useState(member.bio || "");
   const [avatar, setAvatar] = useState(member.avatar || "");
   const [avatarScale, setAvatarScale] = useState(member.avatarScale || 1);
   const [avatarX, setAvatarX] = useState(member.avatarX || 0);
@@ -78,7 +78,11 @@ export default function MemberProfileEdit({
     if (!member.childrenNamesText) return [];
     return member.childrenNamesText.split(/[,،\n]+/).map(s => s.trim()).filter(Boolean);
   });
-  const [maritalStatus, setMaritalStatus] = useState<"أعزب" | "مرتبط" | "متزوج" | "منفصل/ أرمل" | "( اختر )" | "">(member.maritalStatus || "");
+  const [maritalStatus, setMaritalStatus] = useState<"أعزب" | "مرتبط" | "متزوج" | "منفصل/ أرمل" | "( اختر )" | "">(() => {
+    if (member.maritalStatus) return member.maritalStatus;
+    if (member.spouseName || (member.spouses && member.spouses.length > 0)) return "متزوج";
+    return "";
+  });
   const [gender, setGender] = useState<"male" | "female">(
     member.gender || "male",
   );
@@ -171,6 +175,8 @@ export default function MemberProfileEdit({
 
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  const currentMemberIdRef = useRef(member.id);
+
   // Sync state if active member changes
   useEffect(() => {
     setName(member.name);
@@ -181,50 +187,89 @@ export default function MemberProfileEdit({
     setIsAlive(member.isAlive);
     setDeathYear(member.deathYear || 0);
     setDeathDate(member.deathDate || "");
-    setBio(member.bio);
-    setAvatar(member.avatar || "");
-    setAvatarScale(member.avatarScale || 1);
-    setAvatarX(member.avatarX || 0);
-    setAvatarY(member.avatarY || 0);
-    setSpouses(getMemberSpouses(member));
-    setSpouseName(member.spouseName || "");
-    setSpouseId(member.spouseId || null);
-    const parsed = member.childrenNamesText
+
+    const memberSpouses = getMemberSpouses(member);
+    const parsedChildren = member.childrenNamesText
       ? member.childrenNamesText.split(/[,،\n]+/).map(s => s.trim()).filter(Boolean)
       : [];
-    setChildrenList(parsed);
-    setMaritalStatus(member.maritalStatus || "");
-    setGender(member.gender || "male");
+
+    if (member.id !== currentMemberIdRef.current) {
+      currentMemberIdRef.current = member.id;
+      setBio(member.bio || "");
+      setAvatar(member.avatar || "");
+      setAvatarScale(member.avatarScale || 1);
+      setAvatarX(member.avatarX || 0);
+      setAvatarY(member.avatarY || 0);
+      setSpouses(memberSpouses);
+      setSpouseName(member.spouseName || "");
+      setSpouseId(member.spouseId || null);
+      setChildrenList(parsedChildren);
+      setMaritalStatus(
+        member.maritalStatus || (memberSpouses.length > 0 || member.spouseName ? "متزوج" : "")
+      );
+      setGender(member.gender || "male");
+    } else {
+      setBio(prev => {
+        if (member.bio && !prev) return member.bio;
+        return (prev !== undefined && prev !== "") ? prev : (member.bio || "");
+      });
+      setSpouses(prev => (prev && prev.length > 0) ? prev : memberSpouses);
+      setSpouseName(prev => prev || member.spouseName || "");
+      setSpouseId(prev => prev || member.spouseId || null);
+      setChildrenList(prev => (prev && prev.length > 0) ? prev : parsedChildren);
+      setMaritalStatus(prev => prev || member.maritalStatus || (memberSpouses.length > 0 || member.spouseName ? "متزوج" : ""));
+      setGender(member.gender || "male");
+    }
   }, [member]);
 
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    const effectiveSpouses = maritalStatus === "متزوج" ? spouses : [];
-    const formattedSpouseName = effectiveSpouses.map(s => s.name).filter(Boolean).join('، ') || null;
-    const formattedSpouseId = effectiveSpouses.find(s => s.id)?.id || null;
+    const hasSpouses = spouses.length > 0 || Boolean(member.spouseName) || Boolean(spouseName) || (member.spouses && member.spouses.length > 0);
+    const effectiveMaritalStatus = maritalStatus || (hasSpouses ? "متزوج" : "");
+    
+    let effectiveSpouses: SpouseInfo[] = [];
+    if (effectiveMaritalStatus === "متزوج" || spouses.length > 0) {
+      effectiveSpouses = spouses.length > 0 ? spouses : getMemberSpouses(member);
+    } else if (maritalStatus === "أعزب") {
+      effectiveSpouses = [];
+    } else {
+      effectiveSpouses = member.spouses || (member.spouseName ? [{ name: member.spouseName, id: member.spouseId || undefined }] : []);
+    }
+
+    const formattedSpouseName = effectiveSpouses.map(s => s.name).filter(Boolean).join('، ')
+      || (effectiveMaritalStatus === "متزوج" ? (spouseName || member.spouseName || null) : null);
+    
+    const formattedSpouseId = effectiveSpouses.find(s => s.id)?.id || member.spouseId || null;
+
     const formattedChildren = childrenList.map(s => s.trim()).filter(Boolean).join('، ');
+    const finalChildrenNamesText = (formattedChildren && formattedChildren.length > 0)
+      ? formattedChildren
+      : (member.childrenNamesText || null);
+
+    const finalBio = (bio !== undefined && bio !== null && bio !== "") ? bio : (member.bio || "");
 
     onUpdateMember({
       ...member,
       name,
       birthYear,
       birthDate: birthDate || undefined,
-      country: isAlive ? country : "",
-      specialization,
+      country: isAlive ? (country || member.country || "") : "",
+      specialization: specialization || member.specialization || "غير محدد",
       isAlive,
       deathYear: isAlive ? null : deathYear,
       deathDate: isAlive ? undefined : (deathDate || undefined),
-      bio,
-      avatar: avatar || undefined,
+      bio: finalBio,
+      avatar: avatar || member.avatar || undefined,
       avatarScale,
       avatarX,
       avatarY,
       spouseName: formattedSpouseName,
       spouseId: formattedSpouseId,
       spouses: effectiveSpouses,
-      childrenNamesText: gender === "female" ? (formattedChildren || null) : null,
-      maritalStatus,
+      childrenNamesText: finalChildrenNamesText,
+      maritalStatus: effectiveMaritalStatus || member.maritalStatus,
       gender,
+      childrenIds: member.childrenIds || [],
     });
 
     setSaveSuccess(true);
@@ -667,8 +712,7 @@ export default function MemberProfileEdit({
             </label>
             <textarea
               rows={4}
-              required
-              value={bio}
+              value={bio || ""}
               onChange={(e) => setBio(e.target.value)}
               placeholder="اكتب نبذة مختصرة..."
               className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600"

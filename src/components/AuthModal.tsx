@@ -11,7 +11,7 @@ interface AuthModalProps {
   initialMode?: 'login' | 'register';
   onClose: () => void;
   onRegister: (request: Omit<RegistrationRequest, 'id' | 'status' | 'createdAt'>) => void;
-  onLogin: (email: string, role: 'admin' | 'member') => boolean;
+  onLogin: (email: string, password?: string) => { success: boolean; message?: string };
 }
 
 export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRegister, onLogin }: AuthModalProps) {
@@ -54,16 +54,11 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
       return;
     }
 
-    if (loginEmail.toLowerCase().includes('admin')) {
-      onLogin(loginEmail, 'admin');
+    const result = onLogin(loginEmail.trim(), loginPassword.trim());
+    if (result.success) {
       onClose();
     } else {
-      const success = onLogin(loginEmail, 'member');
-      if (success) {
-        onClose();
-      } else {
-        setLoginError('البريد الإلكتروني أو كلمة المرور غير صحيحة.');
-      }
+      setLoginError(result.message || 'البريد الإلكتروني أو كلمة المرور غير صحيحة.');
     }
   };
 

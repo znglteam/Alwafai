@@ -270,8 +270,15 @@ export default function App() {
   };
 
   // Handle Logins
-  const handleLogin = (email: string, role: 'admin' | 'member'): boolean => {
-    if (role === 'admin') {
+  const handleLogin = (email: string, password?: string): { success: boolean; message?: string } => {
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // 1. Admin login check
+    if (
+      cleanEmail === 'admin@family.com' ||
+      cleanEmail === 'admin' ||
+      (password && password.toLowerCase() === 'admin')
+    ) {
       setCurrentSession({
         userId: 'admin-id',
         name: 'مدير البوابة (الآدمن)',
@@ -280,22 +287,81 @@ export default function App() {
       });
       setIsAdminSession(true);
       setActiveTab('admin');
-      return true;
-    } else {
-      const member = members.find(m => m.id === 'member-1-2') || members[0];
-      if (member) {
-        setCurrentSession({
-          userId: member.id,
-          name: `${member.name} بن ${member.fatherName || ''} بن ${member.grandfatherName || ''}`.trim(),
-          email: email,
-          role: 'member'
-        });
-        setIsAdminSession(false);
-        setActiveTab('tree');
-        return true;
+      return { success: true };
+    }
+
+    // 2. Check in Registration Requests (by email)
+    const req = requests.find(r => r.email && r.email.trim().toLowerCase() === cleanEmail);
+    if (req) {
+      if (req.password && password && req.password !== password) {
+        return { success: false, message: 'كلمة المرور المدخلة غير صحيحة.' };
+      }
+
+      if (req.status === 'pending') {
+        return {
+          success: false,
+          message: `طلب تسجيلك باسم (${req.name} بن ${req.fatherName} بن ${req.grandfatherName}) تم إرساله وهو حالياً بانتظار مراجعة وقبول الآدمن في لوحة التحكم. لا يمكن تسجيل الدخول إلا بعد اعتماد الحساب وربطه بالشجرة.`
+        };
+      }
+
+      if (req.status === 'rejected') {
+        return {
+          success: false,
+          message: 'نعتذر، تم رفض طلب التسجيل هذا من قبل إدارة العائلة.'
+        };
+      }
+
+      if (req.status === 'approved') {
+        // Find the member record in the tree created for this approved user
+        const member = members.find(m => 
+          m.registeredUserId === req.id || 
+          (m.email && m.email.trim().toLowerCase() === cleanEmail) ||
+          (m.name.trim() === req.name.trim() && m.fatherName.trim() === req.fatherName.trim())
+        );
+
+        if (member) {
+          setCurrentSession({
+            userId: member.id,
+            name: `${member.name} بن ${member.fatherName || ''} بن ${member.grandfatherName || ''}`.trim(),
+            email: req.email,
+            role: 'member'
+          });
+          setIsAdminSession(false);
+          setActiveTab('tree');
+          return { success: true };
+        } else {
+          // If approved request exists, log in with approved user credentials
+          setCurrentSession({
+            userId: req.id,
+            name: `${req.name} بن ${req.fatherName} بن ${req.grandfatherName}`,
+            email: req.email,
+            role: 'member'
+          });
+          setIsAdminSession(false);
+          setActiveTab('tree');
+          return { success: true };
+        }
       }
     }
-    return false;
+
+    // 3. Check direct tree members with this email
+    const directMember = members.find(m => m.email && m.email.trim().toLowerCase() === cleanEmail);
+    if (directMember) {
+      setCurrentSession({
+        userId: directMember.id,
+        name: `${directMember.name} بن ${directMember.fatherName || ''} بن ${directMember.grandfatherName || ''}`.trim(),
+        email: directMember.email || email,
+        role: 'member'
+      });
+      setIsAdminSession(false);
+      setActiveTab('tree');
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      message: 'لم يتم العثور على حساب مسجل بهذا البريد الإلكتروني. يرجى تقديم طلب تسجيل جديد أولاً ليتم اعتماده من قِبل إدارة العائلة.'
+    };
   };
 
   const handleLogout = () => {
@@ -323,14 +389,6 @@ export default function App() {
     setRequests(nextRequests);
     await saveRequestToCloud(request);
     await logFamilyAction(newRequest.name, 'طلب تسجيل جديد', `طلب انتساب جديد قيد مراجعة الآدمن`, newRequest.name, newRequest.email);
-
-    setCurrentSession({
-      userId: id,
-      name: `${newRequest.name} بن ${newRequest.fatherName} بن ${newRequest.grandfatherName}`,
-      email: newRequest.email,
-      role: 'pending',
-      requestId: id
-    });
   };
 
   // Approve a request
@@ -355,7 +413,9 @@ export default function App() {
       spouseName: null,
       fatherId: fatherId,
       childrenIds: [],
-      registeredUserId: requestId
+      registeredUserId: requestId,
+      email: req.email,
+      gender: req.gender || 'male'
     };
 
     let updatedMembers = [...members, newMember];

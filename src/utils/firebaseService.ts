@@ -141,6 +141,24 @@ export function subscribeToAuditLogs(onLogs: (logs: LiveChangeLog[]) => void) {
   });
 }
 
+// Helper to recursively strip undefined values which crash Firestore setDoc
+function cleanForFirestore<T extends Record<string, any>>(obj: T): Record<string, any> {
+  const cleaned: Record<string, any> = {};
+  if (!obj || typeof obj !== 'object') return obj;
+  
+  Object.keys(obj).forEach((key) => {
+    const value = obj[key];
+    if (value !== undefined) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+        cleaned[key] = cleanForFirestore(value);
+      } else {
+        cleaned[key] = value;
+      }
+    }
+  });
+  return cleaned;
+}
+
 // ----------------- WRITE OPERATIONS -----------------
 
 // Batch seed or push all members to Cloud Firestore
@@ -156,7 +174,7 @@ export async function seedInitialMembersIfEmpty(members: FamilyMember[]) {
       const batch = writeBatch(db);
       for (const member of chunk) {
         const ref = doc(db, 'family_members', member.id);
-        batch.set(ref, member, { merge: true });
+        batch.set(ref, cleanForFirestore(member), { merge: true });
       }
       await batch.commit();
     }
@@ -204,86 +222,131 @@ export async function syncAllLocalToCloud(
 
 // Save single member
 export async function saveMemberToCloud(member: FamilyMember) {
-  const ref = doc(db, 'family_members', member.id);
-  await setDoc(ref, member, { merge: true });
+  try {
+    const ref = doc(db, 'family_members', member.id);
+    await setDoc(ref, cleanForFirestore(member), { merge: true });
+  } catch (err) {
+    console.error('Error saving member to Firestore:', err);
+  }
 }
 
 // Delete single member
 export async function deleteMemberFromCloud(memberId: string) {
-  const ref = doc(db, 'family_members', memberId);
-  const batch = writeBatch(db);
-  batch.delete(ref);
-  await batch.commit();
+  try {
+    const ref = doc(db, 'family_members', memberId);
+    const batch = writeBatch(db);
+    batch.delete(ref);
+    await batch.commit();
+  } catch (err) {
+    console.error('Error deleting member from Firestore:', err);
+  }
 }
 
 // Save batch of members (e.g. after reordering or adding child)
 export async function saveMultipleMembersToCloud(members: FamilyMember[]) {
   if (!members || members.length === 0) return;
-  const chunks: FamilyMember[][] = [];
-  for (let i = 0; i < members.length; i += 300) {
-    chunks.push(members.slice(i, i + 300));
-  }
-  for (const chunk of chunks) {
-    const batch = writeBatch(db);
-    for (const member of chunk) {
-      const ref = doc(db, 'family_members', member.id);
-      batch.set(ref, member, { merge: true });
+  try {
+    const chunks: FamilyMember[][] = [];
+    for (let i = 0; i < members.length; i += 300) {
+      chunks.push(members.slice(i, i + 300));
     }
-    await batch.commit();
+    for (const chunk of chunks) {
+      const batch = writeBatch(db);
+      for (const member of chunk) {
+        const ref = doc(db, 'family_members', member.id);
+        batch.set(ref, cleanForFirestore(member), { merge: true });
+      }
+      await batch.commit();
+    }
+  } catch (err) {
+    console.error('Error saving multiple members to Firestore:', err);
   }
 }
 
 // Save family info
 export async function saveFamilyInfoToCloud(info: FamilyInfo) {
-  await setDoc(SETTINGS_DOC, info, { merge: true });
+  try {
+    await setDoc(SETTINGS_DOC, cleanForFirestore(info), { merge: true });
+  } catch (err) {
+    console.error('Error saving family info to Firestore:', err);
+  }
 }
 
 // Save request
 export async function saveRequestToCloud(req: RegistrationRequest) {
-  const ref = doc(db, 'family_requests', req.id);
-  await setDoc(ref, req, { merge: true });
+  try {
+    const ref = doc(db, 'family_requests', req.id);
+    await setDoc(ref, cleanForFirestore(req), { merge: true });
+    console.log('Successfully saved registration request to Firestore:', req.id);
+  } catch (err) {
+    console.error('Error saving request to Firestore:', err);
+  }
 }
 
 // Save photo
 export async function savePhotoToCloud(photo: FamilyPhoto) {
-  const ref = doc(db, 'family_photos', photo.id);
-  await setDoc(ref, photo, { merge: true });
+  try {
+    const ref = doc(db, 'family_photos', photo.id);
+    await setDoc(ref, cleanForFirestore(photo), { merge: true });
+  } catch (err) {
+    console.error('Error saving photo to Firestore:', err);
+  }
 }
 
 // Delete photo
 export async function deletePhotoFromCloud(photoId: string) {
-  const ref = doc(db, 'family_photos', photoId);
-  const batch = writeBatch(db);
-  batch.delete(ref);
-  await batch.commit();
+  try {
+    const ref = doc(db, 'family_photos', photoId);
+    const batch = writeBatch(db);
+    batch.delete(ref);
+    await batch.commit();
+  } catch (err) {
+    console.error('Error deleting photo from Firestore:', err);
+  }
 }
 
 // Save news
 export async function saveNewsToCloud(item: NewsItem) {
-  const ref = doc(db, 'family_news', item.id);
-  await setDoc(ref, item, { merge: true });
+  try {
+    const ref = doc(db, 'family_news', item.id);
+    await setDoc(ref, cleanForFirestore(item), { merge: true });
+  } catch (err) {
+    console.error('Error saving news to Firestore:', err);
+  }
 }
 
 // Delete news
 export async function deleteNewsFromCloud(newsId: string) {
-  const ref = doc(db, 'family_news', newsId);
-  const batch = writeBatch(db);
-  batch.delete(ref);
-  await batch.commit();
+  try {
+    const ref = doc(db, 'family_news', newsId);
+    const batch = writeBatch(db);
+    batch.delete(ref);
+    await batch.commit();
+  } catch (err) {
+    console.error('Error deleting news from Firestore:', err);
+  }
 }
 
 // Save message
 export async function saveMessageToCloud(msg: FamilyMessage) {
-  const ref = doc(db, 'family_messages', msg.id);
-  await setDoc(ref, msg, { merge: true });
+  try {
+    const ref = doc(db, 'family_messages', msg.id);
+    await setDoc(ref, cleanForFirestore(msg), { merge: true });
+  } catch (err) {
+    console.error('Error saving message to Firestore:', err);
+  }
 }
 
 // Delete message
 export async function deleteMessageFromCloud(msgId: string) {
-  const ref = doc(db, 'family_messages', msgId);
-  const batch = writeBatch(db);
-  batch.delete(ref);
-  await batch.commit();
+  try {
+    const ref = doc(db, 'family_messages', msgId);
+    const batch = writeBatch(db);
+    batch.delete(ref);
+    await batch.commit();
+  } catch (err) {
+    console.error('Error deleting message from Firestore:', err);
+  }
 }
 
 // Log an action to real-time audit trail

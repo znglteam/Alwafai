@@ -64,22 +64,22 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !fatherName || !grandfatherName || !email) return;
+    if (!name.trim() || !fatherName.trim() || !grandfatherName.trim() || !email.trim()) return;
 
     onRegister({
       name: name.trim(),
       fatherName: fatherName.trim(),
       grandfatherName: grandfatherName.trim(),
-      email: email.trim(),
-      password,
+      email: email.trim().toLowerCase(),
+      password: password || '',
       birthYear: birthYear === '' ? 0 : Number(birthYear),
-      birthDate,
-      country: country || 'غير محدد',
-      specialization: specialization || 'غير محدد',
-      bio: bio || 'عضو طموح في العائلة.',
-      avatar: avatar || undefined,
+      birthDate: birthDate || '',
+      country: country.trim() || 'غير محدد',
+      specialization: specialization.trim() || 'غير محدد',
+      bio: bio.trim() || 'عضو في العائلة.',
+      avatar: avatar.trim() || '',
       isAlive: true,
-      gender
+      gender: gender || 'male'
     });
 
     setRegSuccess(true);

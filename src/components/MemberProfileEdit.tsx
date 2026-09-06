@@ -367,7 +367,7 @@ export default function MemberProfileEdit({
             {isAlive && (
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">
-                  بلد الإقامة الحالي
+                  بلد الإقامة
                 </label>
                 <select
                   required
@@ -375,7 +375,7 @@ export default function MemberProfileEdit({
                   onChange={(e) => setCountry(e.target.value)}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
                 >
-                  <option value="">( اختر )</option>
+                  <option value="">بلد الإقامة...</option>
                   {ARAB_COUNTRIES.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
@@ -624,7 +624,7 @@ export default function MemberProfileEdit({
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="مثال: أحمد، سارة، فاطمة..."
+                  placeholder="أسماء الأبناء والبنات مفصولة بفواصل"
                   value={childrenNamesText}
                   onChange={(e) => setChildrenNamesText(e.target.value)}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-amber-50/20 border-amber-100"

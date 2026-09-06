@@ -338,7 +338,7 @@ export default function FamilyTreeVisualizer({
       setNewMemFatherId(parent.id);
       setNewMemFatherName(parent.name);
       setNewMemGrandfatherName(parent.grandfatherName || parent.name);
-      setNewMemCountry(parent.country || 'الكويت');
+      setNewMemCountry(parent.country || '');
     }
   };
 
@@ -349,7 +349,7 @@ export default function FamilyTreeVisualizer({
     setNewMemMotherId('');
     setNewMemFatherName('');
     setNewMemGrandfatherName('');
-    setNewMemCountry(child.country || 'الكويت');
+    setNewMemCountry(child.country || '');
   };
 
   const handleSaveNewMember = (e: React.FormEvent) => {
@@ -1050,10 +1050,12 @@ export default function FamilyTreeVisualizer({
                           </h4>
                           <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
                             {member.isAlive ? (
-                              <>
-                                <MapPin size={11} className="text-slate-400 shrink-0" />
-                                <span className="truncate">{member.country || 'الكويت'}</span>
-                              </>
+                              member.country ? (
+                                <>
+                                  <MapPin size={11} className="text-slate-400 shrink-0" />
+                                  <span className="truncate">{member.country}</span>
+                                </>
+                              ) : null
                             ) : (
                               <span className="text-rose-600 font-medium">
                                 {(() => {
@@ -1520,7 +1522,7 @@ export default function FamilyTreeVisualizer({
                             <div>
                               <label className="block text-[10px] font-bold text-slate-500 mb-0.5">بلد الإقامة</label>
                               <select value={editForm.country || ''} onChange={e => setEditForm({...editForm, country: e.target.value})} className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white cursor-pointer">
-                                <option value="">( اختر )</option>
+                                <option value="">بلد الإقامة...</option>
                                 {ARAB_COUNTRIES.map(c => (
                                   <option key={c} value={c}>{c}</option>
                                 ))}
@@ -1836,7 +1838,7 @@ export default function FamilyTreeVisualizer({
                     <option value="">-- فرع جديد (دون أب محدد) --</option>
                     {members.filter(m => !(m.gender === 'female' || isFemaleName(m.name))).map(m => (
                       <option key={m.id} value={m.id}>
-                        {m.name} بن {m.fatherName} ({m.country || 'سوريا'})
+                        {m.name} بن {m.fatherName} {m.country ? `(${m.country})` : ''}
                       </option>
                     ))}
                   </select>
@@ -2030,12 +2032,13 @@ export default function FamilyTreeVisualizer({
               <div className="grid grid-cols-2 gap-4">
                 {newMemIsAlive && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1">بلد الإقامة الحالي</label>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">بلد الإقامة</label>
                     <select
-                      value={newMemCountry || 'غير محدد'}
+                      value={newMemCountry || ''}
                       onChange={e => setNewMemCountry(e.target.value)}
                       className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
                     >
+                      <option value="">بلد الإقامة...</option>
                       {ARAB_COUNTRIES.map(c => (
                         <option key={c} value={c}>{c}</option>
                       ))}
@@ -2141,7 +2144,7 @@ export default function FamilyTreeVisualizer({
                 <label className="block text-xs font-bold text-slate-600 mb-1">اسم الزوج</label>
                 <input
                   type="text"
-                  placeholder="مثال: محمد الأحمد..."
+                  placeholder="اسم الزوج"
                   value={femaleSpouseName}
                   onChange={e => setFemaleSpouseName(e.target.value)}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
@@ -2152,7 +2155,7 @@ export default function FamilyTreeVisualizer({
                 <label className="block text-xs font-bold text-slate-600 mb-1">أسماء الأبناء والبنات (نصوص مفصولة بفواصل)</label>
                 <textarea
                   rows={3}
-                  placeholder="مثال: أحمد، سارة، فاطمة..."
+                  placeholder="أسماء الأبناء والبنات مفصولة بفواصل"
                   value={femaleChildrenNames}
                   onChange={e => setFemaleChildrenNames(e.target.value)}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"

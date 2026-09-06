@@ -511,7 +511,7 @@ export default function AdminPanel({
                         value={newMemCountry} onChange={e => setNewMemCountry(e.target.value)}
                         className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white cursor-pointer"
                       >
-                        <option value="">( اختر )</option>
+                        <option value="">بلد الإقامة...</option>
                         {ARAB_COUNTRIES.map(c => (
                           <option key={c} value={c}>{c}</option>
                         ))}
@@ -736,7 +736,7 @@ export default function AdminPanel({
                         onChange={e => setEditForm({ ...editForm, country: e.target.value })}
                         className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white cursor-pointer"
                       >
-                        <option value="">( اختر )</option>
+                        <option value="">بلد الإقامة...</option>
                         {ARAB_COUNTRIES.map(c => (
                           <option key={c} value={c}>{c}</option>
                         ))}

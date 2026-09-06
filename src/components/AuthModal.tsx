@@ -153,7 +153,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">اسمك الأول *</label>
                     <input
-                      type="text" required placeholder="مثال: أحمد"
+                      type="text" required placeholder="الاسم الأول"
                       value={name} onChange={e => setName(e.target.value)}
                       className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-600 bg-white"
                     />
@@ -161,7 +161,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">اسم والدك *</label>
                     <input
-                      type="text" required placeholder="مثال: محمد"
+                      type="text" required placeholder="اسم الأب"
                       value={fatherName} onChange={e => setFatherName(e.target.value)}
                       className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-600 bg-white"
                     />
@@ -169,7 +169,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">اسم جدك *</label>
                     <input
-                      type="text" required placeholder="مثال: إبراهيم"
+                      type="text" required placeholder="اسم الجد"
                       value={grandfatherName} onChange={e => setGrandfatherName(e.target.value)}
                       className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-600 bg-white"
                     />
@@ -241,12 +241,12 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 mb-1">بلد الإقامة الحالي</label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">بلد الإقامة</label>
                   <select
                     value={country} onChange={e => setCountry(e.target.value)}
                     className="w-full border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
                   >
-                    <option value="">( اختر )</option>
+                    <option value="">بلد الإقامة...</option>
                     {ARAB_COUNTRIES.map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}

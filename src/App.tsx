@@ -56,15 +56,33 @@ import { Home, Network, User, Shield, LogOut, MessageSquare, Wifi, Bell, CloudUp
 
 export default function App() {
   const [members, setMembers] = useState<FamilyMember[]>(() => {
-    const saved = localStorage.getItem('family_members_v6');
-    if (saved) {
+    const backupKeys = [
+      'family_members_v6',
+      'family_members_v5',
+      'family_members_v4',
+      'family_members_v3',
+      'family_members_v2',
+      'family_members_v1',
+      'family_members',
+      'family_tree_data',
+      'family_tree_members',
+      'tree_members'
+    ];
+    let maxList: FamilyMember[] = [];
+    for (const k of backupKeys) {
       try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        const saved = localStorage.getItem(k);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > maxList.length) {
+            maxList = parsed;
+          }
+        }
       } catch (e) {
         console.error(e);
       }
     }
+    if (maxList.length > 0) return maxList;
     return INITIAL_MEMBERS;
   });
 
@@ -150,20 +168,51 @@ export default function App() {
   // 1. Subscribe to Real-time Collections from Firebase Firestore
   useEffect(() => {
     const unsubMembers = subscribeToMembers((cloudMembers) => {
+      const backupKeys = [
+        'family_members_v6',
+        'family_members_v5',
+        'family_members_v4',
+        'family_members_v3',
+        'family_members_v2',
+        'family_members_v1',
+        'family_members',
+        'family_tree_backup',
+        'family_tree_data',
+        'family_tree_members',
+        'tree_members'
+      ];
+      let localMaxList: FamilyMember[] = [];
+      for (const k of backupKeys) {
+        try {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > localMaxList.length) {
+              localMaxList = parsed;
+            }
+          }
+        } catch (e) {}
+      }
+
       if (cloudMembers && cloudMembers.length > 0) {
+        // If local storage has more members than cloud, merge any missing members and upload them
+        if (localMaxList.length > cloudMembers.length) {
+          const cloudIds = new Set(cloudMembers.map(m => m.id));
+          const missingInCloud = localMaxList.filter(m => !cloudIds.has(m.id));
+          if (missingInCloud.length > 0) {
+            const merged = [...cloudMembers, ...missingInCloud];
+            setMembers(merged);
+            seedInitialMembersIfEmpty(missingInCloud);
+            return;
+          }
+        }
         setMembers(cloudMembers);
       } else {
-        // If Firestore is empty, auto-upload current local members if available
-        const localSaved = localStorage.getItem('family_members_v6');
-        if (localSaved) {
-          try {
-            const parsed = JSON.parse(localSaved);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              seedInitialMembersIfEmpty(parsed);
-              setMembers(parsed);
-              return;
-            }
-          } catch (e) {}
+        // If Firestore is empty, auto-upload from local backup or INITIAL_MEMBERS
+        if (localMaxList.length > 0) {
+          seedInitialMembersIfEmpty(localMaxList);
+          setMembers(localMaxList);
+          return;
         }
         if (INITIAL_MEMBERS.length > 0) {
           seedInitialMembersIfEmpty(INITIAL_MEMBERS);
@@ -541,14 +590,17 @@ export default function App() {
     const childId = 'member-' + Date.now().toString();
     const parent = members.find(m => m.id === parentId);
     
-    const isFemaleName = (name: string): boolean => {
-      const femaleNames = ['فاطمة', 'سارة', 'هند', 'نور', 'سعاد', 'منى', 'ريم', 'حصة', 'نورة', 'أميرة', 'عائشة', 'فاطمه', 'ساره', 'مريم', 'زينب', 'خديجة', 'رندة', 'ليلى', 'رنا', 'رانية', 'هالة', 'منى', 'سهى'];
-      if (!name) return false;
-      const firstWord = name.trim().split(' ')[0];
+    const isMemberFemale = (member?: { gender?: string; name?: string } | null): boolean => {
+      if (!member) return false;
+      if (member.gender === 'female') return true;
+      if (member.gender === 'male') return false;
+      if (!member.name) return false;
+      const femaleNames = ['فاطمة', 'سارة', 'هند', 'سعاد', 'منى', 'ريم', 'حصة', 'نورة', 'أميرة', 'عائشة', 'فاطمه', 'ساره', 'مريم', 'زينب', 'خديجة', 'رندة', 'ليلى', 'رنا', 'رانية', 'هالة', 'سهى'];
+      const firstWord = member.name.trim().split(' ')[0];
       return femaleNames.includes(firstWord);
     };
 
-    const isFemaleParent = parent?.gender === 'female' || (parent && isFemaleName(parent.name));
+    const isFemaleParent = isMemberFemale(parent);
 
     const newChild: FamilyMember = {
       ...childInfo,
@@ -632,6 +684,16 @@ export default function App() {
     await deleteMemberFromCloud(id);
     await saveMultipleMembersToCloud(filtered);
     await logFamilyAction(currentSession.name, 'حذف عضو من الشجرة', target?.name || id, target?.name);
+  };
+
+  // Restore or Bulk Import Members
+  const handleRestoreMembers = async (restoredMembers: FamilyMember[]) => {
+    if (!restoredMembers || restoredMembers.length === 0) return;
+    setMembers(restoredMembers);
+    localStorage.setItem('family_members_v6', JSON.stringify(restoredMembers));
+    localStorage.setItem('family_tree_backup', JSON.stringify(restoredMembers));
+    await seedInitialMembersIfEmpty(restoredMembers);
+    await logFamilyAction(currentSession.name, 'استعادة بيانات الشجرة', `تم استعادة وتثبيت ${restoredMembers.length} فرد في الشجرة`);
   };
 
   // News management
@@ -963,6 +1025,7 @@ export default function App() {
               onAddPhotoComment={handleAddPhotoComment}
               onDeletePhotoComment={handleDeletePhotoComment}
               onDeleteMessage={handleDeleteMessage}
+              onRestoreMembers={handleRestoreMembers}
             />
           )}
 

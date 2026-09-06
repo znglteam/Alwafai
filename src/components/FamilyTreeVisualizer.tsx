@@ -19,10 +19,14 @@ const SPECIALIZATIONS = [
   "أمومة", "طالب جامعي", "متقاعد", "آخر"
 ];
 
-// Helper to infer female gender from Arabic names
-const isFemaleName = (name: string): boolean => {
-  const femaleNames = ['فاطمة', 'سارة', 'هند', 'نور', 'سعاد', 'منى', 'ريم', 'حصة', 'نورة', 'أميرة', 'عائشة', 'فاطمه', 'ساره', 'مريم', 'زينب', 'خديجة', 'رندة', 'ليلى', 'رنا', 'رانية', 'هالة', 'منى', 'سهى'];
-  const firstWord = name.trim().split(' ')[0];
+// Helper to determine gender: explicit gender always takes precedence over name guessing
+const isMemberFemale = (member?: { gender?: string; name?: string } | null): boolean => {
+  if (!member) return false;
+  if (member.gender === 'female') return true;
+  if (member.gender === 'male') return false;
+  if (!member.name) return false;
+  const femaleNames = ['فاطمة', 'سارة', 'هند', 'سعاد', 'منى', 'ريم', 'حصة', 'نورة', 'أميرة', 'عائشة', 'فاطمه', 'ساره', 'مريم', 'زينب', 'خديجة', 'رندة', 'ليلى', 'رنا', 'رانية', 'هالة', 'سهى'];
+  const firstWord = member.name.trim().split(' ')[0];
   return femaleNames.includes(firstWord);
 };
 
@@ -326,7 +330,7 @@ export default function FamilyTreeVisualizer({
   };
 
   const handleAddChildDirectly = (parent: FamilyMember) => {
-    if (parent.gender === 'female' || isFemaleName(parent.name)) {
+    if (isMemberFemale(parent)) {
       setEditingFemaleMember(parent);
       setFemaleChildrenNames(parent.childrenNamesText || '');
       setFemaleSpouseName(parent.spouseName || '');
@@ -520,7 +524,7 @@ export default function FamilyTreeVisualizer({
         
       const matchesSpecialization = selectedSpecialization === 'all' || m.specialization === selectedSpecialization;
       
-      const isFemale = m.gender === 'female' || isFemaleName(m.name);
+      const isFemale = isMemberFemale(m);
       const matchesGender = selectedGender === 'all' ||
         (selectedGender === 'male' && !isFemale) ||
         (selectedGender === 'female' && isFemale);
@@ -531,12 +535,34 @@ export default function FamilyTreeVisualizer({
     });
   }, [members, searchQuery, selectedCountry, selectedStatus, selectedSpecialization, selectedGender, selectedMaritalStatus]);
 
-  const toggleBranch = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setExpandedBranches(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
+  const toggleBranch = (id: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setExpandedBranches(prev => {
+      const current = prev[id] !== false;
+      return {
+        ...prev,
+        [id]: !current
+      };
+    });
+  };
+
+  const expandAllBranches = () => {
+    const newExpanded: Record<string, boolean> = {};
+    members.forEach(m => {
+      newExpanded[m.id] = true;
+    });
+    setExpandedBranches(newExpanded);
+  };
+
+  const collapseAllBranches = () => {
+    const newExpanded: Record<string, boolean> = {};
+    members.forEach(m => {
+      newExpanded[m.id] = false;
+    });
+    setExpandedBranches(newExpanded);
   };
 
   const handleViewInTree = (member: FamilyMember, e?: React.MouseEvent) => {
@@ -605,7 +631,8 @@ export default function FamilyTreeVisualizer({
   const renderTreeNode = (node: FamilyMember, depth: number = 0) => {
     const children = membersByFather[node.id] || [];
     const hasChildren = children.length > 0;
-    const isFemale = node.gender === 'female' || isFemaleName(node.name);
+    const isFemale = isMemberFemale(node);
+    const isExpanded = expandedBranches[node.id] !== false;
 
     return (
       <div key={node.id} id={`node-card-${node.id}`} className="flex flex-col items-center relative transition-all duration-500">
@@ -669,19 +696,40 @@ export default function FamilyTreeVisualizer({
             )}
           </div>
 
-          {/* Under Avatar: First Name */}
-          <div 
-            onClick={() => setSelectedMember(node)}
-            className="flex items-center gap-1 cursor-pointer hover:text-indigo-600 px-1.5 py-0.5 rounded-lg hover:bg-indigo-50/50 transition-all select-none"
-          >
-            <span className="font-extrabold text-slate-800 text-xs whitespace-nowrap">
-              {node.name}
-            </span>
+          {/* Under Avatar: First Name with +/- symbol if has children */}
+          <div className="flex items-center gap-1 select-none">
+            <div 
+              onClick={() => setSelectedMember(node)}
+              className="flex items-center gap-1 cursor-pointer hover:text-indigo-600 px-1.5 py-0.5 rounded-lg hover:bg-indigo-50/50 transition-all"
+            >
+              <span className="font-extrabold text-slate-800 text-xs whitespace-nowrap">
+                {node.name}
+              </span>
+            </div>
+
+            {hasChildren && (
+              <button
+                type="button"
+                onClick={(e) => toggleBranch(node.id, e)}
+                className={`w-4 h-4 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-2xs border ${
+                  isExpanded
+                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-300'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600'
+                }`}
+                title={isExpanded ? `طي أبناء ${node.name} (${children.length})` : `فتح أبناء ${node.name} (${children.length})`}
+              >
+                {isExpanded ? (
+                  <Minus size={10} className="stroke-[3]" />
+                ) : (
+                  <Plus size={10} className="stroke-[3]" />
+                )}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Children Render */}
-        {hasChildren && (
+        {/* Children Render if expanded */}
+        {hasChildren && isExpanded && (
           <div className="flex flex-col items-center w-full">
             {/* Vertical connector from parent to horizontal line */}
             <div className="w-[2px] h-6 bg-indigo-300"></div>
@@ -993,7 +1041,7 @@ export default function FamilyTreeVisualizer({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredMembers.map(member => {
-                  const isFemale = member.gender === 'female' || isFemaleName(member.name);
+                  const isFemale = isMemberFemale(member);
                   
                   // Calculate age
                   let birthYearNum = member.birthYear;
@@ -1129,7 +1177,7 @@ export default function FamilyTreeVisualizer({
                       className={`w-24 h-24 rounded-full overflow-hidden border-4 relative flex items-center justify-center hover:scale-105 transition-transform duration-200 bg-white ${
                         selectedMember.avatar ? 'cursor-pointer' : ''
                       } ${
-                        (selectedMember.gender === 'female' || isFemaleName(selectedMember.name)) 
+                        isMemberFemale(selectedMember) 
                           ? selectedMember.isAlive ? 'border-[#bb5791]' : 'border-[#bb5791]/40'
                           : selectedMember.isAlive ? 'border-[#607fc4]' : 'border-[#607fc4]/40'
                       }`}
@@ -1144,15 +1192,15 @@ export default function FamilyTreeVisualizer({
                           avatarScale={selectedMember.avatarScale}
                         />
                       ) : (
-                        <span className={`flex items-center justify-center h-full ${(selectedMember.gender === 'female' || isFemaleName(selectedMember.name)) ? 'text-[#bb5791]' : 'text-[#607fc4]'}`}>
-                          <GenderUserIcon gender={(selectedMember.gender === 'female' || isFemaleName(selectedMember.name)) ? 'female' : 'male'} size={48} isAlive={selectedMember.isAlive} />
+                        <span className={`flex items-center justify-center h-full ${isMemberFemale(selectedMember) ? 'text-[#bb5791]' : 'text-[#607fc4]'}`}>
+                          <GenderUserIcon gender={isMemberFemale(selectedMember) ? 'female' : 'male'} size={48} isAlive={selectedMember.isAlive} />
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="space-y-1">
                     <h3 className="text-lg font-bold text-slate-800">
-                      {selectedMember.name} {(selectedMember.gender === 'female' || isFemaleName(selectedMember.name)) ? 'بنت' : 'بن'} {selectedMember.fatherName} بن {selectedMember.grandfatherName}
+                      {selectedMember.name} {isMemberFemale(selectedMember) ? 'بنت' : 'بن'} {selectedMember.fatherName} بن {selectedMember.grandfatherName}
                     </h3>
                   </div>
                 </div>
@@ -1184,7 +1232,7 @@ export default function FamilyTreeVisualizer({
                   )}
                   {/* Gender */}
                   <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    {(selectedMember.gender === 'female' || isFemaleName(selectedMember.name)) ? (
+                    {isMemberFemale(selectedMember) ? (
                       <Venus className="shrink-0 text-[#bb5791]" size={16} />
                     ) : (
                       <Mars className="shrink-0 text-[#607fc4]" size={16} />
@@ -1192,7 +1240,7 @@ export default function FamilyTreeVisualizer({
                     <div className="space-y-0.5">
                       <span className="block text-[10px] text-slate-400 font-bold">الجنس</span>
                       <span className="font-semibold text-slate-700">
-                        {(selectedMember.gender === 'female' || isFemaleName(selectedMember.name)) ? 'أنثى' : 'ذكر'}
+                        {isMemberFemale(selectedMember) ? 'أنثى' : 'ذكر'}
                       </span>
                     </div>
                   </div>
@@ -1223,7 +1271,7 @@ export default function FamilyTreeVisualizer({
                       <Heart className="text-amber-600 shrink-0" size={16} />
                       <div className="space-y-0.5">
                         <span className="block text-[10px] text-amber-500 font-bold">
-                          {(selectedMember.gender === 'female' || isFemaleName(selectedMember.name)) ? 'الزوج' : 'الزوجة'}
+                          {isMemberFemale(selectedMember) ? 'الزوج' : 'الزوجة'}
                         </span>
                         {selectedMember.spouseId ? (
                           <button 
@@ -1255,7 +1303,7 @@ export default function FamilyTreeVisualizer({
 
                 {/* Unified Children Section */}
                 {(() => {
-                  const isFemale = selectedMember.gender === 'female' || isFemaleName(selectedMember.name);
+                  const isFemale = isMemberFemale(selectedMember);
                   
                   if (isFemale && selectedMember.childrenNamesText) {
                     const namesList = selectedMember.childrenNamesText
@@ -1398,7 +1446,7 @@ export default function FamilyTreeVisualizer({
                 {isAdmin && (
                   <div className="flex flex-col gap-2 border-t border-slate-100 pt-4">
                     <div className="flex gap-2 w-full">
-                      {(selectedMember.gender === 'female' || isFemaleName(selectedMember.name)) ? (
+                      {isMemberFemale(selectedMember) ? (
                         <button
                           type="button"
                           onClick={() => handleAddChildDirectly(selectedMember)}
@@ -1836,7 +1884,7 @@ export default function FamilyTreeVisualizer({
                     className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
                   >
                     <option value="">-- فرع جديد (دون أب محدد) --</option>
-                    {members.filter(m => !(m.gender === 'female' || isFemaleName(m.name))).map(m => (
+                    {members.filter(m => !isMemberFemale(m)).map(m => (
                       <option key={m.id} value={m.id}>
                         {m.name} بن {m.fatherName} {m.country ? `(${m.country})` : ''}
                       </option>
@@ -2227,7 +2275,7 @@ export default function FamilyTreeVisualizer({
               </button>
               
               {(() => {
-                const isFemale = activeFullscreenMember.gender === 'female' || isFemaleName(activeFullscreenMember.name);
+                const isFemale = isMemberFemale(activeFullscreenMember);
                 return (
                   <div className={`w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 rounded-full overflow-hidden border-4 relative bg-white shadow-2xl flex items-center justify-center ${
                     isFemale ? 'border-[#bb5791]' : 'border-[#607fc4]'

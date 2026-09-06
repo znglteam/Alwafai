@@ -30,6 +30,7 @@ interface AdminPanelProps {
   onAddPhotoComment: (photoId: string, comment: Omit<MemberComment, 'id' | 'createdAt'>) => void;
   onDeletePhotoComment: (photoId: string, commentId: string) => void;
   onDeleteMessage: (id: string) => void;
+  onRestoreMembers?: (members: FamilyMember[]) => void;
 }
 
 export default function AdminPanel({
@@ -52,7 +53,8 @@ export default function AdminPanel({
   onDeletePhoto,
   onAddPhotoComment,
   onDeletePhotoComment,
-  onDeleteMessage
+  onDeleteMessage,
+  onRestoreMembers
 }: AdminPanelProps) {
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'requests' | 'tree' | 'news' | 'photos' | 'messages' | 'stats' | 'logs'>('requests');
@@ -61,11 +63,14 @@ export default function AdminPanel({
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [activeComments, setActiveComments] = useState<Record<string, string>>({});
 
-  // Helper to infer female gender from Arabic names
-  const isFemaleName = (name: string): boolean => {
-    const femaleNames = ['فاطمة', 'سارة', 'هند', 'نور', 'سعاد', 'منى', 'ريم', 'حصة', 'نورة', 'أميرة', 'عائشة', 'فاطمه', 'ساره', 'مريم', 'زينب', 'خديجة', 'رندة', 'ليلى', 'رنا', 'رانية', 'هالة', 'منى', 'سهى'];
-    if (!name) return false;
-    const firstWord = name.trim().split(' ')[0];
+  // Helper to determine female gender: explicit gender takes precedence
+  const isMemberFemale = (member?: { gender?: string; name?: string } | null): boolean => {
+    if (!member) return false;
+    if (member.gender === 'female') return true;
+    if (member.gender === 'male') return false;
+    if (!member.name) return false;
+    const femaleNames = ['فاطمة', 'سارة', 'هند', 'سعاد', 'منى', 'ريم', 'حصة', 'نورة', 'أميرة', 'عائشة', 'فاطمه', 'ساره', 'مريم', 'زينب', 'خديجة', 'رندة', 'ليلى', 'رنا', 'رانية', 'هالة', 'سهى'];
+    const firstWord = member.name.trim().split(' ')[0];
     return femaleNames.includes(firstWord);
   };
 
@@ -122,6 +127,7 @@ export default function AdminPanel({
 
   // Approve request linkage state
   const [requestFatherLinks, setRequestFatherLinks] = useState<Record<string, string>>({});
+  const [fatherSearchQueries, setFatherSearchQueries] = useState<Record<string, string>>({});
 
   // Direct Member Form state
   const [showAddMember, setShowAddMember] = useState(false);
@@ -502,28 +508,79 @@ export default function AdminPanel({
                     )}
 
                     {/* Linking connection to tree */}
-                    {isPending && (
-                      <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-3 space-y-2">
-                        <label className="block text-xs font-bold text-amber-800">
-                          ربط نسب العضو بالوالد المناسب في شجرة العائلة:
-                        </label>
-                        <select
-                          value={linkedFatherId}
-                          onChange={e => setRequestFatherLinks({ ...requestFatherLinks, [req.id]: e.target.value })}
-                          className="w-full max-w-md border border-amber-200 rounded-xl px-3 py-2 text-xs focus:outline-none bg-white cursor-pointer text-slate-700"
-                        >
-                          <option value="">-- تركه كفرد مستقل بدون والد (أو تعيينه لاحقاً) --</option>
-                          {members.filter(m => !(m.gender === 'female' || (m.name && isFemaleName(m.name)))).map(m => (
-                            <option key={m.id} value={m.id}>
-                              {m.name} بن {m.fatherName} بن {m.grandfatherName} (ولد عام {m.birthYear ? `${m.birthYear}م` : "-"})
-                            </option>
-                          ))}
-                        </select>
-                        <p className="text-[10px] text-slate-500 leading-normal">
-                          * تحديد الوالد من الخيارات أعلاه يجعله يظهر كأحد فروع هذا الأب في مخطط الشجرة فور الموافقة.
-                        </p>
-                      </div>
-                    )}
+                    {isPending && (() => {
+                      const searchQuery = (fatherSearchQueries[req.id] || '').trim().toLowerCase();
+                      const candidateMembers = members
+                        .filter(m => {
+                          if (!searchQuery) return true;
+                          const fullName = `${m.name} ${m.fatherName || ''} ${m.grandfatherName || ''}`.toLowerCase();
+                          return fullName.includes(searchQuery);
+                        })
+                        .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+                      const selectedMember = members.find(m => m.id === linkedFatherId);
+
+                      return (
+                        <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4 space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <label className="block text-xs font-extrabold text-amber-900">
+                              ربط نسب العضو بالوالد المناسب في شجرة العائلة:
+                            </label>
+                            <span className="text-[11px] text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-full font-medium self-start sm:self-auto">
+                              إجمالي أفراد الشجرة: {members.length} فرد
+                            </span>
+                          </div>
+
+                          {/* Quick Live Search Box */}
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={fatherSearchQueries[req.id] || ''}
+                              onChange={e => setFatherSearchQueries({ ...fatherSearchQueries, [req.id]: e.target.value })}
+                              placeholder="🔍 ابحث بالاسم لتصفية قائمة الآباء في الشجرة..."
+                              className="w-full bg-white border border-amber-300/80 rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
+                            />
+                            {fatherSearchQueries[req.id] && (
+                              <button
+                                type="button"
+                                onClick={() => setFatherSearchQueries({ ...fatherSearchQueries, [req.id]: '' })}
+                                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 hover:text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded"
+                              >
+                                مسح
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Members Dropdown */}
+                          <select
+                            value={linkedFatherId}
+                            onChange={e => setRequestFatherLinks({ ...requestFatherLinks, [req.id]: e.target.value })}
+                            className="w-full border border-amber-300 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white cursor-pointer text-slate-800 font-medium shadow-sm"
+                          >
+                            <option value="">-- تركه كفرد مستقل بدون والد (أو تعيينه لاحقاً) --</option>
+                            {candidateMembers.map(m => (
+                              <option key={m.id} value={m.id}>
+                                {m.name} {m.fatherName ? `بن ${m.fatherName}` : ''} {m.grandfatherName ? `بن ${m.grandfatherName}` : ''} {m.birthYear ? `(مواليد ${m.birthYear}م)` : ''}
+                              </option>
+                            ))}
+                          </select>
+
+                          {/* Active Selection or Guidance */}
+                          {selectedMember ? (
+                            <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
+                              <Check size={14} className="text-emerald-600 shrink-0" />
+                              <span>
+                                تم اختيار الوالد: <strong>{selectedMember.name} بن {selectedMember.fatherName || ''} بن {selectedMember.grandfatherName || ''}</strong> (سيضاف العضو كفرع تحت هذا الأب مباشرة).
+                              </span>
+                            </div>
+                          ) : (
+                            <p className="text-[11px] text-slate-500 leading-normal">
+                              💡 إذا لم تجد والد العضو في الشجرة بعد، يمكنك اعتماد الطلب كفرد مستقل، أو إضافة والده أولاً من تبويب <strong>"أفراد الشجرة"</strong> ثم ربطه.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}
@@ -741,7 +798,7 @@ export default function AdminPanel({
                       className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white cursor-pointer text-slate-700"
                     >
                       <option value="">-- تركه كعميد مستقل في قمة الشجرة (بدون والد) --</option>
-                      {members.filter(m => !(m.gender === 'female' || (m.name && isFemaleName(m.name)))).map(m => (
+                      {members.filter(m => !isMemberFemale(m)).map(m => (
                         <option key={m.id} value={m.id}>
                           {m.name} بن {m.fatherName} بن {m.grandfatherName} (ولد عام {m.birthYear ? `${m.birthYear}م` : "-"})
                         </option>
@@ -988,7 +1045,7 @@ export default function AdminPanel({
                           avatarScale={m.avatarScale}
                         />
                       ) : (
-                        <GenderUserIcon gender={(m.gender === 'female' || (m.name && isFemaleName(m.name))) ? 'female' : 'male'} size={28} className="stroke-[1.5]" isAlive={m.isAlive} />
+                        <GenderUserIcon gender={isMemberFemale(m) ? 'female' : 'male'} size={28} className="stroke-[1.5]" isAlive={m.isAlive} />
                       )}
                     </div>
                     <div>

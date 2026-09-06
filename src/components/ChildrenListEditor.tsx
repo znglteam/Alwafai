@@ -44,13 +44,7 @@ export default function ChildrenListEditor({
         </button>
       </div>
 
-      {childrenList.length === 0 ? (
-        <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-4 text-center">
-          <p className="text-xs text-slate-500 font-medium">
-            لم يتم تسجيل أي أسماء بعد. اضغط على زر <span className="font-bold text-indigo-600">"إضافة ابن/ابنة"</span> لإضافة خانة جديدة.
-          </p>
-        </div>
-      ) : (
+      {childrenList.length > 0 && (
         <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
           {childrenList.map((childName, index) => (
             <div

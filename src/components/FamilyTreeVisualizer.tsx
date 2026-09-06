@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { FamilyMember, SpouseInfo, getMemberSpouses } from '../types';
-import { Search, MapPin, Award, Heart, HelpCircle, Eye, EyeOff, User, GitCommit, ChevronDown, ChevronRight, Share2, CornerDownLeft, Network, LogIn, UserPlus, X, Trash2, Plus, Minus, ZoomIn, ZoomOut, Mars, Venus, Edit2, GripVertical, MessageSquare } from 'lucide-react';
+import { Search, MapPin, Award, Heart, HelpCircle, Eye, EyeOff, User, GitCommit, ChevronDown, ChevronRight, Share2, CornerDownLeft, Network, LogIn, UserPlus, X, Trash2, Plus, Minus, ZoomIn, ZoomOut, Mars, Venus, Edit2, GripVertical, MessageSquare, Check, UserCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
@@ -66,6 +66,7 @@ export default function FamilyTreeVisualizer({
   const [selectedSpecialization, setSelectedSpecialization] = useState('all');
   const [selectedGender, setSelectedGender] = useState('all');
   const [selectedMaritalStatus, setSelectedMaritalStatus] = useState('all');
+  const [selectedMembership, setSelectedMembership] = useState('all');
   const [viewMode, setViewMode] = useState<'tree' | 'directory'>('tree');
   const [isSortedByAge, setIsSortedByAge] = useState(false);
   
@@ -579,10 +580,14 @@ export default function FamilyTreeVisualizer({
         (selectedGender === 'female' && isFemale);
         
       const matchesMaritalStatus = selectedMaritalStatus === 'all' || m.maritalStatus === selectedMaritalStatus;
+      
+      const matchesMembership = selectedMembership === 'all' || 
+        (selectedMembership === 'registered' && Boolean(m.registeredUserId)) || 
+        (selectedMembership === 'unregistered' && !m.registeredUserId);
 
-      return matchesSearch && matchesCountry && matchesStatus && matchesSpecialization && matchesGender && matchesMaritalStatus;
+      return matchesSearch && matchesCountry && matchesStatus && matchesSpecialization && matchesGender && matchesMaritalStatus && matchesMembership;
     });
-  }, [members, searchQuery, selectedCountry, selectedStatus, selectedSpecialization, selectedGender, selectedMaritalStatus]);
+  }, [members, searchQuery, selectedCountry, selectedStatus, selectedSpecialization, selectedGender, selectedMaritalStatus, selectedMembership]);
 
   const toggleBranch = (id: string, e?: React.MouseEvent) => {
     if (e) {
@@ -738,6 +743,16 @@ export default function FamilyTreeVisualizer({
                 {getDescendantsCount(node.id)}
               </div>
             )}
+
+            {/* Registered Member Green Circle Indicator */}
+            {Boolean(node.registeredUserId) && (
+              <div 
+                className="absolute -top-1 -left-1 bg-emerald-500 border-2 border-white text-white w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-md z-30 ring-2 ring-emerald-500/20" 
+                title="عضو منضم ومسجل في الموقع"
+              >
+                <Check size={9} className="stroke-[3.5] text-white" />
+              </div>
+            )}
           </div>
 
           {/* Under Avatar: First Name with +/- symbol if has children */}
@@ -866,6 +881,13 @@ export default function FamilyTreeVisualizer({
             <h3 className="text-xl font-bold text-slate-800">
               شجرة العائلة
             </h3>
+            <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 flex-wrap">
+              <span>تصفح أفراد وتفرعات العائلة</span>
+              <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                الدائرة الخضراء (🟢) تدل على عضو منضم للموقع
+              </span>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
@@ -1011,7 +1033,7 @@ export default function FamilyTreeVisualizer({
               </div>
 
               {/* Marital Status Filter */}
-              <div className="col-span-2 sm:col-span-1">
+              <div>
                 <label className="block text-[10px] font-bold text-slate-500 mb-1">الحالة الاجتماعية</label>
                 <select
                   value={selectedMaritalStatus}
@@ -1023,6 +1045,20 @@ export default function FamilyTreeVisualizer({
                   <option value="متزوج">متزوج/متزوجة</option>
                   <option value="مرتبط">مرتبط/مرتبطة</option>
                   <option value="منفصل/ أرمل">منفصل/أرمل</option>
+                </select>
+              </div>
+
+              {/* Membership Status Filter */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 mb-1">العضوية في الموقع</label>
+                <select
+                  value={selectedMembership}
+                  onChange={e => setSelectedMembership(e.target.value)}
+                  className="w-full px-2 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer font-medium"
+                >
+                  <option value="all">الكل (مسجل وغير مسجل)</option>
+                  <option value="registered">الأعضاء المنضمون فقط (🟢)</option>
+                  <option value="unregistered">غير المسجلين</option>
                 </select>
               </div>
             </div>
@@ -1126,39 +1162,62 @@ export default function FamilyTreeVisualizer({
                       className="group bg-slate-50 hover:bg-white border border-slate-100 hover:border-indigo-100 rounded-2xl p-4 cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div 
-                          onClick={(e) => {
-                            if (member.avatar) {
-                              e.stopPropagation();
-                              setActiveFullscreenMember(member);
-                            }
-                          }}
-                          className={`w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 relative flex items-center justify-center font-bold text-sm hover:scale-105 transition-transform duration-200 cursor-pointer bg-white ${
-                            isFemale 
-                              ? member.isAlive ? 'border-[#bb5791]' : 'border-[#bb5791]/40' 
-                              : member.isAlive ? 'border-[#607fc4]' : 'border-[#607fc4]/40'
-                          }`}
-                          title={member.avatar ? `انقر لتكبير صورة ${member.name}` : undefined}
-                        >
-                          {member.avatar ? (
-                            <AvatarImage 
-                              src={member.avatar} 
-                              alt={member.name} 
-                              avatarX={member.avatarX}
-                              avatarY={member.avatarY}
-                              avatarScale={member.avatarScale}
-                            />
-                          ) : (
-                            <span className={isFemale ? 'text-[#bb5791]' : 'text-[#607fc4]'}>
-                              <GenderUserIcon gender={isFemale ? 'female' : 'male'} size={26} className="stroke-[1.5]" isAlive={member.isAlive} />
-                            </span>
+                        <div className="relative shrink-0">
+                          <div 
+                            onClick={(e) => {
+                              if (member.avatar) {
+                                e.stopPropagation();
+                                setActiveFullscreenMember(member);
+                              }
+                            }}
+                            className={`w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 relative flex items-center justify-center font-bold text-sm hover:scale-105 transition-transform duration-200 cursor-pointer bg-white ${
+                              isFemale 
+                                ? member.isAlive ? 'border-[#bb5791]' : 'border-[#bb5791]/40' 
+                                : member.isAlive ? 'border-[#607fc4]' : 'border-[#607fc4]/40'
+                            }`}
+                            title={member.avatar ? `انقر لتكبير صورة ${member.name}` : undefined}
+                          >
+                            {member.avatar ? (
+                              <AvatarImage 
+                                src={member.avatar} 
+                                alt={member.name} 
+                                avatarX={member.avatarX}
+                                avatarY={member.avatarY}
+                                avatarScale={member.avatarScale}
+                              />
+                            ) : (
+                              <span className={isFemale ? 'text-[#bb5791]' : 'text-[#607fc4]'}>
+                                <GenderUserIcon gender={isFemale ? 'female' : 'male'} size={26} className="stroke-[1.5]" isAlive={member.isAlive} />
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Green indicator on Search Result avatar */}
+                          {Boolean(member.registeredUserId) && (
+                            <div 
+                              className="absolute -top-1 -left-1 bg-emerald-500 border-2 border-white text-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm z-20 ring-1 ring-emerald-500/20"
+                              title="عضو منضم ومسجل في الموقع"
+                            >
+                              <Check size={8} className="stroke-[3.5] text-white" />
+                            </div>
                           )}
                         </div>
                         
-                        <div className="text-right min-w-0">
-                          <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors truncate">
-                            {getFullName(member)}
-                          </h4>
+                        <div className="text-right min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors truncate">
+                              {getFullName(member)}
+                            </h4>
+                            {Boolean(member.registeredUserId) && (
+                              <span 
+                                className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full shrink-0 shadow-2xs"
+                                title="عضو منضم ومسجل في الموقع"
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                عضو مسجل
+                              </span>
+                            )}
+                          </div>
                           <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
                             {member.isAlive ? (
                               member.country ? (
@@ -1260,11 +1319,28 @@ export default function FamilyTreeVisualizer({
                         </span>
                       )}
                     </div>
+                    {/* Green Registered Member badge on details avatar */}
+                    {Boolean(selectedMember.registeredUserId) && (
+                      <div 
+                        className="absolute top-0 -left-1 bg-emerald-500 border-2 border-white text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md z-30 ring-2 ring-emerald-500/20"
+                        title="عضو منضم ومسجل في الموقع"
+                      >
+                        <Check size={13} className="stroke-[3.5] text-white" />
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-lg font-bold text-slate-800">
-                      {getFullName(selectedMember)}
-                    </h3>
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <h3 className="text-lg font-bold text-slate-800">
+                        {getFullName(selectedMember)}
+                      </h3>
+                      {Boolean(selectedMember.registeredUserId) && (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full shadow-2xs">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          عضو مسجل في الموقع
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 

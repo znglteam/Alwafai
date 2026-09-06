@@ -324,11 +324,6 @@ export default function MemberProfileEdit({
           <h2 className="text-xl md:text-2xl font-bold">
             الملف الشخصي: {member.name} بن {member.fatherName}
           </h2>
-          <p className="text-xs text-indigo-100/80 mt-1 leading-relaxed">
-            مرحباً بك مجدداً. هنا يمكنك تعديل وتحديث بياناتك الشخصية المعروضة
-            على شجرة العائلة. أما الإضافة أو التعديل في فروع الشجرة وأنسابها
-            فتتم من قِبل إدارة الموقع (الآدمن) فقط.
-          </p>
         </div>
         <div className="bg-white/10 px-4 py-2 rounded-xl text-xs border border-white/20 self-start text-white font-bold">
           حالة الحساب: عضو معتمد
@@ -384,10 +379,9 @@ export default function MemberProfileEdit({
             {isAlive && (
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">
-                  بلد الإقامة *
+                  بلد الإقامة
                 </label>
                 <select
-                  required
                   value={country || ""}
                   onChange={(e) => setCountry(e.target.value)}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
@@ -699,53 +693,26 @@ export default function MemberProfileEdit({
 
         {/* Children Management Sidebar */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
-            {member.gender === 'female' ? (
-              <>
-                <h3 className="text-sm font-bold text-slate-800 border-b border-slate-200/60 pb-3">
-                  بيانات عائلتك (نصوص)
-                </h3>
-                
-                <div className="space-y-3">
-                  <div className="bg-white border border-slate-100 p-4 rounded-2xl">
-                    <span className="text-[10px] font-bold text-slate-400 block mb-1">
-                      {spouses.length > 1 ? `أسماء الأزواج (${spouses.length})` : 'اسم الزوج'}
-                    </span>
-                    <p className="text-xs font-bold text-slate-700">
-                      {spouses.length > 0
-                        ? spouses.map(s => s.name).filter(Boolean).join('، ')
-                        : (spouseName || "لم يتم تحديد اسم الزوج بعد (يمكنك تحديده من نموذج التعديل)")}
-                    </p>
-                  </div>
-
-                  <div className="bg-white border border-slate-100 p-4 rounded-2xl">
-                    <span className="text-[10px] font-bold text-slate-400 block mb-1">الأبناء</span>
-                    <p className="text-xs font-bold text-indigo-700 leading-relaxed font-bold">
-                      {childrenList.map(s => s.trim()).filter(Boolean).join('، ') || "لم يتم تسجيل أسماء الأبناء بعد"}
-                    </p>
-                  </div>
+          {member.gender !== 'female' && (
+            <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">
+                    الأبناء ({myChildren.length})
+                  </h3>
+                  <p className="text-[10px] text-slate-500">
+                    الأبناء والبنات المتصلين بنسبك مباركاً.
+                  </p>
                 </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-800">
-                      الأبناء ({myChildren.length})
-                    </h3>
-                    <p className="text-[10px] text-slate-500">
-                      الأبناء والبنات المتصلين بنسبك مباركاً.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddChild(!showAddChild)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                  >
-                    <Plus size={12} />
-                    إضافة ولد
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddChild(!showAddChild)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                >
+                  <Plus size={12} />
+                  إضافة ولد
+                </button>
+              </div>
 
                 {/* Helper Notice Box */}
                 <div className="bg-indigo-50 border border-indigo-100/60 rounded-2xl p-4 text-right">
@@ -1126,11 +1093,10 @@ export default function MemberProfileEdit({
                 </div>
               )}
             </Reorder.Group>
-          </>
+          </div>
         )}
-      </div>
 
-      <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
               <h3 className="text-sm font-bold text-slate-800 border-b border-slate-200/60 pb-3">
                 الأصول والإخوة
               </h3>

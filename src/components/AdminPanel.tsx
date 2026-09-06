@@ -471,7 +471,7 @@ export default function AdminPanel({
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">الاسم الأول للفرد</label>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">الاسم الأول للفرد *</label>
                     <input
                       type="text" required placeholder="الاسم الأول"
                       value={newMemName} onChange={e => setNewMemName(e.target.value)}
@@ -479,7 +479,7 @@ export default function AdminPanel({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">اسم الأب</label>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">اسم الأب *</label>
                     <input
                       type="text" required placeholder="اسم الأب"
                       value={newMemFatherName} onChange={e => setNewMemFatherName(e.target.value)}
@@ -487,7 +487,7 @@ export default function AdminPanel({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">اسم الجد</label>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">اسم الجد *</label>
                     <input
                       type="text" required placeholder="اسم الجد"
                       value={newMemGrandName} onChange={e => setNewMemGrandName(e.target.value)}
@@ -585,7 +585,7 @@ export default function AdminPanel({
                     </div>
                   )}
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">صورة شخصية من جهازك (اختياري)</label>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">صورة شخصية من جهازك</label>
                     <input
                       type="file" accept="image/*"
                       onChange={e => {
@@ -1109,7 +1109,7 @@ export default function AdminPanel({
 
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1">وصف الصورة / المناسبة</label>
+                      <label className="block text-xs font-bold text-slate-500 mb-1">وصف الصورة / المناسبة *</label>
                       <input
                         type="text"
                         required
@@ -1123,7 +1123,7 @@ export default function AdminPanel({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-1">النص المرافق أو قصة الصورة (اختياري)</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">النص المرافق أو قصة الصورة</label>
                   <textarea
                     placeholder="اكتب هنا تفاصيل إضافية، أسماء الأشخاص الظاهرين، أو قصة هذه المناسبة العائلية..."
                     value={photoDescription}

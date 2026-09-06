@@ -330,7 +330,7 @@ export default function MemberProfileEdit({
             {/* Name */}
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1">
-                الاسم الشخصي الأول
+                الاسم الشخصي الأول *
               </label>
               <input
                 type="text"
@@ -367,7 +367,7 @@ export default function MemberProfileEdit({
             {isAlive && (
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">
-                  بلد الإقامة
+                  بلد الإقامة *
                 </label>
                 <select
                   required
@@ -386,14 +386,14 @@ export default function MemberProfileEdit({
             {/* Specialization */}
             <div className={isAlive ? "" : "md:col-span-2"}>
               <label className="block text-xs font-bold text-slate-500 mb-1">
-                التخصص المهني/العلمي (اختياري)
+                التخصص المهني/العلمي
               </label>
               <select
                 value={specialization || ""}
                 onChange={(e) => setSpecialization(e.target.value)}
                 className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
               >
-                <option value="">التخصص المهني (اختياري)...</option>
+                <option value="">التخصص المهني...</option>
                 {SPECIALIZATIONS.map(s => (
                   <option key={s} value={s}>{s}</option>
                 ))}
@@ -403,7 +403,7 @@ export default function MemberProfileEdit({
             {/* Avatar File */}
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-slate-500 mb-1">
-                صورة شخصية من جهازك (اختياري)
+                صورة شخصية من جهازك
               </label>
               <input
                 type="file"
@@ -849,14 +849,14 @@ export default function MemberProfileEdit({
                   </div>
                   <div className="col-span-2">
                     <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                      التخصص المهني/العلمي (اختياري)
+                      التخصص المهني/العلمي
                     </label>
                     <select
                       value={childSpecialization || ""}
                       onChange={(e) => setChildSpecialization(e.target.value)}
                       className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
                     >
-                      <option value="">التخصص المهني (اختياري)...</option>
+                      <option value="">التخصص المهني...</option>
                       {SPECIALIZATIONS.map(s => (
                         <option key={s} value={s}>{s}</option>
                       ))}
@@ -866,7 +866,7 @@ export default function MemberProfileEdit({
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                    صورة شخصية من جهازك (اختياري)
+                    صورة شخصية من جهازك
                   </label>
                   <input
                     type="file"

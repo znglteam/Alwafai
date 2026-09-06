@@ -253,7 +253,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 mb-1">التخصص المهني (اختياري)</label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">التخصص المهني</label>
                   <input
                     type="text" placeholder="التخصص أو المهنة"
                     value={specialization} onChange={e => setSpecialization(e.target.value)}
@@ -264,7 +264,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
 
               {/* Photo Upload or URL */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 mb-1">صورة الملف الشخصي (اختياري)</label>
+                <label className="block text-[11px] font-bold text-slate-600 mb-1">صورة الملف الشخصي</label>
                 <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2">
                   <input
                     type="file"
@@ -292,7 +292,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 mb-1">نبذة تعريفية</label>
                 <textarea
-                  rows={2} required placeholder="اكتب نبذة مختصرة عن نفسك، دراستك، أو اهتماماتك..."
+                  rows={2} placeholder="اكتب نبذة مختصرة عن نفسك، دراستك، أو اهتماماتك..."
                   value={bio} onChange={e => setBio(e.target.value)}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-600 bg-white"
                 />
@@ -300,7 +300,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
 
               <button
                 type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs md:text-sm py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs md:text-sm py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <UserPlus size={16} />
                 تقديم طلب الانضمام للشجرة
@@ -316,7 +316,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
               )}
 
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-600">البريد الإلكتروني المسجل</label>
+                <label className="block text-xs font-bold text-slate-600">البريد الإلكتروني المسجل *</label>
                 <div className="relative">
                   <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                   <input
@@ -331,7 +331,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-600">كلمة المرور</label>
+                <label className="block text-xs font-bold text-slate-600">كلمة المرور *</label>
                 <div className="relative">
                   <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                   <input
@@ -347,7 +347,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
 
               <button
                 type="submit"
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs md:text-sm py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5"
+                className="w-full bg-[#414141] hover:bg-[#333333] text-white font-bold text-xs md:text-sm py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <LogIn size={16} />
                 تسجيل الدخول

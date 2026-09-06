@@ -333,7 +333,7 @@ export default function MainPage({
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">وصف مختصر أو عنوان الصورة</label>
+              <label className="block text-xs font-bold text-slate-600 mb-1">وصف مختصر أو عنوان الصورة *</label>
               <input
                 type="text"
                 required
@@ -344,7 +344,7 @@ export default function MainPage({
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">النص المرافق أو قصة الصورة (اختياري)</label>
+              <label className="block text-xs font-bold text-slate-600 mb-1">النص المرافق أو قصة الصورة</label>
               <textarea
                 placeholder="اكتب هنا تفاصيل إضافية، أسماء الأشخاص الظاهرين في الصورة، أو قصة هذه المناسبة العائلية..."
                 value={photoDescription}
@@ -585,7 +585,7 @@ export default function MainPage({
 
               {/* Caption */}
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">وصف مختصر أو عنوان الصورة</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1">وصف مختصر أو عنوان الصورة *</label>
                 <input
                   type="text"
                   required
@@ -598,7 +598,7 @@ export default function MainPage({
 
               {/* Description */}
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">النص المرافق أو قصة الصورة (اختياري)</label>
+                <label className="block text-xs font-bold text-slate-600 mb-1">النص المرافق أو قصة الصورة</label>
                 <textarea
                   placeholder="اكتب هنا تفاصيل إضافية، أسماء الأشخاص الظاهرين في الصورة، أو قصة هذه المناسبة العائلية..."
                   value={editPhotoDescription}

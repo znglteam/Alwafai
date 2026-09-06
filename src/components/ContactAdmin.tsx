@@ -102,7 +102,7 @@ export default function ContactAdmin({ currentSession, onSendMessage }: ContactA
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[#414141] flex items-center gap-1">
                 <Paperclip size={14} className="text-indigo-600" />
-                إرفاق ملفات مرئية (اختياري)
+                إرفاق ملفات مرئية
               </span>
               <div className="flex gap-1.5">
                 <button

@@ -81,11 +81,13 @@ export function subscribeToFamilyInfo(onInfo: (info: FamilyInfo) => void) {
 
 // 3. Subscribe to news
 export function subscribeToNews(onNews: (news: NewsItem[]) => void) {
-  const q = query(NEWS_COLLECTION, orderBy('createdAt', 'desc'), limit(50));
-  return onSnapshot(q, (snapshot) => {
+  return onSnapshot(NEWS_COLLECTION, (snapshot) => {
     const list: NewsItem[] = [];
     snapshot.forEach((docSnap) => list.push({ id: docSnap.id, ...docSnap.data() } as NewsItem));
+    list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     onNews(list);
+  }, (err) => {
+    console.error('News listener error:', err);
   });
 }
 
@@ -95,36 +97,47 @@ export function subscribeToPhotos(onPhotos: (photos: FamilyPhoto[]) => void) {
     const list: FamilyPhoto[] = [];
     snapshot.forEach((docSnap) => list.push({ id: docSnap.id, ...docSnap.data() } as FamilyPhoto));
     onPhotos(list);
+  }, (err) => {
+    console.error('Photos listener error:', err);
   });
 }
 
 // 5. Subscribe to requests
 export function subscribeToRequests(onRequests: (requests: RegistrationRequest[]) => void) {
-  const q = query(REQUESTS_COLLECTION, orderBy('createdAt', 'desc'), limit(100));
-  return onSnapshot(q, (snapshot) => {
+  return onSnapshot(REQUESTS_COLLECTION, (snapshot) => {
     const list: RegistrationRequest[] = [];
-    snapshot.forEach((docSnap) => list.push({ id: docSnap.id, ...docSnap.data() } as RegistrationRequest));
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      list.push({ id: docSnap.id, ...data } as RegistrationRequest);
+    });
+    list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     onRequests(list);
+  }, (err) => {
+    console.error('Requests listener error:', err);
   });
 }
 
 // 6. Subscribe to messages
 export function subscribeToMessages(onMessages: (messages: FamilyMessage[]) => void) {
-  const q = query(MESSAGES_COLLECTION, orderBy('createdAt', 'desc'), limit(100));
-  return onSnapshot(q, (snapshot) => {
+  return onSnapshot(MESSAGES_COLLECTION, (snapshot) => {
     const list: FamilyMessage[] = [];
     snapshot.forEach((docSnap) => list.push({ id: docSnap.id, ...docSnap.data() } as FamilyMessage));
+    list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     onMessages(list);
+  }, (err) => {
+    console.error('Messages listener error:', err);
   });
 }
 
 // 7. Subscribe to audit logs
 export function subscribeToAuditLogs(onLogs: (logs: LiveChangeLog[]) => void) {
-  const q = query(AUDIT_COLLECTION, orderBy('timestamp', 'desc'), limit(100));
-  return onSnapshot(q, (snapshot) => {
+  return onSnapshot(AUDIT_COLLECTION, (snapshot) => {
     const logs: LiveChangeLog[] = [];
     snapshot.forEach((docSnap) => logs.push({ id: docSnap.id, ...docSnap.data() } as LiveChangeLog));
+    logs.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
     onLogs(logs);
+  }, (err) => {
+    console.error('Audit logs listener error:', err);
   });
 }
 

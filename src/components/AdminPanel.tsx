@@ -145,8 +145,18 @@ export default function AdminPanel({
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FamilyMember | null>(null);
 
-  // Filter pending requests
-  const pendingRequests = requests.filter(r => r.status === 'pending');
+  // Request filters
+  const [requestFilter, setRequestFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
+  const pendingRequests = requests.filter(r => !r.status || r.status === 'pending');
+  const approvedRequests = requests.filter(r => r.status === 'approved');
+  const rejectedRequests = requests.filter(r => r.status === 'rejected');
+
+  const displayedRequests = requests.filter(r => {
+    if (requestFilter === 'pending') return !r.status || r.status === 'pending';
+    if (requestFilter === 'approved') return r.status === 'approved';
+    if (requestFilter === 'rejected') return r.status === 'rejected';
+    return true;
+  });
 
   const handlePostNews = (e: React.FormEvent) => {
     e.preventDefault();
@@ -331,50 +341,135 @@ export default function AdminPanel({
       {/* Content Area */}
       <div>
         
-        {/* Tab 1: Pending Requests */}
+        {/* Tab 1: Registration Requests */}
         {activeTab === 'requests' && (
           <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6">
-            <div className="border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <UserPlus size={20} className="text-amber-500" />
-                طلبات بانتظار الاعتماد والموافقة
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                يفحص الآدمن هذه البيانات المقدمة من أبناء العائلة، وعند الموافقة يتم ربطهم بالوالد الصحيح لتحديث الشجرة تلقائياً.
-              </p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <UserPlus size={20} className="text-amber-500" />
+                  طلبات الانتساب والتسجيل الجديدة
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  تصل هنا جميع طلبات الانضمام المقدمة من أبناء وبنات العائلة لفحصها واعتماد ربطها بالوالد الصحيح في الشجرة.
+                </p>
+              </div>
+
+              {/* Status Filter Chips */}
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl">
+                <button
+                  onClick={() => setRequestFilter('pending')}
+                  className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all ${
+                    requestFilter === 'pending'
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  قيد الانتظار ({pendingRequests.length})
+                </button>
+                <button
+                  onClick={() => setRequestFilter('approved')}
+                  className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all ${
+                    requestFilter === 'approved'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  المعتمدة ({approvedRequests.length})
+                </button>
+                <button
+                  onClick={() => setRequestFilter('rejected')}
+                  className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all ${
+                    requestFilter === 'rejected'
+                      ? 'bg-rose-600 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  المرفوضة ({rejectedRequests.length})
+                </button>
+                <button
+                  onClick={() => setRequestFilter('all')}
+                  className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all ${
+                    requestFilter === 'all'
+                      ? 'bg-[#414141] text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  الكل ({requests.length})
+                </button>
+              </div>
             </div>
 
             <div className="space-y-4">
-              {pendingRequests.map(req => {
+              {displayedRequests.map(req => {
                 const linkedFatherId = requestFatherLinks[req.id] || '';
+                const isPending = !req.status || req.status === 'pending';
+                const isApproved = req.status === 'approved';
+                const isRejected = req.status === 'rejected';
+
                 return (
                   <div key={req.id} className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4 shadow-sm hover:border-indigo-100 transition-colors">
                     {/* Header */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/50 pb-3">
                       <div className="space-y-1">
-                        <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">معلق بانتظار القرار</span>
+                        <div className="flex items-center gap-2">
+                          {isPending && (
+                            <span className="text-[10px] bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-bold">
+                              معلق بانتظار قرارك
+                            </span>
+                          )}
+                          {isApproved && (
+                            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                              <Check size={12} />
+                              معتمد ومضاف للشجرة
+                            </span>
+                          )}
+                          {isRejected && (
+                            <span className="text-[10px] bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full font-bold">
+                              طلب مرفوض
+                            </span>
+                          )}
+                          <span className="text-[10px] text-slate-400">
+                            {req.gender === 'female' ? 'أنثى' : 'ذكر'}
+                          </span>
+                        </div>
                         <h4 className="font-bold text-slate-800 text-base">
                           {req.name} بن {req.fatherName} بن {req.grandfatherName}
                         </h4>
-                        <p className="text-xs text-slate-400">الإيميل: {req.email} | سُجّل في: {new Date(req.createdAt).toLocaleDateString('ar-SA')}</p>
+                        <p className="text-xs text-slate-500">
+                          البريد الإلكتروني: <strong className="text-slate-800 font-mono">{req.email}</strong> {req.createdAt ? `| سُجّل في: ${new Date(req.createdAt).toLocaleDateString('ar-SA')}` : ''}
+                        </p>
                       </div>
 
-                      {/* Decisive Actions */}
+                      {/* Actions */}
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => onRejectRequest(req.id)}
-                          className="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1 font-semibold"
-                        >
-                          <X size={14} />
-                          رفض الطلب
-                        </button>
-                        <button
-                          onClick={() => onApproveRequest(req.id, linkedFatherId || null)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-1 font-bold shadow-md shadow-emerald-600/10"
-                        >
-                          <Check size={14} />
-                          اعتماد وقبول الحساب
-                        </button>
+                        {isPending && (
+                          <>
+                            <button
+                              onClick={() => onRejectRequest(req.id)}
+                              className="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1 font-semibold cursor-pointer"
+                            >
+                              <X size={14} />
+                              رفض الطلب
+                            </button>
+                            <button
+                              onClick={() => onApproveRequest(req.id, linkedFatherId || null)}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-1 font-bold shadow-md shadow-emerald-600/10 cursor-pointer"
+                            >
+                              <Check size={14} />
+                              اعتماد وقبول الحساب
+                            </button>
+                          </>
+                        )}
+                        {isRejected && (
+                          <button
+                            onClick={() => onApproveRequest(req.id, linkedFatherId || null)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-2 rounded-xl transition-all flex items-center gap-1 font-bold cursor-pointer"
+                          >
+                            <Check size={14} />
+                            إعادة الاعتماد والقبول
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -386,11 +481,11 @@ export default function AdminPanel({
                       </div>
                       <div>
                         <span className="block text-[10px] text-slate-400 font-bold mb-0.5">بلد الإقامة</span>
-                        <span className="font-semibold text-slate-800">{req.country}</span>
+                        <span className="font-semibold text-slate-800">{req.country || "-"}</span>
                       </div>
                       <div>
                         <span className="block text-[10px] text-slate-400 font-bold mb-0.5">التخصص المهني/العلمي</span>
-                        <span className="font-semibold text-slate-800">{req.specialization}</span>
+                        <span className="font-semibold text-slate-800">{req.specialization || "-"}</span>
                       </div>
                       <div>
                         <span className="block text-[10px] text-slate-400 font-bold mb-0.5">الحالة</span>
@@ -399,42 +494,45 @@ export default function AdminPanel({
                     </div>
 
                     {/* Bio */}
-                    <div className="bg-white border border-slate-200/60 p-3 rounded-xl text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
-                      <span className="block text-[9px] text-slate-400 font-bold mb-1">نبذة شخصية:</span>
-                      {req.bio || 'لم يتم كتابة نبذة.'}
-                    </div>
+                    {req.bio && (
+                      <div className="bg-white border border-slate-200/60 p-3 rounded-xl text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
+                        <span className="block text-[9px] text-slate-400 font-bold mb-1">نبذة شخصية:</span>
+                        {req.bio}
+                      </div>
+                    )}
 
-                    {/* Linking connection to tree - mandatory for perfect integration */}
-                    <div className="bg-amber-50/50 border border-amber-100/60 rounded-xl p-3 space-y-2">
-                      <label className="block text-xs font-bold text-amber-800">
-                        ربط نسب العضو بالوالد المناسب في شجرة العائلة:
-                      </label>
-                      <select
-                        value={linkedFatherId}
-                        onChange={e => setRequestFatherLinks({ ...requestFatherLinks, [req.id]: e.target.value })}
-                        className="w-full max-w-md border border-amber-200 rounded-xl px-3 py-2 text-xs focus:outline-none bg-white cursor-pointer text-slate-700"
-                      >
-                        <option value="">-- تركه كفرد مستقل بدون والد (أو تعيينه لاحقاً) --</option>
-                        {members.filter(m => !(m.gender === 'female' || (m.name && isFemaleName(m.name)))).map(m => (
-                          <option key={m.id} value={m.id}>
-                            {m.name} بن {m.fatherName} بن {m.grandfatherName} (ولد عام {m.birthYear ? `${m.birthYear}م` : "-"})
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-[10px] text-slate-500 leading-normal">
-                        * توجيه مهم: تحديد الوالد من الخيارات أعلاه يجعله يظهر كأحد فروع هذا الأب في مخطط الشجرة فور الموافقة!
-                      </p>
-                    </div>
-
+                    {/* Linking connection to tree */}
+                    {isPending && (
+                      <div className="bg-amber-50/60 border border-amber-100 rounded-xl p-3 space-y-2">
+                        <label className="block text-xs font-bold text-amber-800">
+                          ربط نسب العضو بالوالد المناسب في شجرة العائلة:
+                        </label>
+                        <select
+                          value={linkedFatherId}
+                          onChange={e => setRequestFatherLinks({ ...requestFatherLinks, [req.id]: e.target.value })}
+                          className="w-full max-w-md border border-amber-200 rounded-xl px-3 py-2 text-xs focus:outline-none bg-white cursor-pointer text-slate-700"
+                        >
+                          <option value="">-- تركه كفرد مستقل بدون والد (أو تعيينه لاحقاً) --</option>
+                          {members.filter(m => !(m.gender === 'female' || (m.name && isFemaleName(m.name)))).map(m => (
+                            <option key={m.id} value={m.id}>
+                              {m.name} بن {m.fatherName} بن {m.grandfatherName} (ولد عام {m.birthYear ? `${m.birthYear}م` : "-"})
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-[10px] text-slate-500 leading-normal">
+                          * تحديد الوالد من الخيارات أعلاه يجعله يظهر كأحد فروع هذا الأب في مخطط الشجرة فور الموافقة.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 );
               })}
 
-              {pendingRequests.length === 0 && (
+              {displayedRequests.length === 0 && (
                 <div className="text-center py-16 text-slate-400">
                   <Check className="mx-auto text-emerald-500 bg-emerald-50 rounded-full p-2 mb-2" size={44} />
-                  <p className="text-sm font-semibold text-slate-700">لا توجد طلبات تسجيل معلقة حالياً.</p>
-                  <p className="text-xs text-slate-400 mt-1">كل حسابات الانتساب معتمدة ومسجلة في شجرتك المباركة.</p>
+                  <p className="text-sm font-semibold text-slate-700">لا توجد طلبات في هذا القسم حالياً.</p>
+                  <p className="text-xs text-slate-400 mt-1">جميع طلبات الانضمام المعروضة تم التعامل معها.</p>
                 </div>
               )}
             </div>

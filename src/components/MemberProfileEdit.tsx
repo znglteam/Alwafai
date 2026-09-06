@@ -386,15 +386,14 @@ export default function MemberProfileEdit({
             {/* Specialization */}
             <div className={isAlive ? "" : "md:col-span-2"}>
               <label className="block text-xs font-bold text-slate-500 mb-1">
-                التخصص المهني/العلمي
+                التخصص المهني/العلمي (اختياري)
               </label>
               <select
-                required
                 value={specialization || ""}
                 onChange={(e) => setSpecialization(e.target.value)}
                 className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
               >
-                <option value="" disabled>اختر التخصص</option>
+                <option value="">التخصص المهني (اختياري)...</option>
                 {SPECIALIZATIONS.map(s => (
                   <option key={s} value={s}>{s}</option>
                 ))}
@@ -850,14 +849,14 @@ export default function MemberProfileEdit({
                   </div>
                   <div className="col-span-2">
                     <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
-                      التخصص المهني/العلمي
+                      التخصص المهني/العلمي (اختياري)
                     </label>
                     <select
                       value={childSpecialization || ""}
                       onChange={(e) => setChildSpecialization(e.target.value)}
                       className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
                     >
-                      <option value="" disabled>اختر التخصص</option>
+                      <option value="">التخصص المهني (اختياري)...</option>
                       {SPECIALIZATIONS.map(s => (
                         <option key={s} value={s}>{s}</option>
                       ))}

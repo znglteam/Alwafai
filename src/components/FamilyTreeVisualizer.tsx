@@ -1530,9 +1530,9 @@ export default function FamilyTreeVisualizer({
                             </div>
                           )}
                           <div className={editForm.isAlive ? "" : "col-span-2"}>
-                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">التخصص المهني/العلمي</label>
+                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">التخصص المهني/العلمي (اختياري)</label>
                             <select value={editForm.specialization || ''} onChange={e => setEditForm({...editForm, specialization: e.target.value})} className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white cursor-pointer">
-                              <option value="" disabled>اختر التخصص</option>
+                              <option value="">التخصص المهني (اختياري)...</option>
                               {SPECIALIZATIONS.map(s => (
                                 <option key={s} value={s}>{s}</option>
                               ))}
@@ -2046,13 +2046,13 @@ export default function FamilyTreeVisualizer({
                   </div>
                 )}
                 <div className={newMemIsAlive ? "" : "col-span-2"}>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">التخصص المهني/العلمي</label>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">التخصص المهني/العلمي (اختياري)</label>
                   <select
                     value={newMemSpecialization || ''}
                     onChange={e => setNewMemSpecialization(e.target.value)}
                     className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
                   >
-                    <option value="" disabled>اختر التخصص</option>
+                    <option value="">التخصص المهني (اختياري)...</option>
                     {SPECIALIZATIONS.map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}

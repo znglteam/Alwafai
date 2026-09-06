@@ -253,9 +253,9 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 mb-1">التخصص المهني</label>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">التخصص المهني (اختياري)</label>
                   <input
-                    type="text" required placeholder="التخصص أو المهنة"
+                    type="text" placeholder="التخصص أو المهنة"
                     value={specialization} onChange={e => setSpecialization(e.target.value)}
                     className="w-full border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-indigo-600 bg-white"
                   />

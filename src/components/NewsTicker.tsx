@@ -69,7 +69,7 @@ export default function NewsTicker({ news }: NewsTickerProps) {
         {/* Ticker label */}
         <div className="flex items-center gap-2 shrink-0">
           <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span className="hidden md:block text-[11px] font-extrabold tracking-wider text-[#414141] bg-white px-2 py-0.5 rounded-md">
+          <span className="text-[10px] sm:text-[11px] font-extrabold tracking-wider text-[#414141] bg-white px-2 py-0.5 rounded-md whitespace-nowrap">
             أخبار العائلة
           </span>
         </div>

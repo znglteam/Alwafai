@@ -31,7 +31,7 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subject.trim() || !content.trim()) return;
+    if (!subject.trim() || !content.trim()) { setMsgError("يرجى تعبئة الحقول المطلوبة (موضوع الرسالة، والرسالة)."); return; } if (attachmentType !== "none" && !attachmentUrl) { setMsgError("يرجى إرفاق الملف أو إلغاء المرفقات."); return; } setMsgError(null);
 
     onSendMessage({
       senderName: currentSession.name || 'عضو العائلة',
@@ -105,7 +105,7 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-5 animate-fade-in">
+            <form onSubmit={handleSubmit} className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-5 animate-fade-in"> {msgError && <p className="text-[10px] text-rose-500 font-bold border border-rose-200 bg-rose-50 p-2 rounded-lg text-center mb-4">{msgError}</p>}
               
               <div>
                 <label className="block text-xs font-bold text-[#414141] mb-1">موضوع الرسالة *</label>

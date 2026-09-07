@@ -281,6 +281,7 @@ export async function saveRequestToCloud(req: RegistrationRequest) {
     console.log('Successfully saved registration request to Firestore:', req.id);
   } catch (err) {
     console.error('Error saving request to Firestore:', err);
+    throw err;
   }
 }
 

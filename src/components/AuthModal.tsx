@@ -10,7 +10,7 @@ interface AuthModalProps {
   isOpen: boolean;
   initialMode?: 'login' | 'register';
   onClose: () => void;
-  onRegister: (request: Omit<RegistrationRequest, 'id' | 'status' | 'createdAt'>) => void;
+  onRegister: (request: Omit<RegistrationRequest, 'id' | 'status' | 'createdAt'>) => Promise<{ success: boolean; message?: string }> | void;
   onLogin: (email: string, password?: string) => { success: boolean; message?: string };
 }
 
@@ -56,33 +56,43 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
     }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError('');
     if (!name.trim() || !fatherName.trim() || !grandfatherName.trim() || !email.trim()) return;
 
-    onRegister({
-      name: name.trim(),
-      fatherName: fatherName.trim(),
-      grandfatherName: grandfatherName.trim(),
-      email: email.trim().toLowerCase(),
-      password: password || '',
-      birthYear: 0,
-      birthDate: '',
-      country: 'غير محدد',
-      specialization: 'غير محدد',
-      bio: 'عضو في العائلة.',
-      avatar: '',
-      isAlive: true,
-      gender: gender,
-      siblings: [],
-      unclesAndAunts: []
-    });
+    try {
+      const result = await onRegister({
+        name: name.trim(),
+        fatherName: fatherName.trim(),
+        grandfatherName: grandfatherName.trim(),
+        email: email.trim().toLowerCase(),
+        password: password || '',
+        birthYear: 0,
+        birthDate: '',
+        country: 'غير محدد',
+        specialization: 'غير محدد',
+        bio: 'عضو في العائلة.',
+        avatar: '',
+        isAlive: true,
+        gender: gender,
+        siblings: [],
+        unclesAndAunts: []
+      });
 
-    setRegSuccess(true);
-    setTimeout(() => {
-      setRegSuccess(false);
-      onClose();
-    }, 4000);
+      if (result && result.success === false) {
+        setLoginError(result.message || 'حدث خطأ أثناء إرسال الطلب.');
+        return;
+      }
+
+      setRegSuccess(true);
+      setTimeout(() => {
+        setRegSuccess(false);
+        onClose();
+      }, 4000);
+    } catch (err) {
+      setLoginError('تعذر إرسال الطلب (قد يكون بسبب استهلاك الحصة اليومية لقاعدة البيانات). حاول غداً.');
+    }
   };
 
   const isRegisterMode = currentMode === 'register';

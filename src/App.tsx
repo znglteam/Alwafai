@@ -420,6 +420,15 @@ export default function App() {
 
   // Handle Registrations (creates pending requests)
   const handleRegister = async (newRequest: Omit<RegistrationRequest, 'id' | 'status' | 'createdAt'>) => {
+    const cleanEmail = newRequest.email.trim().toLowerCase();
+    
+    if (members.some(m => m.email?.trim().toLowerCase() === cleanEmail)) {
+      return { success: false, message: 'البريد الإلكتروني مستخدم بالفعل كعضو في العائلة.' };
+    }
+    if (requests.some(r => r.email?.trim().toLowerCase() === cleanEmail && r.status !== 'rejected')) {
+      return { success: false, message: 'يوجد طلب تسجيل معلق أو معتمد بهذا البريد الإلكتروني.' };
+    }
+
     const id = 'req-' + Date.now().toString();
     const request: RegistrationRequest = {
       ...newRequest,
@@ -428,10 +437,17 @@ export default function App() {
       createdAt: new Date().toISOString()
     };
 
-    const nextRequests = [request, ...requests];
-    setRequests(nextRequests);
-    await saveRequestToCloud(request);
-    await logFamilyAction(newRequest.name, 'طلب تسجيل جديد', `طلب انتساب جديد قيد مراجعة الآدمن`, newRequest.name, newRequest.email);
+    try {
+      await saveRequestToCloud(request); // This will throw if it fails
+      
+      const nextRequests = [request, ...requests];
+      setRequests(nextRequests);
+      await logFamilyAction(newRequest.name, 'طلب تسجيل جديد', `طلب انتساب جديد قيد مراجعة الآدمن`, newRequest.name, newRequest.email);
+      return { success: true };
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
   };
 
   // Approve a request (either linking to existing tree member or creating a new tree node)
@@ -610,6 +626,19 @@ export default function App() {
     await logFamilyAction(currentSession.name, 'إلغاء اعتماد طلب', `تم إعادة طلب ${req.name} إلى قيد الانتظار لإعادة ضبطه`, req.name);
   };
 
+  // Helper to diff and get only changed members to avoid massive quota usage
+  const getChangedMembers = (prevList: FamilyMember[], nextList: FamilyMember[]) => {
+    const changed: FamilyMember[] = [];
+    const prevMap = new Map(prevList.map(m => [m.id, JSON.stringify(m)]));
+    for (const n of nextList) {
+      const pStr = prevMap.get(n.id);
+      if (!pStr || pStr !== JSON.stringify(n)) {
+        changed.push(n);
+      }
+    }
+    return changed;
+  };
+
   // Member profile updates
   const handleUpdateMember = async (updated: FamilyMember) => {
     const prevMember = members.find(m => m.id === updated.id);
@@ -617,14 +646,20 @@ export default function App() {
     const next = reconcileLineageAndMarriages(syncedWithSpouses);
     setMembers(next);
     
-    await saveMultipleMembersToCloud(next);
+    const changed = getChangedMembers(members, next);
+    if (changed.length > 0) {
+      await saveMultipleMembersToCloud(changed);
+    }
     await logFamilyAction(currentSession.name, 'تعديل بيانات فرد', `تحديث بيانات الشجرة`, updated.name);
   };
 
   const handleUpdateMembers = async (newMembers: FamilyMember[]) => {
     const next = reconcileLineage(newMembers);
     setMembers(next);
-    await saveMultipleMembersToCloud(next);
+    const changed = getChangedMembers(members, next);
+    if (changed.length > 0) {
+      await saveMultipleMembersToCloud(changed);
+    }
     await logFamilyAction(currentSession.name, 'إعادة ترتيب الأبناء/الأفراد في الشجرة', 'تحديث تراتيب العائلة');
   };
 
@@ -666,7 +701,10 @@ export default function App() {
 
     const reconciled = reconcileLineage(updated);
     setMembers(reconciled);
-    await saveMultipleMembersToCloud(reconciled);
+    const changed = getChangedMembers(members, reconciled);
+    if (changed.length > 0) {
+      await saveMultipleMembersToCloud(changed);
+    }
     await logFamilyAction(currentSession.name, 'إضافة ابن/ابنة جديدة', `إضافة ${childInfo.name}`, childInfo.name);
   };
 
@@ -705,7 +743,11 @@ export default function App() {
     const syncedWithSpouses = syncSpouseRelationships(updated, member, null);
     const reconciled = reconcileLineageAndMarriages(syncedWithSpouses);
     setMembers(reconciled);
-    saveMultipleMembersToCloud(reconciled);
+    
+    const changed = getChangedMembers(members, reconciled);
+    if (changed.length > 0) {
+      saveMultipleMembersToCloud(changed);
+    }
 
     logFamilyAction(currentSession.name, 'إضافة عضو مباشرة إلى الشجرة', newMem.name, newMem.name);
     return id;
@@ -733,7 +775,10 @@ export default function App() {
 
     setMembers(filtered);
     await deleteMemberFromCloud(id);
-    await saveMultipleMembersToCloud(filtered);
+    const changed = getChangedMembers(members, filtered);
+    if (changed.length > 0) {
+      await saveMultipleMembersToCloud(changed);
+    }
     await logFamilyAction(currentSession.name, 'حذف عضو من الشجرة', target?.name || id, target?.name);
   };
 

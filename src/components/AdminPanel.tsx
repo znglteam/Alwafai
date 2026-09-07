@@ -117,6 +117,10 @@ export default function AdminPanel({
     setEditingNewsId(item.id);
     setNewsContent(item.content);
     setNewsType(item.type);
+    setTimeout(() => {
+      document.getElementById('news-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('news-content-input')?.focus();
+    }, 100);
   };
 
   const handleCancelEditNews = () => {
@@ -1406,7 +1410,7 @@ export default function AdminPanel({
             </div>
 
             {/* Add/Edit News Form */}
-            <form onSubmit={handlePostNews} className="bg-slate-50 border border-slate-100 p-5 rounded-2xl space-y-4">
+            <form id="news-form" onSubmit={handlePostNews} className="bg-slate-50 border border-slate-100 p-5 rounded-2xl space-y-4">
               <h4 className="text-xs font-bold text-slate-700">
                 {editingNewsId ? 'تعديل الخبر أو التهنئة المحددة' : 'نشر خبر أو تهنئة جديدة'}
               </h4>
@@ -1429,6 +1433,7 @@ export default function AdminPanel({
                 <div className="md:col-span-3">
                   <label className="block text-xs font-bold text-slate-500 mb-1">محتوى الخبر بالكامل</label>
                   <input
+                    id="news-content-input"
                     type="text"
                     required
                     placeholder="مثال: يسر عائلة آل الوفائي والعطائي تهنئة المهندس خالد بمناسبة ترقيته..."
@@ -1480,6 +1485,7 @@ export default function AdminPanel({
 
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
+                      type="button"
                       onClick={() => handleEditNewsClick(item)}
                       className="text-slate-400 hover:text-indigo-600 p-1.5 hover:bg-slate-200/60 rounded-xl transition-all"
                       title="تعديل الإعلان"
@@ -1487,6 +1493,7 @@ export default function AdminPanel({
                       <Edit2 size={14} />
                     </button>
                     <button
+                      type="button"
                       onClick={() => onDeleteNews(item.id)}
                       className="text-slate-400 hover:text-rose-600 p-1.5 hover:bg-slate-200/60 rounded-xl transition-all"
                       title="حذف الإعلان"

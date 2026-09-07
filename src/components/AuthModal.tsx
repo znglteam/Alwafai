@@ -147,6 +147,23 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
           ) : isRegisterMode ? (
             /* Register Form */
             <form onSubmit={handleRegisterSubmit} className="space-y-4">
+              {/* Prominent Desktop Install Option during registration request */}
+              <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 border border-emerald-300 rounded-2xl p-3.5 shadow-xs space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
+                    <Sparkles size={15} className="text-emerald-600 shrink-0" />
+                    <span>خيار مميز: تثبيت أيقونة الموقع في سطح المكتب</span>
+                  </div>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                    مستحسن
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  ثبّت أيقونة البوابة على سطح المكتب للوصول الفوري ومتابعة حالة اعتماد عضويتك بنقرة واحدة:
+                </p>
+                <PWAInstallButton variant="prominent" label="تثبيت أيقونة الموقع في سطح المكتب" />
+              </div>
+
               <div className="bg-indigo-50/70 border border-indigo-100 p-4 rounded-2xl space-y-3">
                 <span className="text-xs font-bold text-indigo-900 block flex items-center gap-1.5">
                   <Sparkles size={14} className="text-indigo-600" />

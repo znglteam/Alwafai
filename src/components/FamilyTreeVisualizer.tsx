@@ -395,7 +395,7 @@ export default function FamilyTreeVisualizer({
       spouseName: formattedSpouseName,
       spouseId: formattedSpouseId,
       spouses: effectiveSpouses,
-      maritalStatus: newMemMaritalStatus,
+      maritalStatus: (newMemMaritalStatus as any) || undefined,
       avatar: newMemAvatar || undefined,
       gender: newMemGender
     });

@@ -1008,21 +1008,23 @@ export default function App() {
     }
   };
 
-  const activeMember = members.find(m => 
-    m.id === currentSession.userId ||
-    (currentSession.userId && m.registeredUserId === currentSession.userId) ||
-    (currentSession.email && m.email && m.email.trim().toLowerCase() === currentSession.email.trim().toLowerCase())
+  const activeMember = (members || []).find(m => 
+    m && (
+      m.id === currentSession.userId ||
+      (currentSession.userId && m.registeredUserId === currentSession.userId) ||
+      (currentSession.email && m.email && m.email.trim().toLowerCase() === currentSession.email.trim().toLowerCase())
+    )
   );
 
   const effectiveNews = useMemo(() => {
-    return news || [];
+    return (news || []).filter(Boolean);
   }, [news]);
 
-  const hasPendingRequests = requests.some(r => r.status === "pending");
-  const hasUnreadAdminMessages = messages.some(m => m.isReadByAdmin === false);
+  const hasPendingRequests = (requests || []).some(r => r && r.status === "pending");
+  const hasUnreadAdminMessages = (messages || []).some(m => m && m.isReadByAdmin === false);
   const hasAdminAlert = hasPendingRequests || hasUnreadAdminMessages;
 
-  const hasUnreadMemberReply = currentSession.role !== "guest" && messages.some(m => (m.senderEmail === currentSession.email || m.senderId === currentSession.userId) && m.isReadByMember === false);
+  const hasUnreadMemberReply = currentSession.role !== "guest" && (messages || []).some(m => m && (m.senderEmail === currentSession.email || m.senderId === currentSession.userId) && m.isReadByMember === false);
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-indigo-600 selection:text-white pb-12 text-right">
       
@@ -1158,14 +1160,6 @@ export default function App() {
                   <span className="block text-[9px] text-slate-400 font-bold leading-none">مرحباً بك</span>
                   <span className="text-xs font-bold text-slate-700 truncate max-w-[120px] block hover:text-indigo-600 transition-colors">{currentSession.name}</span>
                 </div>
-
-                <button
-                  onClick={handleLogout}
-                  className="bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 p-2.5 rounded-full transition-colors border border-slate-200/50 cursor-pointer"
-                  title="تسجيل الخروج"
-                >
-                  <LogOut size={16} />
-                </button>
               </>
             )}
           </div>
@@ -1245,6 +1239,7 @@ export default function App() {
                   setActiveTab('tree');
                   if (id) setTreeSelectedMemberId(id);
                 }}
+                onLogout={handleLogout}
               />
             ) : (
               <div className="bg-white border border-slate-100 rounded-3xl p-8 text-center max-w-lg mx-auto my-8 space-y-4 shadow-sm">
@@ -1253,12 +1248,20 @@ export default function App() {
                 </div>
                 <h3 className="text-lg font-bold text-slate-800">جاري تحميل بيانات العضو...</h3>
                 <p className="text-xs text-slate-500">إذا لم تكن مرتبطاً بفرد محدد في الشجرة بعد، يرجى التواصل مع مسؤول العائلة لربط حسابك.</p>
-                <button
-                  onClick={() => setActiveTab('main')}
-                  className="bg-indigo-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
-                >
-                  العودة للرئيسية
-                </button>
+                <div className="flex items-center justify-center gap-2.5 pt-2">
+                  <button
+                    onClick={() => setActiveTab('main')}
+                    className="bg-indigo-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+                  >
+                    العودة للرئيسية
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-bold px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+                  >
+                    تسجيل الخروج
+                  </button>
+                </div>
               </div>
             )
           )}
@@ -1291,6 +1294,7 @@ export default function App() {
               onDeleteAuditLog={handleDeleteAuditLog}
               onClearAuditLogs={handleClearAuditLogs}
               onRestoreMembers={handleRestoreMembers}
+              onLogout={handleLogout}
             />
           )}
 

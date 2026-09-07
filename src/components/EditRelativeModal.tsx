@@ -61,7 +61,7 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
             </div>
             <div>
               <label className="block font-bold text-slate-500 mb-1">الجنس</label>
-              <select value={gender} onChange={e => setGender(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-600 outline-none">
+              <select value={gender} onChange={e => setGender(e.target.value as "male" | "female")} className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-600 outline-none">
                 <option value="male">ذكر</option>
                 <option value="female">أنثى</option>
               </select>

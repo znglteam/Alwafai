@@ -23,6 +23,7 @@ import {
   ChevronDown,
   GripVertical,
   Network,
+  LogOut,
 } from "lucide-react";
 import { Reorder } from "motion/react";
 import { GenderUserIcon } from "./GenderIcon";
@@ -53,6 +54,7 @@ interface MemberProfileEditProps {
     childInfo: Omit<FamilyMember, "id" | "fatherId" | "childrenIds">,
   ) => void;
   onGoToTree?: (memberId: string) => void;
+  onLogout?: () => void;
 }
 
 export default function MemberProfileEdit({
@@ -61,6 +63,7 @@ export default function MemberProfileEdit({
   onUpdateMember,
   onAddChild,
   onGoToTree,
+  onLogout,
 }: MemberProfileEditProps) {
   // Form edit states
   const [name, setName] = useState(member.name);
@@ -377,6 +380,13 @@ export default function MemberProfileEdit({
           <p className="text-xs text-indigo-100 mt-1">تعديل بياناتك الشخصية، وإدارة أسرتك وأبنائك</p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+          {/* PWA Desktop Install Quick Button */}
+          <PWAInstallButton
+            variant="compact"
+            className="bg-white/20 hover:bg-white/30 text-white border-white/30 shadow-xs"
+            label="تثبيت بسطح المكتب"
+          />
+
           {onGoToTree && (
             <button
               type="button"
@@ -389,11 +399,28 @@ export default function MemberProfileEdit({
               <span>رؤيتي في الشجرة</span>
             </button>
           )}
-          <div className="bg-white/10 px-4 py-2 rounded-xl text-xs border border-white/20 text-white font-bold">
-            حالة الحساب: عضو معتمد
-          </div>
+
+          {onLogout && (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="flex items-center gap-1.5 bg-rose-500/90 hover:bg-rose-600 active:scale-95 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-sm border border-rose-400/50 cursor-pointer"
+              id="profile-logout-btn"
+              title="تسجيل الخروج من الحساب"
+            >
+              <LogOut size={15} />
+              <span>تسجيل الخروج</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* PWA Install Notice in Profile Page */}
+      <PWAInstallButton 
+        variant="banner" 
+        label="تثبيت أيقونة الموقع في سطح المكتب" 
+        sublabel="احصل على أيقونة مباشرة على سطح مكتبك أو شاشة هاتفك لتصل لملفك وشجرة العائلة بضغطة زر واحدة."
+      />
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <form
           onSubmit={handleUpdateProfile}

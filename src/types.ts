@@ -102,6 +102,15 @@ export interface FamilyInfo {
 
 export type UserRole = 'guest' | 'pending' | 'member' | 'admin';
 
+export interface MessageReply {
+  id: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  createdAt: string;
+  isAdmin: boolean;
+}
+
 export interface FamilyMessage {
   id: string;
   senderName: string;
@@ -111,6 +120,7 @@ export interface FamilyMessage {
   attachmentUrl?: string;
   attachmentType?: 'image' | 'video' | 'none';
   createdAt: string;
+  replies?: MessageReply[];
 }
 
 export interface UserSession {

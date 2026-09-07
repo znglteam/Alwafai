@@ -74,6 +74,9 @@ export default function AdminPanel({
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
   const [activeComments, setActiveComments] = useState<Record<string, string>>({});
 
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [msgError, setMsgError] = useState<string | null>(null);
+
   // Helper to determine female gender: explicit gender takes precedence
   const isMemberFemale = (member?: { gender?: string; name?: string } | null): boolean => {
     if (!member) return false;
@@ -1842,6 +1845,67 @@ export default function AdminPanel({
                           </button>
                         </div>
                       )}
+
+                      {/* Chat/Replies Thread */}
+                      {(msg.replies && msg.replies.length > 0) && (
+                        <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                          <h5 className="text-[10px] font-bold text-slate-400">سجل المحادثة والردود</h5>
+                          <div className="flex flex-col gap-3">
+                            {msg.replies.map(reply => (
+                              <div key={reply.id} className={`flex flex-col ${reply.isAdmin ? 'items-end' : 'items-start'}`}>
+                                <div className={`max-w-[90%] p-3 text-xs leading-relaxed ${reply.isAdmin ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-tl-sm'}`}>
+                                  <div className={`text-[9px] font-bold mb-1 ${reply.isAdmin ? 'text-indigo-200' : 'text-slate-400'}`}>
+                                    {reply.senderName} {reply.isAdmin && '(الإدارة)'}
+                                  </div>
+                                  <div className="whitespace-pre-line">{reply.content}</div>
+                                </div>
+                                <span className="text-[9px] text-slate-400 mt-1 px-1">
+                                  {new Date(reply.createdAt).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Reply Box */}
+                      <div className="mt-4 pt-4 border-t border-slate-100">
+                        <div className="flex gap-2">
+                          <textarea
+                            value={replyDrafts[msg.id] || ''}
+                            onChange={e => setReplyDrafts(prev => ({...prev, [msg.id]: e.target.value}))}
+                            placeholder="اكتب ردك هنا ليتواصل العضو معك..."
+                            className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 min-h-[40px] max-h-32 resize-y"
+                            rows={2}
+                          />
+                          <button
+                            type="button"
+                            disabled={!replyDrafts[msg.id]?.trim()}
+                            onClick={async () => {
+                              try {
+                                const content = replyDrafts[msg.id].trim();
+                                const reply = {
+                                  id: 'rep-' + Date.now().toString(),
+                                  senderId: currentSession.userId || 'admin',
+                                  senderName: currentSession.name || 'إدارة العائلة',
+                                  content,
+                                  createdAt: new Date().toISOString(),
+                                  isAdmin: true
+                                };
+                                await onUpdateMessage({ ...msg, replies: [...(msg.replies || []), reply] });
+                                setReplyDrafts(prev => ({...prev, [msg.id]: ''}));
+                                setMsgError(null);
+                              } catch (err) {
+                                setMsgError('تعذر الإرسال بسبب السعة اليومية.');
+                              }
+                            }}
+                            className="bg-indigo-600 disabled:bg-slate-300 text-white p-2.5 rounded-xl flex items-center justify-center shrink-0 self-end transition-colors"
+                          >
+                            <Send size={14} className="rtl:rotate-180" />
+                          </button>
+                        </div>
+                        {msgError && <p className="text-[10px] text-rose-500 mt-1 font-bold">{msgError}</p>}
+                      </div>
                     </div>
 
                     {/* Attachment preview panel */}

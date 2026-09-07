@@ -921,6 +921,12 @@ export default function App() {
     await logFamilyAction(newMessage.senderName, 'إرسال رسالة للإدارة', newMessage.subject, undefined, newMessage.senderEmail);
   };
 
+  const handleUpdateMessage = async (updatedMessage: FamilyMessage) => {
+    const nextMessages = messages.map(m => m.id === updatedMessage.id ? updatedMessage : m);
+    setMessages(nextMessages);
+    await saveMessageToCloud(updatedMessage);
+  };
+
   const handleDeleteMessage = async (id: string) => {
     const nextMessages = messages.filter(m => m.id !== id);
     setMessages(nextMessages);
@@ -1188,6 +1194,7 @@ export default function App() {
               onDeletePhoto={handleDeletePhoto}
               onAddPhotoComment={handleAddPhotoComment}
               onDeletePhotoComment={handleDeletePhotoComment}
+              onUpdateMessage={handleUpdateMessage}
               onDeleteMessage={handleDeleteMessage}
               onDeleteAuditLog={handleDeleteAuditLog}
               onClearAuditLogs={handleClearAuditLogs}
@@ -1197,8 +1204,10 @@ export default function App() {
 
           {activeTab === 'messages' && (
             <ContactAdmin
+              messages={messages}
               currentSession={currentSession}
               onSendMessage={handleSendMessage}
+              onUpdateMessage={handleUpdateMessage}
             />
           )}
         </div>

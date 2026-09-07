@@ -477,6 +477,16 @@ export default function AdminPanel({
                   (m.email && req.email && m.email.trim().toLowerCase() === req.email.trim().toLowerCase())
                 );
 
+                // Check for duplicate emails in other requests or existing members
+                const reqEmailClean = req.email?.trim().toLowerCase() || '';
+                const duplicateOtherRequests = reqEmailClean ? requests.filter(
+                  r => r.id !== req.id && r.email?.trim().toLowerCase() === reqEmailClean && r.status !== 'rejected'
+                ) : [];
+                const duplicateOtherMembers = reqEmailClean ? members.filter(
+                  m => m.email && m.email.trim().toLowerCase() === reqEmailClean && m.registeredUserId !== req.id && m.id !== linkedMember?.id
+                ) : [];
+                const hasDuplicateEmail = duplicateOtherRequests.length > 0 || duplicateOtherMembers.length > 0;
+
                 // Auto match candidate in members tree
                 const autoMatchedMember = findMatchingMemberInTree(req, members);
 
@@ -531,6 +541,12 @@ export default function AdminPanel({
                           <span className="text-[10px] text-slate-400 bg-white px-2 py-0.5 rounded-md border border-slate-100 font-medium">
                             {isMemberFemale(req) ? 'أنثى' : 'ذكر'}
                           </span>
+                          {hasDuplicateEmail && (
+                            <span className="text-[10px] bg-rose-100 text-rose-800 border border-rose-300 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 animate-pulse">
+                              <AlertTriangle size={11} className="text-rose-600" />
+                              بريد مكرر لأكثر من اسم
+                            </span>
+                          )}
                         </div>
                         <h4 className="font-bold text-slate-800 text-base">
                           {req.name} {req.fatherName ? (isMemberFemale(req) ? `بنت ${req.fatherName}` : `بن ${req.fatherName}`) : ''} {req.grandfatherName ? `بن ${req.grandfatherName}` : ''}
@@ -538,6 +554,25 @@ export default function AdminPanel({
                         <p className="text-xs text-slate-500">
                           البريد الإلكتروني: <strong className="text-slate-800 font-mono">{req.email}</strong> {req.createdAt ? ` | سُجّل في: ${new Date(req.createdAt).toLocaleDateString('ar-SA')}` : ''}
                         </p>
+                        {hasDuplicateEmail && (
+                          <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-900 flex items-start gap-2 mt-2">
+                            <AlertTriangle size={16} className="text-rose-600 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                              <p className="font-bold text-rose-800">
+                                تنبيه أمان: هذا البريد الإلكتروني ({req.email}) مسجل مسبقاً لأكثر من شخص!
+                              </p>
+                              <p className="text-[11px] text-rose-700 leading-relaxed">
+                                {duplicateOtherRequests.length > 0 && (
+                                  <span>مسجل في طلب آخر باسم: <strong>{duplicateOtherRequests.map(r => r.name + (r.fatherName ? ' بن ' + r.fatherName : '')).join('، ')}</strong>. </span>
+                                )}
+                                {duplicateOtherMembers.length > 0 && (
+                                  <span>مسجل لعضو في الشجرة: <strong>{duplicateOtherMembers.map(m => m.name + (m.fatherName ? ' بن ' + m.fatherName : '')).join('، ')}</strong>. </span>
+                                )}
+                                وفقاً لتوجيهات الإدارة، يجب رفض الطلب المكرر ومطالبة صاحبه بإدخال بريد إلكتروني مستقل وخاص به.
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Top Action Buttons */}

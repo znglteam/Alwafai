@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { RegistrationRequest } from '../types';
 import { isMemberFemale } from '../utils/marriageUtils';
 import { PWAInstallButton } from "./PWAInstallButton";
-import { X, User, Mail, Lock, Sparkles, LogIn, UserPlus, Upload, FileText, CheckCircle, Plus, Trash2, Users, HelpCircle, Info } from 'lucide-react';
+import { X, User, Mail, Lock, Sparkles, LogIn, UserPlus, Upload, FileText, CheckCircle, Plus, Trash2, Users, HelpCircle, Info, AlertTriangle } from 'lucide-react';
 
 const ARAB_COUNTRIES = [
   "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
@@ -147,6 +147,12 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
           ) : isRegisterMode ? (
             /* Register Form */
             <form onSubmit={handleRegisterSubmit} className="space-y-4">
+              {loginError && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs p-3.5 rounded-2xl font-bold flex items-start gap-2 shadow-xs">
+                  <AlertTriangle size={17} className="text-rose-600 shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">{loginError}</span>
+                </div>
+              )}
               {/* Prominent Desktop Install Option during registration request */}
               <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 border border-emerald-300 rounded-2xl p-3.5 shadow-xs space-y-2">
                 <div className="flex items-center justify-between gap-2">

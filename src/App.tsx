@@ -440,8 +440,25 @@ export default function App() {
   // Handle Registrations (creates pending requests)
   const handleNewRequest = async (newRequest: Omit<RegistrationRequest, "id" | "status" | "createdAt">) => {
     const cleanEmail = newRequest.email.trim().toLowerCase();
-    if (requests.some(r => r.email?.trim().toLowerCase() === cleanEmail && r.status !== 'rejected')) {
-      return { success: false, message: 'يوجد طلب تسجيل معلق أو معتمد بهذا البريد الإلكتروني.' };
+
+    // 1. Check if email is already assigned to an existing member in the tree
+    const existingMemberWithEmail = members.find(m => m.email && m.email.trim().toLowerCase() === cleanEmail);
+    if (existingMemberWithEmail) {
+      const memberName = `${existingMemberWithEmail.name} ${existingMemberWithEmail.fatherName ? 'بن ' + existingMemberWithEmail.fatherName : ''}`.trim();
+      return { 
+        success: false, 
+        message: `نعتذر، هذا البريد الإلكتروني مسجل ومستخدم مسبقاً في الشجرة باسم (${memberName}). بناءً على توجيهات الإدارة، يجب استخدام بريد إلكتروني مستقل وخاص بكل فرد.` 
+      };
+    }
+
+    // 2. Check if email is already submitted in another request
+    const existingReq = requests.find(r => r.email && r.email.trim().toLowerCase() === cleanEmail && r.status !== 'rejected');
+    if (existingReq) {
+      const reqName = `${existingReq.name} ${existingReq.fatherName ? 'بن ' + existingReq.fatherName : ''}`.trim();
+      return { 
+        success: false, 
+        message: `نعتذر، تم تقديم طلب تسجيل مسبقاً بهذا البريد الإلكتروني باسم (${reqName}). لا يُسمح بتسجيل أكثر من اسم أو شخص بنفس البريد الإلكتروني.` 
+      };
     }
 
     const id = 'req-' + Date.now().toString();

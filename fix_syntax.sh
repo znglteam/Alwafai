@@ -1,5 +1,4 @@
-sed -i '/<div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">/{
-    N
-    /.*{isAddingMember && (/!P
-    /.*{isAddingMember && (/D
-}' src/components/FamilyTreeVisualizer.tsx
+#!/bin/bash
+sed -i '768,769d' src/App.tsx
+sed -i '771i\
+  const handleAddMemberDirectly = (newMem: Omit<FamilyMember, "id" | "childrenIds">): string => {' src/App.tsx

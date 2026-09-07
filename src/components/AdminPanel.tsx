@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { FamilyMember, RegistrationRequest, NewsItem, FamilyPhoto, FamilyMessage, MemberComment, UserSession } from '../types';
 import { LiveChangeLog } from '../utils/firebaseService';
 
 const ARAB_COUNTRIES = [
   "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
 ];
-import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, TrendingUp, Mars, Venus, Upload, Activity, History, Link, AlertTriangle, RotateCcw, UserCheck, Search, Send } from 'lucide-react';
+import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, Mars, Venus, Upload, Activity, History, Link, AlertTriangle, RotateCcw, UserCheck, Search, Send } from 'lucide-react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
 import { findMatchingMemberInTree, getRankedCandidateMembers, getResolvedMemberLineage } from '../utils/memberMatching';
@@ -70,7 +70,7 @@ export default function AdminPanel({
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
   const [requestToDelete, setRequestToDelete] = useState<{ id: string; name: string } | null>(null);
   const [validationError, setValidationError] = useState<{ reqId: string; msg: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'requests' | 'tree' | 'news' | 'photos' | 'messages' | 'stats' | 'logs'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'tree' | 'news' | 'photos' | 'messages' | 'logs'>('requests');
   useEffect(() => {
     if (activeTab === "messages") {
       const unreadMessages = messages.filter(m => m.isReadByAdmin === false);
@@ -98,32 +98,32 @@ export default function AdminPanel({
     return femaleNames.includes(firstWord);
   };
 
-  // Statistics calculations
-  const totalCount = members.length;
-  const aliveCount = members.filter(m => m.isAlive).length;
-  const deceasedCount = totalCount - aliveCount;
-
-  // Country counts
-  const countryCounts = members.reduce((acc, m) => {
-    if (m.isAlive && m.country) {
-      acc[m.country] = (acc[m.country] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
-  // Specialization counts
-  const specializationCounts = members.reduce((acc, m) => {
-    if (m.specialization && !m.specialization.includes('المرحلة')) {
-      const cleanSpec = m.specialization.split('(')[0].trim();
-      acc[cleanSpec] = (acc[cleanSpec] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
-  // Top specializations sorted
-  const topSpecializations = Object.entries(specializationCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  // Filter audit logs to show ONLY modifications made by family members (excludes admin, requests, messages)
+  const memberAuditLogs = useMemo(() => {
+    return (auditLogs || []).filter(log => {
+      const uName = (log.userName || "").toLowerCase();
+      const action = (log.action || "").toLowerCase();
+      const details = (log.details || "").toLowerCase();
+      // Exclude admin role or admin-identifying names
+      if (log.userRole === "admin" || uName.includes("admin") || uName.includes("مشرف") || uName.includes("إدارة") || uName.includes("ادارة")) {
+        return false;
+      }
+      // Exclude requests, messages, registrations, approvals, rejections
+      if (
+        action.includes("طلب") || 
+        action.includes("انتساب") || 
+        action.includes("تسجيل") || 
+        action.includes("رسالة") || 
+        action.includes("اعتماد") || 
+        action.includes("رفض") ||
+        details.includes("طلب انتساب") ||
+        details.includes("إرسال رسالة")
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [auditLogs]);
   
   // News Form state
   const [newsType, setNewsType] = useState<NewsItem['type']>('general');
@@ -391,21 +391,13 @@ export default function AdminPanel({
           الرسائل والمرفقات ({messages.length})
         </button>
         <button
-          onClick={() => setActiveTab('stats')}
-          className={`pb-3 px-6 text-sm font-bold transition-all border-b-2 -mb-[2px] ${
-            activeTab === 'stats' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          إحصائيات العائلة
-        </button>
-        <button
           onClick={() => setActiveTab('logs')}
           className={`pb-3 px-6 text-sm font-bold transition-all border-b-2 -mb-[2px] flex items-center gap-1.5 ${
             activeTab === 'logs' ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
           <Activity size={14} className="text-amber-500" />
-          <span>سجل التغييرات الحي ({auditLogs.length})</span>
+          <span>تعديلات الأعضاء ({memberAuditLogs.length})</span>
         </button>
       </div>
 
@@ -1979,138 +1971,27 @@ export default function AdminPanel({
           </div>
         )}
 
-        {/* Tab 6: Statistics (Admins only) */}
-        {activeTab === 'stats' && (
-          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6 animate-fade-in">
-            <div className="border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <TrendingUp size={20} className="text-indigo-600" />
-                إحصائيات وتوزيع أفراد العائلة
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                تقرير شامل وحصري لإدارة البوابة يعرض التحليلات الجغرافية والتخصصية والبيانات الديموغرافية لأفراد العائلة المسجلين بالشجرة.
-              </p>
-            </div>
-
-            {/* Quick Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl text-right">
-                <span className="block text-xs text-indigo-600 font-bold mb-1">إجمالي الأعضاء بالشجرة</span>
-                <span className="text-3xl font-extrabold text-indigo-900">{totalCount} <span className="text-sm font-normal text-indigo-700">فرد</span></span>
-              </div>
-              <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl text-right">
-                <span className="block text-xs text-emerald-600 font-bold mb-1">الأعضاء الأحياء</span>
-                <span className="text-3xl font-extrabold text-emerald-900">{aliveCount} <span className="text-sm font-normal text-emerald-700">فرد</span></span>
-              </div>
-              <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl text-right">
-                <span className="block text-xs text-slate-500 font-bold mb-1">الأعضاء المتوفين</span>
-                <span className="text-3xl font-extrabold text-slate-800">{deceasedCount} <span className="text-sm font-normal text-slate-600">فرد</span></span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
-              {/* Geographical Distribution */}
-              <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl space-y-4">
-                <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200/60 pb-2">
-                  <MapPin size={16} className="text-indigo-600" />
-                  توزيع الإقامة للأعضاء الأحياء
-                </h4>
-                <div className="space-y-3">
-                  {Object.entries(countryCounts).length > 0 ? (
-                    Object.entries(countryCounts).map(([country, count]) => {
-                      const percentage = Math.round((count / aliveCount) * 100) || 0;
-                      return (
-                        <div key={country} className="space-y-1">
-                          <div className="flex justify-between text-xs font-semibold">
-                            <span className="text-slate-700">{country}</span>
-                            <span className="text-slate-600">{count} فرد ({percentage}%)</span>
-                          </div>
-                          <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
-                            <div 
-                              className="bg-indigo-600 h-full rounded-full transition-all" 
-                              style={{ width: `${percentage}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="text-xs text-slate-400 text-center py-6">لا توجد بيانات إقامة متوفرة.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Distinguished Specializations */}
-              <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl space-y-4">
-                <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200/60 pb-2">
-                  <BookOpen size={16} className="text-indigo-600" />
-                  أبرز التخصصات العلمية والمهنية بالشجرة
-                </h4>
-                <div className="space-y-2">
-                  {topSpecializations.length > 0 ? (
-                    topSpecializations.map(([spec, count]) => (
-                      <div key={spec} className="flex justify-between items-center bg-white border border-slate-100 p-3 rounded-xl text-xs">
-                        <span className="font-semibold text-slate-700 truncate max-w-[240px]">{spec}</span>
-                        <span className="bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-lg shrink-0">
-                          {count} {count > 1 ? 'أعضاء' : 'عضو'}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-slate-400 text-center py-6">لا توجد تخصصات علمية مدونة بعد.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* Tab 7: Real-time Live Change Logs */}
+        {/* Tab 6: Real-time Member Change Logs */}
         {activeTab === 'logs' && (
           <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6 animate-fade-in">
-            <div className="border-b border-slate-100 pb-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  <History size={20} className="text-amber-600" />
-                  سجل التغييرات والتعديلات الحية
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  تتبع فوري ومباشر لجميع التغييرات التي يجريها الأعضاء والمسؤولون على شجرة العائلة وبياناتها السحابية.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row items-center gap-2 self-start">
-                {auditLogs.length > 0 && onClearAuditLogs && (
-                  <button
-                    onClick={() => {
-                      if (window.confirm('هل أنت متأكد من رغبتك في مسح السجل كاملاً؟')) {
-                        onClearAuditLogs();
-                      }
-                    }}
-                    className="text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-1.5 rounded-xl border border-rose-200 font-bold transition-all flex items-center gap-1.5"
-                  >
-                    <Trash2 size={14} />
-                    مسح السجل كاملاً
-                  </button>
-                )}
-                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 text-xs px-3 py-1.5 rounded-xl border border-emerald-200/60 font-bold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                  <span>المزامنة السحابية متصلة ونشطة</span>
-                </div>
-              </div>
+            <div className="border-b border-slate-100 pb-3 flex items-center justify-between gap-3">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <History size={20} className="text-amber-600" />
+                سجل تعديلات الأعضاء على الشجرة
+              </h3>
             </div>
 
-            {auditLogs.length === 0 ? (
+            {memberAuditLogs.length === 0 ? (
               <div className="text-center py-12 space-y-3">
                 <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mx-auto">
                   <Activity size={24} />
                 </div>
-                <p className="text-sm font-bold text-slate-700">لا توجد عمليات مسجلة حتى الآن</p>
-                <p className="text-xs text-slate-400">أي تعديل يجريه أي فرد أو الآدمن على الشجرة سيظهر هنا فوراً بلحظتها.</p>
+                <p className="text-sm font-bold text-slate-700">لا توجد تعديلات مسجلة من الأعضاء حتى الآن</p>
+                <p className="text-xs text-slate-400">تظهر هنا حصراً التعديلات والإضافات التي يجريها أفراد العائلة (الأعضاء) على الشجرة.</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {auditLogs.map((log) => (
+                {memberAuditLogs.map((log) => (
                   <div 
                     key={log.id} 
                     className="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-amber-200 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-right"
@@ -2136,8 +2017,8 @@ export default function AdminPanel({
                     </div>
 
                     <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-                      <div className="text-[11px] text-slate-400 font-mono">
-                        {new Date(log.timestamp).toLocaleString('ar-SA', {
+                      <div className="text-[11px] text-slate-400 font-mono" dir="ltr">
+                        {new Date(log.timestamp).toLocaleString('ar-SA-u-nu-latn', {
                           hour: '2-digit',
                           minute: '2-digit',
                           day: 'numeric',

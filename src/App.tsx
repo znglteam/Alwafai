@@ -241,12 +241,31 @@ export default function App() {
     });
 
     const unsubLogs = subscribeToAuditLogs((logs) => {
-      setAuditLogs(logs);
-      if (logs.length > 0 && currentSession.role === 'admin') {
-        const latest = logs[0];
+      // Filter logs to ONLY show member modifications (exclude admin, requests, messages)
+      const memberLogs = (logs || []).filter(log => {
+        const uName = (log.userName || "").toLowerCase();
+        const action = (log.action || "").toLowerCase();
+        const details = (log.details || "").toLowerCase();
+        if (log.userRole === "admin" || uName.includes("admin") || uName.includes("مشرف") || uName.includes("إدارة") || uName.includes("ادارة")) return false;
+        if (
+          action.includes("طلب") || 
+          action.includes("انتساب") || 
+          action.includes("تسجيل") || 
+          action.includes("رسالة") || 
+          action.includes("اعتماد") || 
+          action.includes("رفض") ||
+          details.includes("طلب انتساب") ||
+          details.includes("إرسال رسالة")
+        ) return false;
+        return true;
+      });
+
+      setAuditLogs(memberLogs);
+      if (memberLogs.length > 0 && currentSession.role === "admin") {
+        const latest = memberLogs[0];
         const logTime = new Date(latest.timestamp).getTime();
         if (Date.now() - logTime < 8000) {
-          setLiveNotification(`تحديث حي: قام ${latest.userName} بـ ${latest.action} ${latest.targetMemberName ? `(${latest.targetMemberName})` : ''}`);
+          setLiveNotification(`تعديل من عضو: قام ${latest.userName} بـ ${latest.action} ${latest.targetMemberName ? `(${latest.targetMemberName})` : ""}`);
           setTimeout(() => setLiveNotification(null), 5000);
         }
       }
@@ -442,7 +461,6 @@ export default function App() {
       
       const nextRequests = [request, ...requests];
       setRequests(nextRequests);
-      await logFamilyAction(newRequest.name, 'طلب تسجيل جديد', `طلب انتساب جديد قيد مراجعة الآدمن`, newRequest.name, newRequest.email);
       return { success: true };
     } catch (err) {
       console.error(err);
@@ -512,7 +530,6 @@ export default function App() {
       await saveMemberToCloud(updatedExisting);
       await saveRequestToCloud(updatedRequest);
       await saveNewsToCloud(newNewsItem);
-      await logFamilyAction(currentSession.name, 'ربط واعتماد حساب مسجل', `تم ربط حساب ${req.name} (${req.email}) مع الفرد الموجود بالشجرة بنفس اسمه: ${existing.name}`, existing.name);
     } else {
       const newMemberId = 'member-' + Date.now().toString();
       effectiveMemberId = newMemberId;
@@ -582,7 +599,6 @@ export default function App() {
       await saveRequestToCloud(updatedRequest);
       await saveNewsToCloud(newNewsItem);
 
-      await logFamilyAction(currentSession.name, 'موافقة على عضو جديد', `تم اعتماد وقبول حساب ${req.name} وإضافته للشجرة`, req.name);
     }
 
     if (currentSession.role === 'pending' && currentSession.requestId === requestId) {
@@ -616,7 +632,6 @@ export default function App() {
     const updatedRequests = requests.filter(r => r.id !== requestId);
     setRequests(updatedRequests);
     await deleteRequestFromCloud(requestId);
-    await logFamilyAction(currentSession.name, 'حذف طلب تسجيل', `تم حذف طلب التسجيل للمستخدم: ${req?.name || requestId}`, req?.name);
   };
 
   // Revoke Request back to pending
@@ -627,7 +642,6 @@ export default function App() {
     const updatedRequests = requests.map(r => r.id === requestId ? updatedRequest : r);
     setRequests(updatedRequests);
     await saveRequestToCloud(updatedRequest);
-    await logFamilyAction(currentSession.name, 'إلغاء اعتماد طلب', `تم إعادة طلب ${req.name} إلى قيد الانتظار لإعادة ضبطه`, req.name);
   };
 
   // Helper to diff and get only changed members to avoid massive quota usage
@@ -705,7 +719,9 @@ export default function App() {
       }
     }
     
-    await logFamilyAction(currentSession.name, 'تعديل بيانات فرد', diffDetails, updated.name);
+    if (currentSession.role === "member") {
+      await logFamilyAction(currentSession.name, "تعديل بيانات فرد", diffDetails, updated.name, undefined, "member");
+    }
   };
 
   const handleUpdateMembers = async (newMembers: FamilyMember[]) => {
@@ -715,8 +731,11 @@ export default function App() {
     if (changed.length > 0) {
       await saveMultipleMembersToCloud(changed);
     }
-    await logFamilyAction(currentSession.name, 'إعادة ترتيب الأبناء/الأفراد في الشجرة', 'تحديث تراتيب العائلة');
+    if (currentSession.role === "member") {
+      await logFamilyAction(currentSession.name, "إعادة ترتيب الأبناء/الأفراد في الشجرة", "تحديث تراتيب العائلة", undefined, undefined, "member");
+    }
   };
+      
 
   // Add Child (called by Member or Admin)
   const handleAddChild = async (parentId: string, childInfo: Omit<FamilyMember, 'id' | 'fatherId' | 'childrenIds'>) => {
@@ -751,20 +770,24 @@ export default function App() {
         };
         return updatedParent;
       }
-      return m;
-    });
+    return m;
+  });
 
-    const reconciled = reconcileLineage(updated);
-    setMembers(reconciled);
-    const changed = getChangedMembers(members, reconciled);
-    if (changed.length > 0) {
-      await saveMultipleMembersToCloud(changed);
-    }
-    await logFamilyAction(currentSession.name, 'إضافة ابن/ابنة جديدة', `إضافة ${childInfo.name}`, childInfo.name);
+  const reconciled = reconcileLineage(updated);
+  setMembers(reconciled);
+
+  const changed = getChangedMembers(members, reconciled);
+  if (changed.length > 0) {
+    await saveMultipleMembersToCloud(changed);
+  }
+
+  if (currentSession.role === "member") {
+    await logFamilyAction(currentSession.name, "إضافة ابن/ابنة جديدة", `إضافة ${childInfo.name}`, childInfo.name, undefined, "member");
+  }
   };
 
+  const handleAddMemberDirectly = (newMem: Omit<FamilyMember, "id" | "childrenIds">): string => {
   // Add Member Directly (Admin only)
-  const handleAddMemberDirectly = (newMem: Omit<FamilyMember, 'id' | 'childrenIds'>): string => {
     const id = 'member-' + Date.now().toString();
     const fatherNode = newMem.fatherId ? members.find(m => m.id === newMem.fatherId) : null;
     const resolvedFatherName = fatherNode ? fatherNode.name : (newMem.fatherName || '');
@@ -801,10 +824,9 @@ export default function App() {
     
     const changed = getChangedMembers(members, reconciled);
     if (changed.length > 0) {
-      saveMultipleMembersToCloud(changed);
     }
 
-    logFamilyAction(currentSession.name, 'إضافة عضو مباشرة إلى الشجرة', newMem.name, newMem.name);
+    
     return id;
   };
 
@@ -834,7 +856,6 @@ export default function App() {
     if (changed.length > 0) {
       await saveMultipleMembersToCloud(changed);
     }
-    await logFamilyAction(currentSession.name, 'حذف عضو من الشجرة', target?.name || id, target?.name);
   };
 
   // Restore or Bulk Import Members
@@ -843,8 +864,7 @@ export default function App() {
     setMembers(restoredMembers);
     localStorage.setItem('family_members_v6', JSON.stringify(restoredMembers));
     localStorage.setItem('family_tree_backup', JSON.stringify(restoredMembers));
-    await seedInitialMembersIfEmpty(restoredMembers);
-    await logFamilyAction(currentSession.name, 'استعادة بيانات الشجرة', `تم استعادة وتثبيت ${restoredMembers.length} فرد في الشجرة`);
+    
   };
 
   // News management
@@ -956,7 +976,6 @@ export default function App() {
     const nextMessages = [message, ...messages];
     setMessages(nextMessages);
     await saveMessageToCloud(message);
-    await logFamilyAction(newMessage.senderName, 'إرسال رسالة للإدارة', newMessage.subject, undefined, newMessage.senderEmail);
   };
 
   const handleUpdateMessage = async (updatedMessage: FamilyMessage) => {
@@ -1225,7 +1244,6 @@ export default function App() {
               photos={photos}
               messages={messages}
               currentSession={currentSession}
-              onSendMessage={handleSendMessage}
               onUpdateMessage={handleUpdateMessage}
               auditLogs={auditLogs}
               onApproveRequest={handleApproveRequest}

@@ -1,7 +1,10 @@
 export interface MemberComment {
+  isReadByMember?: boolean;
+  isReadByAdmin?: boolean;
   id: string;
   senderName: string;
   senderEmail: string;
+  senderId?: string;
   content: string;
   createdAt: string;
 }
@@ -55,6 +58,8 @@ export const getMemberSpouses = (m?: Partial<FamilyMember> | null): SpouseInfo[]
 };
 
 export interface RegistrationRequest {
+  isReadByMember?: boolean;
+  isReadByAdmin?: boolean;
   id: string;
   name: string;
   fatherName: string;
@@ -79,6 +84,8 @@ export interface RegistrationRequest {
 }
 
 export interface NewsItem {
+  isReadByMember?: boolean;
+  isReadByAdmin?: boolean;
   id: string;
   type: 'welcome' | 'baby' | 'condolence' | 'general';
   content: string;
@@ -115,6 +122,7 @@ export interface FamilyMessage {
   id: string;
   senderName: string;
   senderEmail: string;
+  senderId?: string;
   recipientEmail?: string;
   subject: string;
   content: string;

@@ -34,6 +34,7 @@ export const auth = getAuth(app);
 export interface LiveChangeLog {
   id: string;
   userName: string;
+  userRole?: string;
   userPhone?: string;
   action: string;
   details: string;
@@ -366,15 +367,17 @@ export async function logFamilyAction(
   action: string,
   details: string,
   targetMemberName?: string,
-  userPhone?: string
+  userPhone?: string,
+  userRole: string = "member"
 ) {
   try {
     await addDoc(AUDIT_COLLECTION, {
       userName,
+      userRole,
       action,
       details,
-      targetMemberName: targetMemberName || '',
-      userPhone: userPhone || '',
+      targetMemberName: targetMemberName || "",
+      userPhone: userPhone || "",
       timestamp: new Date().toISOString(),
       createdAt: serverTimestamp()
     });

@@ -269,7 +269,7 @@ export default function MainPage({
 
       {/* Photo Gallery Section */}
 
-      <section className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
+      <section id="gallery-section" className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
           <div>
             <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">

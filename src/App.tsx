@@ -53,7 +53,7 @@ import AuthModal from './components/AuthModal';
 import ContactAdmin from './components/ContactAdmin';
 import UserProfileModal from './components/UserProfileModal';
 
-import { Home, Network, User, Shield, LogOut, MessageSquare, Wifi, Bell, CloudUpload, CheckCircle, LogIn, UserPlus } from 'lucide-react';
+import { Home, Network, User, Shield, LogOut, MessageSquare, Wifi, Bell, CloudUpload, CheckCircle, LogIn, UserPlus, Image } from 'lucide-react';
 import { reconcileLineageAndMarriages, syncSpouseRelationships, isMemberFemale } from './utils/marriageUtils';
 import { findMatchingMemberInTree } from './utils/memberMatching';
 
@@ -879,10 +879,12 @@ export default function App() {
       )}
 
       {/* Top News Ticker */}
-      <NewsTicker news={effectiveNews} />
+      {currentSession.role !== 'guest' && (
+        <NewsTicker news={effectiveNews} />
+      )}
 
       {/* Main Navbar */}
-      <nav id="main-nav" className={`bg-white border-b border-slate-200/90 py-3 px-4 md:px-6 sticky ${effectiveNews && effectiveNews.length > 0 ? 'top-11' : 'top-0'} z-30 shadow-xs text-right`}>
+      <nav id="main-nav" className={`bg-white border-b border-slate-200/90 py-3 px-4 md:px-6 sticky ${currentSession.role !== 'guest' && effectiveNews && effectiveNews.length > 0 ? 'top-11' : 'top-0'} z-30 shadow-xs text-right`}>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
           
           {/* Right Column (RTL Start): Prestigious Family Title & Location Badge */}
@@ -897,19 +899,32 @@ export default function App() {
             </div>
           </div>
 
-          {/* Center Column: Nav Tabs (Visible for logged-in members & admins) */}
+          {/* Center Column: Nav Tabs */}
           <div className="flex flex-wrap items-center justify-center gap-1.5 md:gap-2">
-            {currentSession.role !== 'guest' && (
-              <button
-                onClick={() => setActiveTab('main')}
-                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'main' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <Home size={14} />
-                الرئيسية
-              </button>
-            )}
+            <button
+              onClick={() => setActiveTab('main')}
+              className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
+                activeTab === 'main' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <Home size={14} />
+              الرئيسية
+            </button>
+
+            <button
+              onClick={() => {
+                if (activeTab !== 'main') {
+                  setActiveTab('main');
+                }
+                setTimeout(() => {
+                  document.getElementById('gallery-section')?.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+              }}
+              className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+            >
+              <Image size={14} />
+              معرض الصور
+            </button>
             
             {/* Family Tree Tab - Visible ONLY to Approved Members & Admins */}
             {(currentSession.role === 'member' || currentSession.role === 'admin') && (

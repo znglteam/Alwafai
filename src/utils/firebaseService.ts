@@ -380,3 +380,26 @@ export async function logFamilyAction(
     console.error('Failed to write audit log:', error);
   }
 }
+
+export async function deleteAuditLogFromCloud(logId: string) {
+  try {
+    await deleteDoc(doc(db, 'family_audit_logs', logId));
+  } catch (err) {
+    console.error('Error deleting log:', err);
+    throw err;
+  }
+}
+
+export async function clearAllAuditLogsFromCloud(logs: LiveChangeLog[]) {
+  try {
+    const batch = writeBatch(db);
+    logs.forEach(log => {
+      const ref = doc(db, 'family_audit_logs', log.id);
+      batch.delete(ref);
+    });
+    await batch.commit();
+  } catch (err) {
+    console.error('Error clearing logs:', err);
+    throw err;
+  }
+}

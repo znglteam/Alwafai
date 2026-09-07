@@ -39,6 +39,8 @@ import {
   saveMessageToCloud,
   deleteMessageFromCloud,
   logFamilyAction,
+  deleteAuditLogFromCloud,
+  clearAllAuditLogsFromCloud,
   LiveChangeLog
 } from './utils/firebaseService';
 
@@ -650,7 +652,28 @@ export default function App() {
     if (changed.length > 0) {
       await saveMultipleMembersToCloud(changed);
     }
-    await logFamilyAction(currentSession.name, 'تعديل بيانات فرد', `تحديث بيانات الشجرة`, updated.name);
+    
+    // Generate precise diff for audit log
+    let diffDetails = 'تحديث بيانات الشجرة';
+    if (prevMember) {
+      const changes: string[] = [];
+      if (prevMember.name !== updated.name) changes.push(`الاسم من "${prevMember.name}" إلى "${updated.name}"`);
+      if (prevMember.birthYear !== updated.birthYear) changes.push(`سنة الميلاد من "${prevMember.birthYear || 'غير محدد'}" إلى "${updated.birthYear || 'غير محدد'}"`);
+      if (prevMember.country !== updated.country) changes.push(`البلد من "${prevMember.country || 'غير محدد'}" إلى "${updated.country || 'غير محدد'}"`);
+      if (prevMember.specialization !== updated.specialization) changes.push(`التخصص من "${prevMember.specialization || 'غير محدد'}" إلى "${updated.specialization || 'غير محدد'}"`);
+      if (prevMember.bio !== updated.bio) changes.push(`النبذة الشخصية`);
+      if (prevMember.isAlive !== updated.isAlive) changes.push(`الحالة (على قيد الحياة: ${updated.isAlive ? 'نعم' : 'لا'})`);
+      if (prevMember.avatar !== updated.avatar) changes.push(`الصورة الشخصية`);
+      if (prevMember.spouseName !== updated.spouseName) changes.push(`اسم الزوج/الزوجة من "${prevMember.spouseName || 'لا يوجد'}" إلى "${updated.spouseName || 'لا يوجد'}"`);
+      
+      if (changes.length > 0) {
+        diffDetails = `تم تعديل: ${changes.join('، ')}`;
+      } else {
+        diffDetails = `لم يتم رصد تغييرات فعلية في الحقول الرئيسية`;
+      }
+    }
+    
+    await logFamilyAction(currentSession.name, 'تعديل بيانات فرد', diffDetails, updated.name);
   };
 
   const handleUpdateMembers = async (newMembers: FamilyMember[]) => {
@@ -904,6 +927,26 @@ export default function App() {
     await deleteMessageFromCloud(id);
   };
 
+  const handleDeleteAuditLog = async (id: string) => {
+    const nextLogs = auditLogs.filter(log => log.id !== id);
+    setAuditLogs(nextLogs);
+    try {
+      await deleteAuditLogFromCloud(id);
+    } catch (e) {
+      console.warn('Could not delete audit log due to quota limit');
+    }
+  };
+
+  const handleClearAuditLogs = async () => {
+    const logsToClear = [...auditLogs];
+    setAuditLogs([]);
+    try {
+      await clearAllAuditLogsFromCloud(logsToClear);
+    } catch (e) {
+      console.warn('Could not clear audit logs due to quota limit');
+    }
+  };
+
   const activeMember = members.find(m => 
     m.id === currentSession.userId ||
     (currentSession.userId && m.registeredUserId === currentSession.userId) ||
@@ -1146,6 +1189,8 @@ export default function App() {
               onAddPhotoComment={handleAddPhotoComment}
               onDeletePhotoComment={handleDeletePhotoComment}
               onDeleteMessage={handleDeleteMessage}
+              onDeleteAuditLog={handleDeleteAuditLog}
+              onClearAuditLogs={handleClearAuditLogs}
               onRestoreMembers={handleRestoreMembers}
             />
           )}

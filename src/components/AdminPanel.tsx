@@ -33,6 +33,8 @@ interface AdminPanelProps {
   onAddPhotoComment: (photoId: string, comment: Omit<MemberComment, 'id' | 'createdAt'>) => void;
   onDeletePhotoComment: (photoId: string, commentId: string) => void;
   onDeleteMessage: (id: string) => void;
+  onDeleteAuditLog?: (id: string) => void;
+  onClearAuditLogs?: () => void;
   onRestoreMembers?: (members: FamilyMember[]) => void;
 }
 
@@ -59,6 +61,8 @@ export default function AdminPanel({
   onAddPhotoComment,
   onDeletePhotoComment,
   onDeleteMessage,
+  onDeleteAuditLog,
+  onClearAuditLogs,
   onRestoreMembers
 }: AdminPanelProps) {
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
@@ -2001,9 +2005,24 @@ export default function AdminPanel({
                   تتبع فوري ومباشر لجميع التغييرات التي يجريها الأعضاء والمسؤولون على شجرة العائلة وبياناتها السحابية.
                 </p>
               </div>
-              <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 text-xs px-3 py-1.5 rounded-xl border border-emerald-200/60 font-bold self-start">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                <span>المزامنة السحابية متصلة ونشطة</span>
+              <div className="flex flex-col sm:flex-row items-center gap-2 self-start">
+                {auditLogs.length > 0 && onClearAuditLogs && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm('هل أنت متأكد من رغبتك في مسح السجل كاملاً؟')) {
+                        onClearAuditLogs();
+                      }
+                    }}
+                    className="text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 px-3 py-1.5 rounded-xl border border-rose-200 font-bold transition-all flex items-center gap-1.5"
+                  >
+                    <Trash2 size={14} />
+                    مسح السجل كاملاً
+                  </button>
+                )}
+                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 text-xs px-3 py-1.5 rounded-xl border border-emerald-200/60 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                  <span>المزامنة السحابية متصلة ونشطة</span>
+                </div>
               </div>
             </div>
 
@@ -2036,19 +2055,30 @@ export default function AdminPanel({
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 font-medium">
+                      <p className="text-xs text-slate-500 font-medium whitespace-pre-line">
                         {log.details}
                         {log.userPhone && ` • هاتف: ${log.userPhone}`}
                       </p>
                     </div>
 
-                    <div className="text-[11px] text-slate-400 shrink-0 font-mono">
-                      {new Date(log.timestamp).toLocaleString('ar-SA', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        day: 'numeric',
-                        month: 'short'
-                      })}
+                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                      <div className="text-[11px] text-slate-400 font-mono">
+                        {new Date(log.timestamp).toLocaleString('ar-SA', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          day: 'numeric',
+                          month: 'short'
+                        })}
+                      </div>
+                      {onDeleteAuditLog && (
+                        <button
+                          onClick={() => onDeleteAuditLog(log.id)}
+                          className="text-slate-400 hover:text-rose-600 p-1.5 hover:bg-rose-50 rounded-lg transition-all"
+                          title="حذف هذا السجل"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

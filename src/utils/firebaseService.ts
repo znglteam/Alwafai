@@ -152,6 +152,8 @@ function cleanForFirestore<T extends Record<string, any>>(obj: T): Record<string
     if (value !== undefined) {
       if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
         cleaned[key] = cleanForFirestore(value);
+      } else if (Array.isArray(value)) {
+        cleaned[key] = value.map(v => (v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) ? cleanForFirestore(v) : v).filter(v => v !== undefined);
       } else {
         cleaned[key] = value;
       }
@@ -344,7 +346,7 @@ export async function saveMessageToCloud(msg: FamilyMessage) {
     const ref = doc(db, 'family_messages', msg.id);
     await setDoc(ref, cleanForFirestore(msg), { merge: true });
   } catch (err) {
-    console.error('Error saving message to Firestore:', err);
+    console.error('Error saving message to Firestore:', err); throw err;
   }
 }
 

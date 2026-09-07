@@ -421,12 +421,8 @@ export default function App() {
   };
 
   // Handle Registrations (creates pending requests)
-  const handleRegister = async (newRequest: Omit<RegistrationRequest, 'id' | 'status' | 'createdAt'>) => {
+  const handleNewRequest = async (newRequest: Omit<RegistrationRequest, "id" | "status" | "createdAt">) => {
     const cleanEmail = newRequest.email.trim().toLowerCase();
-    
-    if (members.some(m => m.email?.trim().toLowerCase() === cleanEmail)) {
-      return { success: false, message: 'البريد الإلكتروني مستخدم بالفعل كعضو في العائلة.' };
-    }
     if (requests.some(r => r.email?.trim().toLowerCase() === cleanEmail && r.status !== 'rejected')) {
       return { success: false, message: 'يوجد طلب تسجيل معلق أو معتمد بهذا البريد الإلكتروني.' };
     }
@@ -436,7 +432,9 @@ export default function App() {
       ...newRequest,
       id,
       status: 'pending',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      isReadByAdmin: false,
+      isReadByMember: true
     };
 
     try {
@@ -501,7 +499,9 @@ export default function App() {
         id: 'news-' + Date.now().toString(),
         type: 'welcome',
         content: `نرحب بالعضو الجديد في الموقع: ${memberFullName}`,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+      isReadByAdmin: false,
+      isReadByMember: true
       };
       const updatedNews = [newNewsItem, ...news];
 
@@ -566,7 +566,9 @@ export default function App() {
         id: 'news-' + Date.now().toString(),
         type: 'welcome',
         content: `نرحب بالعضو الجديد في الموقع: ${memberFullName}`,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+      isReadByAdmin: false,
+      isReadByMember: true
       };
       const updatedNews = [newNewsItem, ...news];
 
@@ -682,6 +684,8 @@ export default function App() {
             content: `قام "${latestComment.senderName}" بإضافة تعليق على ملفك الشخصي في شجرة العائلة.\n\nالتعليق:\n"${latestComment.content}"\n\nتاريخ التعليق: ${latestComment.createdAt}`,
             attachmentType: 'none' as const,
             createdAt: new Date().toISOString(),
+      isReadByAdmin: false,
+      isReadByMember: true,
             replies: []
           };
           
@@ -848,7 +852,9 @@ export default function App() {
     const item: NewsItem = {
       ...newItem,
       id: 'news-' + Date.now().toString(),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      isReadByAdmin: false,
+      isReadByMember: true
     };
     try {
       await saveNewsToCloud(item);
@@ -912,7 +918,9 @@ export default function App() {
     const newComment: MemberComment = {
       ...comment,
       id: 'comment-' + Date.now().toString(),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      isReadByAdmin: false,
+      isReadByMember: true
     };
     const targetPhoto = photos.find(p => p.id === photoId);
     if (!targetPhoto) return;
@@ -941,7 +949,9 @@ export default function App() {
     const message: FamilyMessage = {
       ...newMessage,
       id: 'msg-' + Date.now().toString(),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      isReadByAdmin: false,
+      isReadByMember: true
     };
     const nextMessages = [message, ...messages];
     setMessages(nextMessages);
@@ -991,6 +1001,11 @@ export default function App() {
     return news || [];
   }, [news]);
 
+  const hasPendingRequests = requests.some(r => r.status === "pending");
+  const hasUnreadAdminMessages = messages.some(m => m.isReadByAdmin === false);
+  const hasAdminAlert = hasPendingRequests || hasUnreadAdminMessages;
+
+  const hasUnreadMemberReply = currentSession.role !== "guest" && messages.some(m => (m.senderEmail === currentSession.email || m.senderId === currentSession.userId) && m.isReadByMember === false);
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-indigo-600 selection:text-white pb-12 text-right">
       
@@ -1071,7 +1086,9 @@ export default function App() {
               >
                 <Shield size={14} />
                 لوحة الإدارة
-                {auditLogs.length > 0 && (
+                {hasAdminAlert ? (
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#bb5791] animate-pulse inline-block mr-1 shadow-sm"></span>
+                ) : auditLogs.length > 0 && (
                   <span className="w-2 h-2 rounded-full bg-amber-400 inline-block mr-1"></span>
                 )}
               </button>
@@ -1292,7 +1309,12 @@ export default function App() {
           }`}
           id="floating-contact-btn"
         >
-          {activeTab === 'messages' ? <LogOut size={20} className="rotate-180" /> : <Headset size={22} />}
+          <div className="relative">
+            {activeTab === 'messages' ? <LogOut size={20} className="rotate-180" /> : <Headset size={22} />}
+            {hasUnreadMemberReply && activeTab !== "messages" && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#bb5791] border-2 border-indigo-600 rounded-full animate-pulse"></span>
+            )}
+          </div>
         </button>
       )}
 

@@ -884,10 +884,6 @@ export default function FamilyTreeVisualizer({
             </h3>
             <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 flex-wrap">
               <span>تصفح أفراد وتفرعات العائلة</span>
-              <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-2xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                الدائرة الخضراء (🟢) تدل على عضو منضم للموقع
-              </span>
             </div>
           </div>
 

@@ -1,0 +1,2 @@
+#!/bin/bash
+sed -i '/return (/i\  const hasPendingRequests = requests.some(r => r.status === "pending");\n  const hasUnreadAdminMessages = messages.some(m => m.isReadByAdmin === false);\n  const hasAdminAlert = hasPendingRequests || hasUnreadAdminMessages;\n\n  const hasUnreadMemberReply = currentSession.role !== "guest" && messages.some(m => (m.senderEmail === currentSession.email || m.senderId === currentSession.userId) && m.isReadByMember === false);' src/App.tsx

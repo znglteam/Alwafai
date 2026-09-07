@@ -1,0 +1,2 @@
+#!/bin/bash
+sed -i 's/{activeTab === '\''messages'\'' ? <LogOut size={20} className="rotate-180" \/> : <Headset size={22} \/>}/<div className="relative">\n            {activeTab === '\''messages'\'' ? <LogOut size={20} className="rotate-180" \/> : <Headset size={22} \/>}\n            {hasUnreadMemberReply \&\& activeTab !== "messages" \&\& (\n              <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#bb5791] border-2 border-indigo-600 rounded-full animate-pulse"><\/span>\n            )}\n          <\/div>/' src/App.tsx

@@ -20,6 +20,12 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
 
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [msgError, setMsgError] = useState<string | null>(null);
+  useEffect(() => {
+    const unreadMessages = messages.filter(m => (m.senderEmail === currentSession.email || m.senderId === currentSession.userId) && m.isReadByMember === false);
+    unreadMessages.forEach(msg => {
+      onUpdateMessage({ ...msg, isReadByMember: true });
+    });
+  }, []);
 
   const myMessages = useMemo(() => {
     if (!currentSession.email) return [];
@@ -279,7 +285,7 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
                           setReplyDrafts(prev => ({...prev, [msg.id]: ''}));
                           setMsgError(null);
                         } catch (err) {
-                          setMsgError('حدث خطأ أثناء الإرسال. يرجى المحاولة مرة أخرى.');
+                          setMsgError('Error: ' + String(err));
                         }
                       }}
                       className="bg-[#414141] hover:bg-slate-800 disabled:bg-slate-300 text-white p-2.5 rounded-xl flex items-center justify-center shrink-0 self-end transition-colors"

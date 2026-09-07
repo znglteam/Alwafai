@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FamilyMember, RegistrationRequest, NewsItem, FamilyPhoto, FamilyMessage, MemberComment, UserSession } from '../types';
 import { LiveChangeLog } from '../utils/firebaseService';
 
@@ -69,6 +69,14 @@ export default function AdminPanel({
   const [requestToDelete, setRequestToDelete] = useState<{ id: string; name: string } | null>(null);
   const [validationError, setValidationError] = useState<{ reqId: string; msg: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'requests' | 'tree' | 'news' | 'photos' | 'messages' | 'stats' | 'logs'>('requests');
+  useEffect(() => {
+    if (activeTab === "messages") {
+      const unreadMessages = messages.filter(m => m.isReadByAdmin === false);
+      unreadMessages.forEach(msg => {
+        onUpdateMessage({ ...msg, isReadByAdmin: true });
+      });
+    }
+  }, [activeTab]);
 
   // Photo Comments UI State
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
@@ -1896,7 +1904,7 @@ export default function AdminPanel({
                                 setReplyDrafts(prev => ({...prev, [msg.id]: ''}));
                                 setMsgError(null);
                               } catch (err) {
-                                setMsgError('حدث خطأ أثناء الإرسال. يرجى المحاولة مرة أخرى.');
+                                setMsgError('Error: ' + String(err));
                               }
                             }}
                             className="bg-indigo-600 disabled:bg-slate-300 text-white p-2.5 rounded-xl flex items-center justify-center shrink-0 self-end transition-colors"

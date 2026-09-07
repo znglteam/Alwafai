@@ -122,6 +122,8 @@ export interface FamilyMessage {
   attachmentType?: 'image' | 'video' | 'none';
   createdAt: string;
   replies?: MessageReply[];
+  isReadByAdmin?: boolean;
+  isReadByMember?: boolean;
 }
 
 export interface UserSession {

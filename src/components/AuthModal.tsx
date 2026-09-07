@@ -26,6 +26,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
   const [grandfatherName, setGrandfatherName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [gender, setGender] = useState<'male' | 'female'>('male');
   const [regSuccess, setRegSuccess] = useState(false);
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
       bio: 'عضو في العائلة.',
       avatar: '',
       isAlive: true,
-      gender: 'male',
+      gender: gender,
       siblings: [],
       unclesAndAunts: []
     });
@@ -123,7 +124,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                 <h4 className="font-extrabold text-base">تم إرسال طلب انضمامك بنجاح!</h4>
                 <p className="text-xs leading-relaxed text-slate-700">
                   تم تسجيل طلبك بالاسم الثلاثي: <br />
-                  <strong className="font-bold text-emerald-900 text-sm">{name} بن {fatherName} بن {grandfatherName}</strong>
+                  <strong className="font-bold text-emerald-900 text-sm">{name} {gender === 'female' ? 'بنت' : 'بن'} {fatherName} بن {grandfatherName}</strong>
                 </p>
                 <p className="text-[11px] text-slate-500">
                   الطلب الآن معروض في لوحة إدارة العائلة لمطابقته وربطه بالوالد المناسب في الشجرة.
@@ -139,7 +140,18 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                   بيانات خط النسب (الاسم الثلاثي):
                 </span>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">النوع</label>
+                    <select
+                      value={gender}
+                      onChange={e => setGender(e.target.value as 'male' | 'female')}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-600 bg-white"
+                    >
+                      <option value="male">ذكر</option>
+                      <option value="female">أنثى</option>
+                    </select>
+                  </div>
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">اسمك الأول *</label>
                     <input
@@ -169,7 +181,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                 <div className="bg-white/80 border border-indigo-100/80 rounded-xl p-2.5 text-xs text-slate-600">
                   <span className="text-[10px] text-slate-400 font-bold block mb-0.5">معاينة الاسم في الشجرة:</span>
                   <strong className="text-indigo-950 font-bold">
-                    {name.trim() || '...'} بن {fatherName.trim() || '...'} بن {grandfatherName.trim() || '...'}
+                    {name.trim() || '...'} {gender === 'female' ? 'بنت' : 'بن'} {fatherName.trim() || '...'} بن {grandfatherName.trim() || '...'}
                   </strong>
                 </div>
               </div>

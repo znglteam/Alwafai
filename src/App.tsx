@@ -344,7 +344,7 @@ export default function App() {
       if (req.status === 'pending') {
         return {
           success: false,
-          message: `طلب تسجيلك باسم (${req.name} بن ${req.fatherName} بن ${req.grandfatherName}) تم إرساله وهو حالياً بانتظار مراجعة وقبول الآدمن في لوحة التحكم. لا يمكن تسجيل الدخول إلا بعد اعتماد الحساب وربطه بالشجرة.`
+          message: `طلب تسجيلك باسم (${req.name} ${req.gender === 'female' ? 'بنت' : 'بن'} ${req.fatherName} بن ${req.grandfatherName}) تم إرساله وهو حالياً بانتظار مراجعة وقبول الآدمن في لوحة التحكم. لا يمكن تسجيل الدخول إلا بعد اعتماد الحساب وربطه بالشجرة.`
         };
       }
 
@@ -365,7 +365,7 @@ export default function App() {
         if (member) {
           setCurrentSession({
             userId: member.id,
-            name: `${member.name} بن ${member.fatherName || ''} بن ${member.grandfatherName || ''}`.trim(),
+            name: `${member.name} ${isMemberFemale(member) ? 'بنت' : 'بن'} ${member.fatherName || ''} بن ${member.grandfatherName || ''}`.trim(),
             email: req.email,
             role: 'member'
           });
@@ -376,7 +376,7 @@ export default function App() {
           // If approved request exists, log in with approved user credentials
           setCurrentSession({
             userId: req.id,
-            name: `${req.name} بن ${req.fatherName} بن ${req.grandfatherName}`,
+            name: `${req.name} ${req.gender === 'female' ? 'بنت' : 'بن'} ${req.fatherName} بن ${req.grandfatherName}`,
             email: req.email,
             role: 'member'
           });
@@ -392,7 +392,7 @@ export default function App() {
     if (directMember) {
       setCurrentSession({
         userId: directMember.id,
-        name: `${directMember.name} بن ${directMember.fatherName || ''} بن ${directMember.grandfatherName || ''}`.trim(),
+        name: `${directMember.name} ${isMemberFemale(directMember) ? 'بنت' : 'بن'} ${directMember.fatherName || ''} بن ${directMember.grandfatherName || ''}`.trim(),
         email: directMember.email || email,
         role: 'member'
       });

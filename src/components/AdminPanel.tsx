@@ -33,6 +33,7 @@ interface AdminPanelProps {
   onAddPhotoComment: (photoId: string, comment: Omit<MemberComment, 'id' | 'createdAt'>) => void;
   onDeletePhotoComment: (photoId: string, commentId: string) => void;
   onDeleteMessage: (id: string) => void;
+  onUpdateMessage: (updatedMessage: FamilyMessage) => Promise<void> | void;
   onDeleteAuditLog?: (id: string) => void;
   onClearAuditLogs?: () => void;
   onRestoreMembers?: (members: FamilyMember[]) => void;
@@ -44,6 +45,7 @@ export default function AdminPanel({
   news,
   photos,
   messages,
+  onUpdateMessage,
   currentSession,
   auditLogs = [],
   onApproveRequest,

@@ -1225,6 +1225,8 @@ export default function App() {
               photos={photos}
               messages={messages}
               currentSession={currentSession}
+              onSendMessage={handleSendMessage}
+              onUpdateMessage={handleUpdateMessage}
               auditLogs={auditLogs}
               onApproveRequest={handleApproveRequest}
               onRejectRequest={handleRejectRequest}
@@ -1240,7 +1242,6 @@ export default function App() {
               onDeletePhoto={handleDeletePhoto}
               onAddPhotoComment={handleAddPhotoComment}
               onDeletePhotoComment={handleDeletePhotoComment}
-              onUpdateMessage={handleUpdateMessage}
               onDeleteMessage={handleDeleteMessage}
               onDeleteAuditLog={handleDeleteAuditLog}
               onClearAuditLogs={handleClearAuditLogs}

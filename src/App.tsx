@@ -223,13 +223,11 @@ export default function App() {
     });
 
     const unsubNews = subscribeToNews((cloudNews) => {
-      if (cloudNews && cloudNews.length > 0) setNews(cloudNews);
+      setNews(cloudNews || []);
     });
 
     const unsubPhotos = subscribeToPhotos((cloudPhotos) => {
-      if (cloudPhotos && cloudPhotos.length > 0) {
-        setPhotos(cloudPhotos);
-      }
+      setPhotos(cloudPhotos || []);
     });
 
     const unsubRequests = subscribeToRequests((cloudRequests) => {
@@ -237,7 +235,7 @@ export default function App() {
     });
 
     const unsubMessages = subscribeToMessages((cloudMessages) => {
-      if (cloudMessages) setMessages(cloudMessages);
+      setMessages(cloudMessages || []);
     });
 
     const unsubLogs = subscribeToAuditLogs((logs) => {
@@ -898,21 +896,6 @@ export default function App() {
             >
               <Home size={14} />
               الرئيسية
-            </button>
-
-            <button
-              onClick={() => {
-                if (activeTab !== 'main') {
-                  setActiveTab('main');
-                }
-                setTimeout(() => {
-                  document.getElementById('gallery-section')?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }}
-              className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
-            >
-              <Image size={14} />
-              معرض الصور
             </button>
             
             {/* Family Tree Tab - Visible ONLY to Approved Members & Admins */}

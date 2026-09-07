@@ -69,7 +69,7 @@ export default function NewsTicker({ news }: NewsTickerProps) {
         {/* Ticker label */}
         <div className="flex items-center gap-2 shrink-0">
           <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span className="text-[11px] font-extrabold tracking-wider text-[#414141] bg-white px-2 py-0.5 rounded-md">
+          <span className="hidden md:block text-[11px] font-extrabold tracking-wider text-[#414141] bg-white px-2 py-0.5 rounded-md">
             أخبار العائلة
           </span>
         </div>
@@ -86,7 +86,7 @@ export default function NewsTicker({ news }: NewsTickerProps) {
               className="flex items-center gap-2.5 w-full md:gap-4"
             >
               {/* Type Badge */}
-              <span className={`inline-flex items-center gap-1 text-[10px] md:text-xs font-semibold px-2 py-0.5 rounded-full border shrink-0 ${badgeInfo.color}`}>
+              <span className={`hidden md:inline-flex items-center gap-1 text-[10px] md:text-xs font-semibold px-2 py-0.5 rounded-full border shrink-0 ${badgeInfo.color}`}>
                 <BadgeIcon size={12} />
                 {badgeInfo.label}
               </span>

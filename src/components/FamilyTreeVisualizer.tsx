@@ -882,9 +882,6 @@ export default function FamilyTreeVisualizer({
             <h3 className="text-xl font-bold text-slate-800">
               شجرة العائلة
             </h3>
-            <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 flex-wrap">
-              <span>تصفح أفراد وتفرعات العائلة</span>
-            </div>
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">
@@ -906,10 +903,10 @@ export default function FamilyTreeVisualizer({
                     ? 'bg-amber-500 hover:bg-amber-600 text-white ring-2 ring-amber-400' 
                     : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200'
                 }`}
-                title="تعديل ترتيب الإخوة"
+                title="تغيير الترتيب"
               >
                 <GripVertical size={13} className={isReorderMode ? 'animate-pulse text-white' : 'text-slate-500'} />
-                {isReorderMode ? 'إنهاء إعادة الترتيب' : 'تعديل ترتيب الإخوة'}
+                {isReorderMode ? 'إنهاء إعادة الترتيب' : 'تغيير الترتيب'}
               </button>
             )}
 

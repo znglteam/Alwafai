@@ -1028,7 +1028,7 @@ export default function App() {
           
           {/* Right Column (RTL Start): Prestigious Family Title & Location Badge */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2.5 text-center sm:text-right">
+            <div className="flex flex-row items-center justify-center gap-2.5 text-right">
               <h1 className="text-xl md:text-2xl font-bold font-serif text-[#414141] tracking-wide leading-none">
                 آل الوفائي والعطائي
               </h1>
@@ -1038,6 +1038,7 @@ export default function App() {
             </div>
           </div>
 
+          <div className="flex flex-row flex-wrap items-center justify-center gap-3 w-full md:w-auto">
           {/* Center Column: Nav Tabs */}
           <div className="flex flex-wrap items-center justify-center gap-1.5 md:gap-2">
             <button
@@ -1142,7 +1143,7 @@ export default function App() {
               </>
             )}
           </div>
-
+          </div>
         </div>
       </nav>
 

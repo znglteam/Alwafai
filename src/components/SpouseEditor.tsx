@@ -96,20 +96,20 @@ export default function SpouseEditor({
           className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 hover:text-indigo-700 rounded-lg transition-colors border border-indigo-100"
         >
           <Plus size={12} />
-          <span>إضافة {spouseTerm} أخرى</span>
+          <span>{isFemale ? 'إضافة زوج آخر' : 'إضافة زوجة أخرى'}</span>
         </button>
       </div>
 
       {spouses.length === 0 ? (
         <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-4 text-center">
-          <p className="text-xs text-slate-400 mb-2">لم يتم تحديد أي {spouseTerm} بعد</p>
+          <p className="text-xs text-slate-400 mb-2">لم يتم تحديد أي {isFemale ? 'زوج' : 'زوجة'} بعد</p>
           <button
             type="button"
             onClick={handleAddSpouse}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 bg-white hover:bg-indigo-50 border border-indigo-200 rounded-xl shadow-xs transition-all"
           >
             <Plus size={13} />
-            <span>إضافة {spouseTerm}</span>
+            <span>{isFemale ? 'إضافة زوج' : 'إضافة زوجة'}</span>
           </button>
         </div>
       ) : (

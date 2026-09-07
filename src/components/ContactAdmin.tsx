@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FamilyMessage, UserSession } from '../types';
 import { Send, Paperclip, Image, Video, CheckCircle, Info, MessageSquare, Edit3, Inbox, MessageCircle } from 'lucide-react';
 
@@ -30,7 +30,7 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
   const myMessages = useMemo(() => {
     if (!currentSession.email) return [];
     return messages.filter(m => 
-      m.senderEmail.toLowerCase() === currentSession.email?.toLowerCase() ||
+      m.senderEmail?.toLowerCase() === currentSession.email?.toLowerCase() ||
       m.recipientEmail?.toLowerCase() === currentSession.email?.toLowerCase()
     );
   }, [messages, currentSession.email]);

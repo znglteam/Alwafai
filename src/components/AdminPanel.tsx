@@ -73,14 +73,29 @@ export default function AdminPanel({
   const [requestToDelete, setRequestToDelete] = useState<{ id: string; name: string } | null>(null);
   const [validationError, setValidationError] = useState<{ reqId: string; msg: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'requests' | 'tree' | 'news' | 'photos' | 'messages' | 'logs'>('requests');
+
+  // Filter messages intended for the Admin: exclude automated personal notifications sent to members
+  const adminVisibleMessages = useMemo(() => {
+    return messages.filter(m => {
+      if (m.messageType === 'profile_comment_member') return false;
+      if (m.recipientEmail && m.recipientEmail !== 'admin@family.com' && m.recipientEmail !== 'system@ghanem.family' && m.subject?.includes('على ملفك الشخصي')) {
+        return false;
+      }
+      return true;
+    });
+  }, [messages]);
+
+  const unreadAdminMessages = useMemo(() => {
+    return adminVisibleMessages.filter(m => m.isReadByAdmin === false);
+  }, [adminVisibleMessages]);
+
   useEffect(() => {
     if (activeTab === "messages") {
-      const unreadMessages = messages.filter(m => m.isReadByAdmin === false);
-      unreadMessages.forEach(msg => {
+      unreadAdminMessages.forEach(msg => {
         onUpdateMessage({ ...msg, isReadByAdmin: true });
       });
     }
-  }, [activeTab]);
+  }, [activeTab, unreadAdminMessages]);
 
   // Photo Comments UI State
   const [expandedComments, setExpandedComments] = useState<Record<string, boolean>>({});
@@ -386,11 +401,14 @@ export default function AdminPanel({
         </button>
         <button
           onClick={() => setActiveTab('messages')}
-          className={`pb-3 px-6 text-sm font-bold transition-all border-b-2 -mb-[2px] ${
+          className={`pb-3 px-6 text-sm font-bold transition-all border-b-2 -mb-[2px] flex items-center gap-1.5 ${
             activeTab === 'messages' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
-          الرسائل والمرفقات ({messages.length})
+          <span>الرسائل والمرفقات ({adminVisibleMessages.length})</span>
+          {unreadAdminMessages.length > 0 && (
+            <span className="w-2 h-2 rounded-full bg-[#bb5791] animate-pulse inline-block"></span>
+          )}
         </button>
         <button
           onClick={() => setActiveTab('logs')}
@@ -1839,24 +1857,30 @@ export default function AdminPanel({
               </p>
             </div>
 
-            {messages.length === 0 ? (
+            {adminVisibleMessages.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-3xl space-y-3">
                 <MessageSquare className="mx-auto text-slate-300" size={44} />
                 <h4 className="text-xs font-bold text-slate-500">صندوق الرسائل فارغ حالياً</h4>
-                <p className="text-[10px] text-slate-400">عندما يقوم الأعضاء بمراسلتك عبر زر التواصل ستظهر جميع رسائلهم ومرفقاتهم هنا.</p>
+                <p className="text-[10px] text-slate-400">عندما يقوم الأعضاء بمراسلتك أو التعليق على الملفات ستظهر الرسائل والإشعارات هنا.</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {messages.map(msg => (
+                {adminVisibleMessages.map(msg => (
                   <div key={msg.id} className="border border-slate-100 hover:border-indigo-100 bg-slate-50/20 hover:bg-slate-50/50 p-5 rounded-2xl transition-all flex flex-col md:flex-row gap-5">
                     
                     {/* Message Body Column */}
                     <div className="flex-1 space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
                         <div>
-                          <span className="text-[10px] bg-indigo-50 border border-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md font-bold">
-                            المرسل: {msg.senderName}
-                          </span>
+                          {msg.messageType === 'profile_comment_admin' ? (
+                            <span className="text-[10px] bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 rounded-md font-bold">
+                              إشعار: تعليق على شجرة العائلة
+                            </span>
+                          ) : (
+                            <span className="text-[10px] bg-indigo-50 border border-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md font-bold">
+                              المرسل: {msg.senderName}
+                            </span>
+                          )}
                           <span className="text-[10px] text-slate-400 mr-2" dir="ltr">{msg.senderEmail}</span>
                         </div>
                         <span className="text-[10px] text-slate-400 font-bold">{new Date(msg.createdAt).toLocaleDateString('ar-SA')}</span>

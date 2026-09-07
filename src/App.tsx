@@ -710,29 +710,74 @@ export default function App() {
       if ((prevMember.comments?.length || 0) < (updated.comments?.length || 0)) {
         changes.push(`إضافة تعليق جديد`);
         
-        // Notify the member if they have an email
-        const targetEmail = updated.email || (updated.registeredUserId ? requests.find(r => r.id === updated.registeredUserId)?.email : null);
-        if (targetEmail) {
-          const latestComment = updated.comments![updated.comments!.length - 1];
-          const msg = {
-            id: 'msg-' + Date.now().toString(),
-            senderName: 'إدارة العائلة (إشعار آلي)',
-            senderEmail: 'system@ghanem.family',
-            recipientEmail: targetEmail,
+        const latestComment = updated.comments![updated.comments!.length - 1];
+        const isCommentByAdmin = currentSession.role === 'admin' || 
+          latestComment.senderEmail === 'admin@family.com' || 
+          latestComment.senderName?.includes('الآدمن') || 
+          latestComment.senderName?.includes('مدير');
+
+        // Resolve target member email and identity
+        const targetEmail = 
+          updated.email || 
+          (updated.registeredUserId ? requests.find(r => r.id === updated.registeredUserId)?.email : null) ||
+          requests.find(r => r.name && updated.name && r.name.trim() === updated.name.trim())?.email ||
+          null;
+
+        const cleanTargetEmail = targetEmail?.trim().toLowerCase();
+        const cleanCommenterEmail = latestComment.senderEmail?.trim().toLowerCase();
+
+        // 1. Notify the Member whose profile was commented on
+        // (Only if the commenter is NOT the member themselves)
+        if (!cleanCommenterEmail || !cleanTargetEmail || cleanCommenterEmail !== cleanTargetEmail) {
+          const memberMsg: FamilyMessage = {
+            id: 'msg-' + Date.now().toString() + '-m',
+            senderName: isCommentByAdmin ? 'إدارة العائلة' : (latestComment.senderName || 'أحد أفراد العائلة'),
+            senderEmail: latestComment.senderEmail || 'system@ghanem.family',
+            recipientEmail: targetEmail || undefined,
+            targetMemberId: updated.id,
+            messageType: 'profile_comment_member',
             subject: 'إشعار: تعليق جديد على ملفك الشخصي',
-            content: `قام "${latestComment.senderName}" بإضافة تعليق على ملفك الشخصي في شجرة العائلة.\n\nالتعليق:\n"${latestComment.content}"\n\nتاريخ التعليق: ${latestComment.createdAt}`,
-            attachmentType: 'none' as const,
+            content: `قام "${latestComment.senderName}" بإضافة تعليق جديد على ملفك الشخصي في شجرة العائلة.\n\nنص التعليق:\n"${latestComment.content}"\n\nتاريخ التعليق: ${latestComment.createdAt}`,
+            attachmentType: 'none',
             createdAt: new Date().toISOString(),
-      isReadByAdmin: false,
-      isReadByMember: true,
+            isReadByAdmin: true,    // Do not notify admin that admin or someone commented in member's inbox
+            isReadByMember: false,  // Notify the member!
             replies: []
           };
           
           try {
-            await saveMessageToCloud(msg);
-            setMessages(prev => [msg, ...prev]);
+            await saveMessageToCloud(memberMsg);
+            setMessages(prev => [memberMsg, ...prev]);
           } catch (e) {
-             console.warn('Could not save notification message');
+            console.warn('Could not save member notification message');
+          }
+        }
+
+        // 2. Notify the Admin ONLY IF someone OTHER than the admin commented
+        if (!isCommentByAdmin) {
+          const adminMsg: FamilyMessage = {
+            id: 'msg-' + Date.now().toString() + '-adm',
+            senderName: latestComment.senderName || 'عضو في العائلة',
+            senderEmail: latestComment.senderEmail || 'visitor@family.com',
+            recipientEmail: 'admin@family.com',
+            targetMemberId: updated.id,
+            messageType: 'profile_comment_admin',
+            subject: `تعليق جديد من (${latestComment.senderName}) على ملف (${updated.name})`,
+            content: `قام "${latestComment.senderName}" بإضافة تعليق جديد على ملف العضو "${updated.name}" في شجرة العائلة.\n\nنص التعليق:\n"${latestComment.content}"\n\nتاريخ التعليق: ${latestComment.createdAt}`,
+            attachmentType: 'none',
+            createdAt: new Date().toISOString(),
+            isReadByAdmin: false,   // Alert Admin!
+            isReadByMember: true,
+            replies: []
+          };
+
+          try {
+            await saveMessageToCloud(adminMsg);
+            setMessages(prev => [adminMsg, ...prev]);
+            setLiveNotification(`تعليق جديد من ${latestComment.senderName} على ملف ${updated.name}`);
+            setTimeout(() => setLiveNotification(null), 6000);
+          } catch (e) {
+            console.warn('Could not save admin notification message');
           }
         }
       }
@@ -1058,10 +1103,41 @@ export default function App() {
   }, [news]);
 
   const hasPendingRequests = (requests || []).some(r => r && r.status === "pending");
-  const hasUnreadAdminMessages = (messages || []).some(m => m && m.isReadByAdmin === false);
+  const hasUnreadAdminMessages = useMemo(() => {
+    return (messages || []).some(m => {
+      if (!m || m.isReadByAdmin !== false) return false;
+      if (m.messageType === 'profile_comment_member') return false;
+      if (m.recipientEmail && m.recipientEmail !== 'admin@family.com' && m.recipientEmail !== 'system@ghanem.family' && m.subject?.includes('على ملفك الشخصي')) {
+        return false;
+      }
+      return true;
+    });
+  }, [messages]);
+
   const hasAdminAlert = hasPendingRequests || hasUnreadAdminMessages;
 
-  const hasUnreadMemberReply = currentSession.role !== "guest" && (messages || []).some(m => m && (m.senderEmail === currentSession.email || m.senderId === currentSession.userId) && m.isReadByMember === false);
+  const unreadMemberMessagesCount = useMemo(() => {
+    if (!currentSession || currentSession.role === "guest") return 0;
+    const cleanEmail = currentSession.email?.trim().toLowerCase();
+    const cleanUserId = currentSession.userId;
+    const activeMemberId = activeMember?.id;
+
+    return (messages || []).filter(m => {
+      if (!m || m.isReadByMember !== false) return false;
+      
+      const recEmail = m.recipientEmail?.trim().toLowerCase();
+      const sndEmail = m.senderEmail?.trim().toLowerCase();
+
+      if (cleanEmail && recEmail && recEmail === cleanEmail) return true;
+      if (cleanEmail && sndEmail && sndEmail === cleanEmail) return true;
+      if (cleanUserId && (m.senderId === cleanUserId || m.targetMemberId === cleanUserId)) return true;
+      if (activeMemberId && m.targetMemberId === activeMemberId) return true;
+      
+      return false;
+    }).length;
+  }, [messages, currentSession, activeMember]);
+
+  const hasUnreadMemberReply = unreadMemberMessagesCount > 0;
   return (
     <div dir="rtl" className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans selection:bg-indigo-600 selection:text-white pb-12 text-right">
       
@@ -1160,6 +1236,27 @@ export default function App() {
               </div>
             ) : (
               <>
+                {currentSession.role === 'member' && (
+                  <button
+                    onClick={() => setActiveTab('messages')}
+                    className={`relative p-2.5 rounded-full border transition-all cursor-pointer flex items-center justify-center ${
+                      activeTab === 'messages'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                        : hasUnreadMemberReply
+                        ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+                        : 'bg-slate-50 text-slate-700 hover:text-indigo-600 hover:bg-slate-100 border-slate-200/60'
+                    }`}
+                    title={hasUnreadMemberReply ? `لديك ${unreadMemberMessagesCount} إشعار جديد` : "الرسائل والإشعارات"}
+                  >
+                    <Bell size={18} />
+                    {hasUnreadMemberReply && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#bb5791] text-white text-[9px] font-extrabold animate-pulse">
+                        {unreadMemberMessagesCount}
+                      </span>
+                    )}
+                  </button>
+                )}
+
                 <button
                   onClick={() => {
                     if (activeMember) {
@@ -1385,7 +1482,9 @@ export default function App() {
           <div className="relative">
             {activeTab === 'messages' ? <LogOut size={20} className="rotate-180" /> : <Headset size={22} />}
             {hasUnreadMemberReply && activeTab !== "messages" && (
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#bb5791] border-2 border-indigo-600 rounded-full animate-pulse"></span>
+              <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-1 bg-[#bb5791] border-2 border-white rounded-full flex items-center justify-center text-[9px] font-extrabold text-white animate-pulse">
+                {unreadMemberMessagesCount}
+              </span>
             )}
           </div>
         </button>

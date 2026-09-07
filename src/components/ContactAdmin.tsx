@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { FamilyMessage, UserSession } from '../types';
-import { Send, Paperclip, Image, Video, CheckCircle, Info, MessageSquare, Edit3, Inbox, MessageCircle } from 'lucide-react';
+import { Send, Paperclip, Image, Video, CheckCircle, Info, MessageSquare, Edit3, Inbox, MessageCircle, Bell, Heart } from 'lucide-react';
 
 interface ContactAdminProps {
   messages: FamilyMessage[];
@@ -10,8 +10,6 @@ interface ContactAdminProps {
 }
 
 export default function ContactAdmin({ messages, currentSession, onSendMessage, onUpdateMessage }: ContactAdminProps) {
-  const [activeTab, setActiveTab] = useState<'new' | 'inbox'>('new');
-  
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const [attachmentType, setAttachmentType] = useState<'none' | 'image' | 'video'>('none');
@@ -20,20 +18,36 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
 
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [msgError, setMsgError] = useState<string | null>(null);
-  useEffect(() => {
-    const unreadMessages = messages.filter(m => (m.senderEmail === currentSession.email || m.senderId === currentSession.userId) && m.isReadByMember === false);
-    unreadMessages.forEach(msg => {
-      onUpdateMessage({ ...msg, isReadByMember: true });
-    });
-  }, []);
+
+  const userCleanEmail = currentSession.email?.trim().toLowerCase();
+  const userId = currentSession.userId;
 
   const myMessages = useMemo(() => {
-    if (!currentSession.email) return [];
-    return messages.filter(m => 
-      m.senderEmail?.toLowerCase() === currentSession.email?.toLowerCase() ||
-      m.recipientEmail?.toLowerCase() === currentSession.email?.toLowerCase()
-    );
-  }, [messages, currentSession.email]);
+    return messages.filter(m => {
+      const recEmail = m.recipientEmail?.trim().toLowerCase();
+      const sndEmail = m.senderEmail?.trim().toLowerCase();
+      
+      if (userCleanEmail && recEmail && recEmail === userCleanEmail) return true;
+      if (userCleanEmail && sndEmail && sndEmail === userCleanEmail) return true;
+      if (userId && (m.senderId === userId || m.targetMemberId === userId)) return true;
+      return false;
+    });
+  }, [messages, userCleanEmail, userId]);
+
+  const unreadCount = useMemo(() => {
+    return myMessages.filter(m => m.isReadByMember === false).length;
+  }, [myMessages]);
+
+  const [activeTab, setActiveTab] = useState<'new' | 'inbox'>('inbox');
+
+  useEffect(() => {
+    if (activeTab === 'inbox') {
+      const unread = myMessages.filter(m => m.isReadByMember === false);
+      unread.forEach(msg => {
+        onUpdateMessage({ ...msg, isReadByMember: true });
+      });
+    }
+  }, [activeTab, myMessages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +110,10 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
           }`}
         >
           <Inbox size={14} />
-          صندوق المحادثات ({myMessages.length})
+          <span>صندوق الرسائل والإشعارات ({myMessages.length})</span>
+          {unreadCount > 0 && (
+            <span className="w-2 h-2 rounded-full bg-[#bb5791] animate-pulse"></span>
+          )}
         </button>
       </div>
 
@@ -211,29 +228,60 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
           {myMessages.length === 0 ? (
             <div className="text-center py-16 bg-white border border-slate-100 rounded-3xl space-y-3 shadow-sm">
               <MessageCircle className="mx-auto text-slate-300" size={48} />
-              <h4 className="text-sm font-bold text-slate-600">لا توجد محادثات سابقة</h4>
+              <h4 className="text-sm font-bold text-slate-600">لا توجد رسائل أو إشعارات حالياً</h4>
               <p className="text-xs text-slate-400 max-w-xs mx-auto">
-                لم تقم بإرسال أي رسائل إلى الإدارة حتى الآن. انقر على "إنشاء رسالة جديدة" للبدء.
+                ستظهر هنا رسائلك للإدارة، والردود الواردة، وإشعارات التعليقات والمباركات على ملفك الشخصي.
               </p>
             </div>
           ) : (
-            myMessages.map(msg => (
+            myMessages.map(msg => {
+              const isReceivedNotification = (msg.recipientEmail && userCleanEmail && msg.recipientEmail.trim().toLowerCase() === userCleanEmail) || msg.messageType === 'profile_comment_member';
+              const isProfileComment = msg.messageType === 'profile_comment_member' || msg.subject?.includes('تعليق جديد على ملفك');
+
+              return (
               <div key={msg.id} className="bg-white border border-slate-100 rounded-3xl p-5 md:p-6 shadow-sm flex flex-col gap-4">
                 <div className="flex justify-between items-start border-b border-slate-100 pb-3">
-                  <div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      {isProfileComment ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-0.5 rounded-md font-bold">
+                          <Heart size={11} className="text-amber-600 fill-amber-600/20" />
+                          تعليق على ملفك الشخصي
+                        </span>
+                      ) : isReceivedNotification ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] bg-indigo-50 border border-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md font-bold">
+                          <Bell size={11} />
+                          إشعار وارد
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-bold">
+                          الموضوع الأساسي
+                        </span>
+                      )}
+                      <span className="text-[10px] text-slate-400 font-bold">{new Date(msg.createdAt).toLocaleDateString('ar-SA')}</span>
+                    </div>
                     <h4 className="font-bold text-sm text-[#414141]">{msg.subject}</h4>
-                    <span className="text-[10px] text-slate-400 font-bold">{new Date(msg.createdAt).toLocaleDateString('ar-SA')}</span>
                   </div>
-                  <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-bold">
-                    الموضوع الأساسي
-                  </span>
                 </div>
                 
                 {/* Initial Message */}
                 <div className="flex flex-col items-start gap-1">
-                  <div className="max-w-[90%] bg-indigo-50 border border-indigo-100 text-slate-700 p-3 rounded-2xl rounded-tr-sm text-xs leading-relaxed">
-                    <div className="text-[9px] font-bold text-indigo-400 mb-1">أنت</div>
-                    <div className="whitespace-pre-line">{msg.content}</div>
+                  <div className={`w-full max-w-[95%] md:max-w-[90%] p-3.5 rounded-2xl text-xs leading-relaxed ${
+                    isProfileComment 
+                      ? 'bg-amber-50/60 border border-amber-200/70 text-slate-800 rounded-tr-sm' 
+                      : isReceivedNotification
+                      ? 'bg-slate-50 border border-slate-200 text-slate-800 rounded-tr-sm'
+                      : 'bg-indigo-50 border border-indigo-100 text-slate-700 rounded-tr-sm'
+                  }`}>
+                    <div className="text-[10px] font-bold text-indigo-600 mb-1 flex items-center justify-between">
+                      <span>{isReceivedNotification ? `المرسل: ${msg.senderName}` : 'أنت'}</span>
+                      {isProfileComment && (
+                        <span className="text-[9px] text-amber-700 font-bold bg-amber-100 px-2 py-0.5 rounded-md">
+                          شجرة العائلة
+                        </span>
+                      )}
+                    </div>
+                    <div className="whitespace-pre-line font-medium">{msg.content}</div>
                   </div>
                   {msg.attachmentUrl && (
                     <div className="mt-2 text-[10px] font-bold text-indigo-600 border border-indigo-100 bg-indigo-50 px-2 py-1 rounded-md">
@@ -296,7 +344,7 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
                   {msgError && <p className="text-[10px] text-rose-500 mt-1 font-bold">{msgError}</p>}
                 </div>
               </div>
-            ))
+            ); })
           )}
         </div>
       )}

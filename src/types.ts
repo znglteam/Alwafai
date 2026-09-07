@@ -124,6 +124,8 @@ export interface FamilyMessage {
   senderEmail: string;
   senderId?: string;
   recipientEmail?: string;
+  targetMemberId?: string;
+  messageType?: 'contact' | 'profile_comment_member' | 'profile_comment_admin';
   subject: string;
   content: string;
   attachmentUrl?: string;

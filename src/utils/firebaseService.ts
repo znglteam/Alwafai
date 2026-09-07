@@ -323,6 +323,7 @@ export async function saveNewsToCloud(item: NewsItem) {
     await setDoc(ref, cleanForFirestore(item), { merge: true });
   } catch (err) {
     console.error('Error saving news to Firestore:', err);
+    throw err;
   }
 }
 
@@ -333,6 +334,7 @@ export async function deleteNewsFromCloud(newsId: string) {
     await deleteDoc(ref);
   } catch (err) {
     console.error('Error deleting news from Firestore:', err);
+    throw err;
   }
 }
 

@@ -22,9 +22,9 @@ interface AdminPanelProps {
   onRejectRequest: (requestId: string) => void;
   onDeleteRequest?: (requestId: string) => void;
   onRevokeRequest?: (requestId: string) => void;
-  onAddNews: (newsItem: Omit<NewsItem, 'id' | 'createdAt'>) => void;
-  onUpdateNews: (id: string, updatedFields: Partial<NewsItem>) => void;
-  onDeleteNews: (id: string) => void;
+  onAddNews: (newsItem: Omit<NewsItem, 'id' | 'createdAt'>) => Promise<void> | void;
+  onUpdateNews: (id: string, updatedFields: Partial<NewsItem>) => Promise<void> | void;
+  onDeleteNews: (id: string) => Promise<void> | void;
   onDeleteMember: (id: string) => void;
   onAddMemberDirectly: (member: Omit<FamilyMember, 'id' | 'childrenIds'>) => void;
   onUpdateMember: (updated: FamilyMember) => void;
@@ -178,24 +178,31 @@ export default function AdminPanel({
     return true;
   });
 
-  const handlePostNews = (e: React.FormEvent) => {
+  const [newsError, setNewsError] = useState<string | null>(null);
+
+  const handlePostNews = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newsContent.trim()) return;
+    setNewsError(null);
     
-    if (editingNewsId) {
-      onUpdateNews(editingNewsId, {
-        type: newsType,
-        content: newsContent
-      });
-      setEditingNewsId(null);
-    } else {
-      onAddNews({
-        type: newsType,
-        content: newsContent
-      });
+    try {
+      if (editingNewsId) {
+        await onUpdateNews(editingNewsId, {
+          type: newsType,
+          content: newsContent
+        });
+        setEditingNewsId(null);
+      } else {
+        await onAddNews({
+          type: newsType,
+          content: newsContent
+        });
+      }
+      setNewsContent('');
+      setNewsType('general');
+    } catch (err) {
+      setNewsError('نعتذر، لقد نفدت سعة بيانات الموقع المخصصة لهذا اليوم. يرجى إعادة المحاولة غداً بعد الساعة 11:00 صباحاً بتوقيت مكة.');
     }
-    setNewsContent('');
-    setNewsType('general');
   };
 
   const handlePostPhoto = (e: React.FormEvent) => {
@@ -1415,6 +1422,12 @@ export default function AdminPanel({
                 {editingNewsId ? 'تعديل الخبر أو التهنئة المحددة' : 'نشر خبر أو تهنئة جديدة'}
               </h4>
               
+              {newsError && (
+                <div className="bg-rose-50 text-rose-700 p-3 rounded-xl text-xs font-bold border border-rose-200">
+                  {newsError}
+                </div>
+              )}
+              
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-1">
                   <label className="block text-xs font-bold text-slate-500 mb-1">نوع الخبر</label>
@@ -1494,7 +1507,14 @@ export default function AdminPanel({
                     </button>
                     <button
                       type="button"
-                      onClick={() => onDeleteNews(item.id)}
+                      onClick={async () => {
+                        try {
+                          await onDeleteNews(item.id);
+                        } catch (err) {
+                          setNewsError('نعتذر، لم يتم الحذف. نفدت سعة بيانات الموقع اليوم. حاول غداً.');
+                          document.getElementById('news-form')?.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }}
                       className="text-slate-400 hover:text-rose-600 p-1.5 hover:bg-slate-200/60 rounded-xl transition-all"
                       title="حذف الإعلان"
                     >

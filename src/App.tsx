@@ -799,24 +799,39 @@ export default function App() {
       id: 'news-' + Date.now().toString(),
       createdAt: new Date().toISOString()
     };
-    const nextNews = [item, ...news];
-    setNews(nextNews);
-    await saveNewsToCloud(item);
+    try {
+      await saveNewsToCloud(item);
+      const nextNews = [item, ...news];
+      setNews(nextNews);
+    } catch (e) {
+      console.warn('Could not save news to cloud due to quota limit');
+      throw e;
+    }
   };
 
   const handleUpdateNews = async (id: string, updatedFields: Partial<NewsItem>) => {
     const existing = news.find(n => n.id === id);
     if (!existing) return;
     const updated: NewsItem = { ...existing, ...updatedFields };
-    const nextNews = news.map(n => n.id === id ? updated : n);
-    setNews(nextNews);
-    await saveNewsToCloud(updated);
+    try {
+      await saveNewsToCloud(updated);
+      const nextNews = news.map(n => n.id === id ? updated : n);
+      setNews(nextNews);
+    } catch (e) {
+      console.warn('Could not update news in cloud due to quota limit');
+      throw e;
+    }
   };
 
   const handleDeleteNews = async (id: string) => {
-    const nextNews = news.filter(n => n.id !== id);
-    setNews(nextNews);
-    await deleteNewsFromCloud(id);
+    try {
+      await deleteNewsFromCloud(id);
+      const nextNews = news.filter(n => n.id !== id);
+      setNews(nextNews);
+    } catch (e) {
+      console.warn('Could not delete news from cloud due to quota limit');
+      throw e;
+    }
   };
 
   // Photos management

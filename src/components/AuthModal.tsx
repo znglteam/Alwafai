@@ -91,7 +91,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
         onClose();
       }, 4000);
     } catch (err) {
-      setLoginError('تعذر إرسال الطلب (قد يكون بسبب استهلاك الحصة اليومية لقاعدة البيانات). حاول غداً.');
+      setLoginError('نعتذر، لقد نفدت سعة بيانات الموقع المخصصة لهذا اليوم. يرجى إعادة المحاولة غداً بعد الساعة 11:00 صباحاً بتوقيت مكة المكرمة.');
     }
   };
 
@@ -150,18 +150,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                   بيانات خط النسب (الاسم الثلاثي):
                 </span>
                 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">النوع</label>
-                    <select
-                      value={gender}
-                      onChange={e => setGender(e.target.value as 'male' | 'female')}
-                      className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-600 bg-white"
-                    >
-                      <option value="male">ذكر</option>
-                      <option value="female">أنثى</option>
-                    </select>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 mb-1">اسمك الأول *</label>
                     <input

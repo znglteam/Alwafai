@@ -635,58 +635,15 @@ export default function MemberProfileEdit({
               </div>
             )}
 
-            {/* Marital Status */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">
-                الحالة الاجتماعية
-              </label>
-              <select
-                value={maritalStatus || ""}
-                onChange={(e) => setMaritalStatus(e.target.value as any)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
-              >
-                <option value="">( اختر )</option>
-                <option value="أعزب">أعزب</option>
-                <option value="مرتبط">مرتبط</option>
-                <option value="متزوج">متزوج</option>
-                <option value="منفصل/ أرمل">منفصل/ أرمل</option>
-              </select>
-            </div>
-
-            {/* Spouse Editor */}
-            {maritalStatus === 'متزوج' && (
-              <div className="pt-2">
-                <SpouseEditor
-                  gender={gender}
-                  memberName={name}
-                  currentMemberId={member.id}
-                  spouses={spouses}
-                  onChange={setSpouses}
-                  allMembers={allMembers}
-                />
-              </div>
-            )}
-
-            {/* Children names (for females only) */}
-            {gender === 'female' && (
-              <div>
-                <ChildrenListEditor
-                  childrenList={childrenList}
-                  onChange={setChildrenList}
-                  title="الأبناء"
-                />
-              </div>
-            )}
-
             {/* Status (Alive / Deceased) */}
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1">
-                الحالة
+                الحالة (حياة / وفاة)
               </label>
               <select
                 value={isAlive ? "alive" : "deceased"}
                 onChange={(e) => setIsAlive(e.target.value === "alive")}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
               >
                 <option value="alive">على قيد الحياة (حياً)</option>
                 <option value="deceased">متوفى (رحمه الله)</option>
@@ -728,6 +685,49 @@ export default function MemberProfileEdit({
                     }
                   }}
                   className="w-full border border-rose-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-rose-600 bg-white cursor-pointer"
+                />
+              </div>
+            )}
+
+            {/* Marital Status */}
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-500 mb-1">
+                الحالة الاجتماعية
+              </label>
+              <select
+                value={maritalStatus || ""}
+                onChange={(e) => setMaritalStatus(e.target.value as any)}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
+              >
+                <option value="">( اختر )</option>
+                <option value="أعزب">أعزب</option>
+                <option value="مرتبط">مرتبط</option>
+                <option value="متزوج">متزوج</option>
+                <option value="منفصل/ أرمل">منفصل/ أرمل</option>
+              </select>
+            </div>
+
+            {/* Spouse Editor */}
+            {maritalStatus === 'متزوج' && (
+              <div className="md:col-span-2 pt-2">
+                <SpouseEditor
+                  gender={gender}
+                  memberName={name}
+                  currentMemberId={member.id}
+                  spouses={spouses}
+                  onChange={setSpouses}
+                  allMembers={allMembers}
+                />
+              </div>
+            )}
+
+            {/* Children names (for females only) */}
+            {gender === 'female' && (
+              <div className="md:col-span-2">
+                <ChildrenListEditor
+                  childrenList={childrenList}
+                  onChange={setChildrenList}
+                  title="الأبناء"
                 />
               </div>
             )}

@@ -1,6 +1,9 @@
 import { initializeApp } from 'firebase/app';
 import { 
   initializeFirestore, 
+  getFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   doc, 
   onSnapshot, 
   setDoc, 
@@ -28,9 +31,27 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-}, firebaseConfig.firestoreDatabaseId);
+
+let firestoreInstance;
+try {
+  firestoreInstance = initializeFirestore(
+    app,
+    {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    },
+    firebaseConfig.firestoreDatabaseId
+  );
+} catch (e) {
+  try {
+    firestoreInstance = initializeFirestore(app, {}, firebaseConfig.firestoreDatabaseId);
+  } catch {
+    firestoreInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+  }
+}
+
+export const db = firestoreInstance;
 export const auth = getAuth(app);
 
 export interface LiveChangeLog {

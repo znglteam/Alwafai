@@ -1246,6 +1246,41 @@ export default function AdminPanel({
                     />
                   </div>
                   <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">الحالة</label>
+                    <select
+                      value={editForm.isAlive ? 'alive' : 'deceased'}
+                      onChange={e => setEditForm({ ...editForm, isAlive: e.target.value === 'alive' })}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white cursor-pointer"
+                    >
+                      <option value="alive">على قيد الحياة</option>
+                      <option value="deceased">متوفى</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">الجنس</label>
+                    <select
+                      value={editForm.gender || 'male'}
+                      onChange={e => setEditForm({ ...editForm, gender: e.target.value as 'male' | 'female' })}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white cursor-pointer"
+                    >
+                      <option value="male">ذكر</option>
+                      <option value="female">أنثى</option>
+                    </select>
+                  </div>
+
+                  {!editForm.isAlive && (
+                    <div className="md:col-span-3 bg-rose-50 p-3 rounded-xl border border-rose-100">
+                      <label className="block text-xs font-bold text-rose-700 mb-1">سنة الوفاة</label>
+                      <input
+                        type="number" required
+                        value={editForm.deathYear || 0}
+                        onChange={e => setEditForm({ ...editForm, deathYear: parseInt(e.target.value) || 0 })}
+                        className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white"
+                      />
+                    </div>
+                  )}
+
+                  <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">الحالة الاجتماعية</label>
                     <select
                       value={editForm.maritalStatus || ''}
@@ -1303,40 +1338,6 @@ export default function AdminPanel({
                           className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white"
                         />
                       )}
-                    </div>
-                  )}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">الحالة</label>
-                    <select
-                      value={editForm.isAlive ? 'alive' : 'deceased'}
-                      onChange={e => setEditForm({ ...editForm, isAlive: e.target.value === 'alive' })}
-                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white cursor-pointer"
-                    >
-                      <option value="alive">على قيد الحياة</option>
-                      <option value="deceased">متوفى</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">الجنس</label>
-                    <select
-                      value={editForm.gender || 'male'}
-                      onChange={e => setEditForm({ ...editForm, gender: e.target.value as 'male' | 'female' })}
-                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white cursor-pointer"
-                    >
-                      <option value="male">ذكر</option>
-                      <option value="female">أنثى</option>
-                    </select>
-                  </div>
-
-                  {!editForm.isAlive && (
-                    <div className="md:col-span-3 bg-rose-50 p-3 rounded-xl border border-rose-100">
-                      <label className="block text-xs font-bold text-rose-700 mb-1">سنة الوفاة</label>
-                      <input
-                        type="number" required
-                        value={editForm.deathYear || 0}
-                        onChange={e => setEditForm({ ...editForm, deathYear: parseInt(e.target.value) || 0 })}
-                        className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white"
-                      />
                     </div>
                   )}
                 </div>

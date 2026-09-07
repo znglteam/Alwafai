@@ -1757,6 +1757,23 @@ export default function FamilyTreeVisualizer({
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">الحالة</label>
+                            <select value={editForm.isAlive ? 'alive' : 'deceased'} onChange={e => setEditForm({...editForm, isAlive: e.target.value === 'alive', deathYear: e.target.value === 'alive' ? null : editForm.deathYear})} className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white cursor-pointer">
+                              <option value="alive">على قيد الحياة</option>
+                              <option value="deceased">متوفى</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">الجنس</label>
+                            <select value={editForm.gender || 'male'} onChange={e => setEditForm({...editForm, gender: e.target.value as 'male' | 'female'})} className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white cursor-pointer">
+                              <option value="male">ذكر</option>
+                              <option value="female">أنثى</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
                           <div className="col-span-2">
                             <label className="block text-[10px] font-bold text-slate-500 mb-0.5">الحالة الاجتماعية</label>
                             <select
@@ -1802,22 +1819,6 @@ export default function FamilyTreeVisualizer({
                             />
                           </div>
                         )}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">الحالة</label>
-                            <select value={editForm.isAlive ? 'alive' : 'deceased'} onChange={e => setEditForm({...editForm, isAlive: e.target.value === 'alive', deathYear: e.target.value === 'alive' ? null : editForm.deathYear})} className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white cursor-pointer">
-                              <option value="alive">على قيد الحياة</option>
-                              <option value="deceased">متوفى</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-500 mb-0.5">الجنس</label>
-                            <select value={editForm.gender || 'male'} onChange={e => setEditForm({...editForm, gender: e.target.value as 'male' | 'female'})} className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white cursor-pointer">
-                              <option value="male">ذكر</option>
-                              <option value="female">أنثى</option>
-                            </select>
-                          </div>
-                        </div>
                         <div>
                           <label className="block text-[10px] font-bold text-slate-500 mb-0.5">الصورة الشخصية</label>
                           <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-2">

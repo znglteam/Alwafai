@@ -279,7 +279,7 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
                           setReplyDrafts(prev => ({...prev, [msg.id]: ''}));
                           setMsgError(null);
                         } catch (err) {
-                          setMsgError('تعذر إرسال الرد بسبب السعة اليومية لقاعدة البيانات.');
+                          setMsgError('حدث خطأ أثناء الإرسال. يرجى المحاولة مرة أخرى.');
                         }
                       }}
                       className="bg-[#414141] hover:bg-slate-800 disabled:bg-slate-300 text-white p-2.5 rounded-xl flex items-center justify-center shrink-0 self-end transition-colors"

@@ -55,7 +55,7 @@ import AuthModal from './components/AuthModal';
 import ContactAdmin from './components/ContactAdmin';
 import UserProfileModal from './components/UserProfileModal';
 
-import { Home, Network, User, Shield, LogOut, MessageSquare, Wifi, Bell, CloudUpload, CheckCircle, LogIn, UserPlus, Image } from 'lucide-react';
+import { Home, Network, User, Shield, LogOut, MessageSquare, Wifi, Bell, CloudUpload, CheckCircle, LogIn, UserPlus, Image, Headset } from 'lucide-react';
 import { reconcileLineageAndMarriages, syncSpouseRelationships, isMemberFemale } from './utils/marriageUtils';
 import { findMatchingMemberInTree } from './utils/memberMatching';
 
@@ -1292,8 +1292,8 @@ export default function App() {
           }`}
           id="floating-contact-btn"
         >
-          <MessageSquare size={15} />
-          <span>{activeTab === 'messages' ? 'العودة للرئيسية' : 'مراسلة الإدارة'}</span>
+          <Headset size={15} />
+          <span>{activeTab === 'messages' ? 'العودة للرئيسية' : 'خدمة العملاء'}</span>
         </button>
       )}
 

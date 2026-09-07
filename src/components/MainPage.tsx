@@ -274,7 +274,7 @@ export default function MainPage({
           <div>
             <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
               <Image className="text-indigo-600" size={22} />
-              ألبوم صور العائلة واللقاءات
+              أعلام العائلة وكبارها
             </h3>
             <p className="text-xs text-slate-400 mt-1">
               معرض الصور التذكارية لأعيان ولقاءات واجتماعات العائلة المباركة

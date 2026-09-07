@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { 
-  getFirestore, 
+  initializeFirestore, 
   doc, 
   onSnapshot, 
   setDoc, 
@@ -28,7 +28,9 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+}, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 
 export interface LiveChangeLog {
@@ -78,6 +80,8 @@ export function subscribeToFamilyInfo(onInfo: (info: FamilyInfo) => void) {
     if (docSnap.exists()) {
       onInfo(docSnap.data() as FamilyInfo);
     }
+  }, (err) => {
+    console.warn('Family info listener error:', err);
   });
 }
 

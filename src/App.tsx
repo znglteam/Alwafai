@@ -1312,8 +1312,8 @@ export default function App() {
         onGoToAdmin={() => setActiveTab('admin')}
       />
 
-      {/* Floating Contact Admin Button - Visible ONLY to Logged-in Members and Admins */}
-      {currentSession.role !== 'guest' && (
+      {/* Floating Contact Admin Button - Visible ONLY to Logged-in Members (Hidden for Admin) */}
+      {currentSession.role === 'member' && (
         <button
           onClick={() => {
             if (activeTab === 'messages') {

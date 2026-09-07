@@ -23,7 +23,10 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
 
   const myMessages = useMemo(() => {
     if (!currentSession.email) return [];
-    return messages.filter(m => m.senderEmail.toLowerCase() === currentSession.email?.toLowerCase());
+    return messages.filter(m => 
+      m.senderEmail.toLowerCase() === currentSession.email?.toLowerCase() ||
+      m.recipientEmail?.toLowerCase() === currentSession.email?.toLowerCase()
+    );
   }, [messages, currentSession.email]);
 
   const handleSubmit = (e: React.FormEvent) => {

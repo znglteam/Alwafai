@@ -392,12 +392,17 @@ export async function deleteAuditLogFromCloud(logId: string) {
 
 export async function clearAllAuditLogsFromCloud(logs: LiveChangeLog[]) {
   try {
-    const batch = writeBatch(db);
-    logs.forEach(log => {
-      const ref = doc(db, 'family_audit_logs', log.id);
-      batch.delete(ref);
-    });
-    await batch.commit();
+    // Firestore batch limit is 500 operations
+    const chunkSize = 500;
+    for (let i = 0; i < logs.length; i += chunkSize) {
+      const chunk = logs.slice(i, i + chunkSize);
+      const batch = writeBatch(db);
+      chunk.forEach(log => {
+        const ref = doc(db, 'family_audit_logs', log.id);
+        batch.delete(ref);
+      });
+      await batch.commit();
+    }
   } catch (err) {
     console.error('Error clearing logs:', err);
     throw err;

@@ -346,7 +346,7 @@ export default function App() {
       if (req.status === 'pending') {
         return {
           success: false,
-          message: `طلب تسجيلك باسم (${req.name} ${req.gender === 'female' ? 'بنت' : 'بن'} ${req.fatherName} بن ${req.grandfatherName}) تم إرساله وهو حالياً بانتظار مراجعة وقبول الآدمن في لوحة التحكم. لا يمكن تسجيل الدخول إلا بعد اعتماد الحساب وربطه بالشجرة.`
+          message: `طلب تسجيلك باسم (${req.name} ${isMemberFemale(req) ? 'بنت' : 'بن'} ${req.fatherName} بن ${req.grandfatherName}) تم إرساله وهو حالياً بانتظار مراجعة وقبول الآدمن في لوحة التحكم. لا يمكن تسجيل الدخول إلا بعد اعتماد الحساب وربطه بالشجرة.`
         };
       }
 
@@ -378,7 +378,7 @@ export default function App() {
           // If approved request exists, log in with approved user credentials
           setCurrentSession({
             userId: req.id,
-            name: `${req.name} ${req.gender === 'female' ? 'بنت' : 'بن'} ${req.fatherName} بن ${req.grandfatherName}`,
+            name: `${req.name} ${isMemberFemale(req) ? 'بنت' : 'بن'} ${req.fatherName} بن ${req.grandfatherName}`,
             email: req.email,
             role: 'member'
           });
@@ -491,7 +491,7 @@ export default function App() {
       const updatedRequest: RegistrationRequest = { ...req, status: 'approved' as const };
       const updatedRequests = requests.map(r => r.id === requestId ? updatedRequest : r);
 
-      const isFemaleReq = (req.gender || existing.gender) === 'female';
+      const isFemaleReq = isMemberFemale(req) || isMemberFemale(existing);
       const connectorReq = isFemaleReq ? 'بنت' : 'بن';
       const fatherPartReq = (existing.fatherName || req.fatherName) ? ` ${connectorReq} ${existing.fatherName || req.fatherName}` : '';
       const grandPartReq = (existing.grandfatherName || req.grandfatherName) ? ` بن ${existing.grandfatherName || req.grandfatherName}` : '';
@@ -556,7 +556,7 @@ export default function App() {
       const updatedRequest: RegistrationRequest = { ...req, status: 'approved' as const };
       const updatedRequests = requests.map(r => r.id === requestId ? updatedRequest : r);
 
-      const isFemaleReq = req.gender === 'female';
+      const isFemaleReq = isMemberFemale(req);
       const connectorReq = isFemaleReq ? 'بنت' : 'بن';
       const fatherPartReq = req.fatherName ? ` ${connectorReq} ${req.fatherName}` : '';
       const grandPartReq = req.grandfatherName ? ` بن ${req.grandfatherName}` : '';
@@ -665,6 +665,34 @@ export default function App() {
       if (prevMember.isAlive !== updated.isAlive) changes.push(`الحالة (على قيد الحياة: ${updated.isAlive ? 'نعم' : 'لا'})`);
       if (prevMember.avatar !== updated.avatar) changes.push(`الصورة الشخصية`);
       if (prevMember.spouseName !== updated.spouseName) changes.push(`اسم الزوج/الزوجة من "${prevMember.spouseName || 'لا يوجد'}" إلى "${updated.spouseName || 'لا يوجد'}"`);
+      
+      if ((prevMember.comments?.length || 0) < (updated.comments?.length || 0)) {
+        changes.push(`إضافة تعليق جديد`);
+        
+        // Notify the member if they have an email
+        const targetEmail = updated.email || (updated.registeredUserId ? requests.find(r => r.id === updated.registeredUserId)?.email : null);
+        if (targetEmail) {
+          const latestComment = updated.comments![updated.comments!.length - 1];
+          const msg = {
+            id: 'msg-' + Date.now().toString(),
+            senderName: 'إدارة العائلة (إشعار آلي)',
+            senderEmail: 'system@ghanem.family',
+            recipientEmail: targetEmail,
+            subject: 'إشعار: تعليق جديد على ملفك الشخصي',
+            content: `قام "${latestComment.senderName}" بإضافة تعليق على ملفك الشخصي في شجرة العائلة.\n\nالتعليق:\n"${latestComment.content}"\n\nتاريخ التعليق: ${latestComment.createdAt}`,
+            attachmentType: 'none' as const,
+            createdAt: new Date().toISOString(),
+            replies: []
+          };
+          
+          try {
+            await saveMessageToCloud(msg);
+            setMessages(prev => [msg, ...prev]);
+          } catch (e) {
+             console.warn('Could not save notification message');
+          }
+        }
+      }
       
       if (changes.length > 0) {
         diffDetails = `تم تعديل: ${changes.join('، ')}`;

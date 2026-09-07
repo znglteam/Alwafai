@@ -115,6 +115,7 @@ export interface FamilyMessage {
   id: string;
   senderName: string;
   senderEmail: string;
+  recipientEmail?: string;
   subject: string;
   content: string;
   attachmentUrl?: string;

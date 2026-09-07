@@ -1241,6 +1241,10 @@ export default function App() {
                 allMembers={members}
                 onUpdateMember={handleUpdateMember}
                 onAddChild={handleAddChild}
+                onGoToTree={(id) => {
+                  setActiveTab('tree');
+                  if (id) setTreeSelectedMemberId(id);
+                }}
               />
             ) : (
               <div className="bg-white border border-slate-100 rounded-3xl p-8 text-center max-w-lg mx-auto my-8 space-y-4 shadow-sm">

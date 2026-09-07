@@ -22,6 +22,7 @@ import {
   ChevronUp,
   ChevronDown,
   GripVertical,
+  Network,
 } from "lucide-react";
 import { Reorder } from "motion/react";
 import { GenderUserIcon } from "./GenderIcon";
@@ -51,6 +52,7 @@ interface MemberProfileEditProps {
     fatherId: string,
     childInfo: Omit<FamilyMember, "id" | "fatherId" | "childrenIds">,
   ) => void;
+  onGoToTree?: (memberId: string) => void;
 }
 
 export default function MemberProfileEdit({
@@ -58,6 +60,7 @@ export default function MemberProfileEdit({
   allMembers,
   onUpdateMember,
   onAddChild,
+  onGoToTree,
 }: MemberProfileEditProps) {
   // Form edit states
   const [name, setName] = useState(member.name);
@@ -369,11 +372,26 @@ export default function MemberProfileEdit({
       <div className="bg-indigo-600 text-white rounded-3xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 border border-indigo-700/10">
         <div>
           <h2 className="text-xl md:text-2xl font-bold">
-            الملف الشخصي: {member.name} بن {member.fatherName}
+            الملف الشخصي: {member.name} {member.fatherName ? `بن ${member.fatherName}` : ''}
           </h2>
+          <p className="text-xs text-indigo-100 mt-1">تعديل بياناتك الشخصية، وإدارة أسرتك وأبنائك</p>
         </div>
-        <div className="bg-white/10 px-4 py-2 rounded-xl text-xs border border-white/20 self-start text-white font-bold">
-          حالة الحساب: عضو معتمد
+        <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+          {onGoToTree && (
+            <button
+              type="button"
+              onClick={() => onGoToTree(member.id)}
+              className="flex items-center gap-2 bg-white text-indigo-700 hover:bg-indigo-50 active:scale-95 font-bold px-4 py-2.5 rounded-xl text-xs transition-all shadow-sm border border-white/80 cursor-pointer"
+              id="view-me-in-tree-btn"
+              title="رؤية موقعك ومكانك في شجرة العائلة"
+            >
+              <Network size={16} className="text-indigo-600" />
+              <span>رؤيتي في الشجرة</span>
+            </button>
+          )}
+          <div className="bg-white/10 px-4 py-2 rounded-xl text-xs border border-white/20 text-white font-bold">
+            حالة الحساب: عضو معتمد
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

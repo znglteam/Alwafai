@@ -1,0 +1,152 @@
+#!/bin/bash
+sed -i 's/شجرة العائلة الهرمية/الشجرة الهرمية/g' src/components/FamilyTreeVisualizer.tsx
+
+cat << 'INNER_EOF' > replacement.txt
+        <div className="flex flex-col gap-4">
+          {/* Toggle View Mode (Moved to Top) */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex bg-slate-100 p-1 rounded-xl">
+              <button
+                onClick={() => setViewMode('tree')}
+                className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${
+                  viewMode === 'tree' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                الشجرة الهرمية
+              </button>
+              <button
+                onClick={() => setViewMode('directory')}
+                className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${
+                  viewMode === 'directory' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                بحث
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2 items-center">
+              {isAdmin && (
+                <button
+                  onClick={() => setIsAddingMember(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow"
+                >
+                  <Plus size={14} />
+                  إضافة فرد جديد للشجرة
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Secondary Controls (Reorder, Expand/Collapse) */}
+          {viewMode === 'tree' && (
+            <div className="flex flex-wrap gap-2 items-center">
+              {isApprovedMember && (
+                <button
+                  onClick={() => setIsReorderMode(!isReorderMode)}
+                  className={`font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer ${
+                    isReorderMode 
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white ring-2 ring-amber-400' 
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200'
+                  }`}
+                  title="تغيير الترتيب"
+                >
+                  <GripVertical size={13} className={isReorderMode ? 'animate-pulse text-white' : 'text-slate-500'} />
+                  {isReorderMode ? 'إنهاء إعادة الترتيب' : 'تغيير الترتيب'}
+                </button>
+              )}
+              
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                <button
+                  onClick={expandAllBranches}
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg text-slate-600 hover:text-indigo-700 hover:bg-white transition-all cursor-pointer"
+                  title="فتح وتوسيع جميع فروع الشجرة"
+                >
+                  فتح الكل
+                </button>
+                <button
+                  onClick={collapseAllBranches}
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg text-slate-600 hover:text-indigo-700 hover:bg-white transition-all cursor-pointer"
+                  title="طي جميع فروع الشجرة"
+                >
+                  طي الكل
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+INNER_EOF
+
+# we need to replace lines 880 to 952
+sed -i '880,952c\
+        <div className="flex flex-col gap-4">\
+          {/* Toggle View Mode (Moved to Top) */}\
+          <div className="flex flex-wrap items-center justify-between gap-4">\
+            <div className="flex bg-slate-100 p-1 rounded-xl">\
+              <button\
+                onClick={() => setViewMode('tree')}\
+                className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${\
+                  viewMode === '"'tree'"' ? '"'bg-white text-indigo-700 shadow-sm'"' : '"'text-slate-600 hover:text-slate-900'"'\
+                }`}\
+              >\
+                الشجرة الهرمية\
+              </button>\
+              <button\
+                onClick={() => setViewMode('directory')}\
+                className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${\
+                  viewMode === '"'directory'"' ? '"'bg-white text-indigo-700 shadow-sm'"' : '"'text-slate-600 hover:text-slate-900'"'\
+                }`}\
+              >\
+                بحث\
+              </button>\
+            </div>\
+\
+            <div className="flex flex-wrap gap-2 items-center">\
+              {isAdmin && (\
+                <button\
+                  onClick={() => setIsAddingMember(true)}\
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow"\
+                >\
+                  <Plus size={14} />\
+                  إضافة فرد جديد للشجرة\
+                </button>\
+              )}\
+            </div>\
+          </div>\
+\
+          {/* Secondary Controls (Reorder, Expand/Collapse) */}\
+          {viewMode === '"'tree'"' && (\
+            <div className="flex flex-wrap gap-2 items-center">\
+              {isApprovedMember && (\
+                <button\
+                  onClick={() => setIsReorderMode(!isReorderMode)}\
+                  className={`font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer ${\
+                    isReorderMode \
+                      ? '"'bg-amber-500 hover:bg-amber-600 text-white ring-2 ring-amber-400'"' \
+                      : '"'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200'"'\
+                  }`}\
+                  title="تغيير الترتيب"\
+                >\
+                  <GripVertical size={13} className={isReorderMode ? '"'animate-pulse text-white'"' : '"'text-slate-500'"'} />\
+                  {isReorderMode ? '"'إنهاء إعادة الترتيب'"' : '"'تغيير الترتيب'"'}\
+                </button>\
+              )}\
+              \
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">\
+                <button\
+                  onClick={expandAllBranches}\
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg text-slate-600 hover:text-indigo-700 hover:bg-white transition-all cursor-pointer"\
+                  title="فتح وتوسيع جميع فروع الشجرة"\
+                >\
+                  فتح الكل\
+                </button>\
+                <button\
+                  onClick={collapseAllBranches}\
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg text-slate-600 hover:text-indigo-700 hover:bg-white transition-all cursor-pointer"\
+                  title="طي جميع فروع الشجرة"\
+                >\
+                  طي الكل\
+                </button>\
+              </div>\
+            </div>\
+          )}\
+        </div>' src/components/FamilyTreeVisualizer.tsx

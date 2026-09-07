@@ -877,40 +877,59 @@ export default function FamilyTreeVisualizer({
       
       {/* Search and Navigation Bar */}
       <div className="bg-white border border-slate-100 rounded-3xl p-5 md:p-6 shadow-sm space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-bold text-slate-800">
-              شجرة العائلة
-            </h3>
+        <div className="flex flex-col gap-4">
+          {/* Toggle View Mode (Moved to Top) */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex bg-slate-100 p-1 rounded-xl">
+              <button
+                onClick={() => setViewMode('tree')}
+                className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${
+                  viewMode === 'tree' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                الشجرة الهرمية
+              </button>
+              <button
+                onClick={() => setViewMode('directory')}
+                className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${
+                  viewMode === 'directory' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                بحث
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2 items-center">
+              {isAdmin && (
+                <button
+                  onClick={() => setIsAddingMember(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow"
+                >
+                  <Plus size={14} />
+                  إضافة فرد جديد للشجرة
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 items-center">
-            {isAdmin && (
-              <button
-                onClick={() => setIsAddingMember(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow"
-              >
-                <Plus size={14} />
-                إضافة فرد جديد للشجرة
-              </button>
-            )}
-
-            {isApprovedMember && viewMode === 'tree' && (
-              <button
-                onClick={() => setIsReorderMode(!isReorderMode)}
-                className={`font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer ${
-                  isReorderMode 
-                    ? 'bg-amber-500 hover:bg-amber-600 text-white ring-2 ring-amber-400' 
-                    : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200'
-                }`}
-                title="تغيير الترتيب"
-              >
-                <GripVertical size={13} className={isReorderMode ? 'animate-pulse text-white' : 'text-slate-500'} />
-                {isReorderMode ? 'إنهاء إعادة الترتيب' : 'تغيير الترتيب'}
-              </button>
-            )}
-
-            {viewMode === 'tree' && (
+          {/* Secondary Controls (Reorder, Expand/Collapse) */}
+          {viewMode === 'tree' && (
+            <div className="flex flex-wrap gap-2 items-center">
+              {isApprovedMember && (
+                <button
+                  onClick={() => setIsReorderMode(!isReorderMode)}
+                  className={`font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer ${
+                    isReorderMode 
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white ring-2 ring-amber-400' 
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200'
+                  }`}
+                  title="تغيير الترتيب"
+                >
+                  <GripVertical size={13} className={isReorderMode ? 'animate-pulse text-white' : 'text-slate-500'} />
+                  {isReorderMode ? 'إنهاء إعادة الترتيب' : 'تغيير الترتيب'}
+                </button>
+              )}
+              
               <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
                 <button
                   onClick={expandAllBranches}
@@ -927,28 +946,8 @@ export default function FamilyTreeVisualizer({
                   طي الكل
                 </button>
               </div>
-            )}
-
-            {/* Toggle View Mode */}
-            <div className="flex bg-slate-100 p-1 rounded-xl self-start">
-              <button
-                onClick={() => setViewMode('tree')}
-                className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${
-                  viewMode === 'tree' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                شجرة العائلة الهرمية
-              </button>
-              <button
-                onClick={() => setViewMode('directory')}
-                className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${
-                  viewMode === 'directory' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                بحث
-              </button>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Filters Grid */}

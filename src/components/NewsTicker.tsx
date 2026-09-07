@@ -100,7 +100,7 @@ export default function NewsTicker({ news }: NewsTickerProps) {
         </div>
 
         {/* Next/Prev buttons */}
-        <div className="flex items-center gap-1.5 shrink-0 border-r border-white/10 pr-3 mr-1">
+        <div className="hidden md:flex items-center gap-1.5 shrink-0 border-r border-white/10 pr-3 mr-1">
           <button
             onClick={handlePrev}
             className="text-white/70 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-md"

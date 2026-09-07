@@ -53,7 +53,6 @@ import MemberProfileEdit from './components/MemberProfileEdit';
 import AdminPanel from './components/AdminPanel';
 import AuthModal from './components/AuthModal';
 import ContactAdmin from './components/ContactAdmin';
-import UserProfileModal from './components/UserProfileModal';
 
 import { Home, Network, User, Shield, LogOut, MessageSquare, Wifi, Bell, CloudUpload, CheckCircle, LogIn, UserPlus, Image, Headset } from 'lucide-react';
 import { reconcileLineageAndMarriages, syncSpouseRelationships, isMemberFemale } from './utils/marriageUtils';
@@ -168,7 +167,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'main' | 'tree' | 'profile' | 'admin' | 'messages'>('main');
   const [treeSelectedMemberId, setTreeSelectedMemberId] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [auditLogs, setAuditLogs] = useState<LiveChangeLog[]>([]);
   const [liveNotification, setLiveNotification] = useState<string | null>(null);
   const [isUploadingToCloud, setIsUploadingToCloud] = useState(false);
@@ -1137,9 +1135,15 @@ export default function App() {
             ) : (
               <>
                 <button
-                  onClick={() => setIsProfileModalOpen(true)}
+                  onClick={() => {
+                    if (activeMember) {
+                      setActiveTab('profile');
+                    } else if (currentSession.role === 'admin') {
+                      setActiveTab('admin');
+                    }
+                  }}
                   className="relative group p-2.5 rounded-full hover:bg-slate-100 transition-colors border border-slate-200/60 flex items-center justify-center bg-slate-50 text-slate-700 hover:text-indigo-600 cursor-pointer"
-                  title={`الملف الشخصي: ${currentSession.name}`}
+                  title={activeMember ? "تعديل الملف الشخصي والبيانات" : (currentSession.role === 'admin' ? "لوحة الإدارة" : `الملف الشخصي: ${currentSession.name}`)}
                 >
                   <User size={18} />
                   <span className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white ${
@@ -1147,9 +1151,19 @@ export default function App() {
                   }`} />
                 </button>
 
-                <div className="hidden lg:block text-right">
+                <div 
+                  onClick={() => {
+                    if (activeMember) {
+                      setActiveTab('profile');
+                    } else if (currentSession.role === 'admin') {
+                      setActiveTab('admin');
+                    }
+                  }}
+                  className="hidden lg:block text-right cursor-pointer"
+                  title={activeMember ? "الانتقال لصفحة التعديلات" : undefined}
+                >
                   <span className="block text-[9px] text-slate-400 font-bold leading-none">مرحباً بك</span>
-                  <span className="text-xs font-bold text-slate-700 truncate max-w-[120px] block">{currentSession.name}</span>
+                  <span className="text-xs font-bold text-slate-700 truncate max-w-[120px] block hover:text-indigo-600 transition-colors">{currentSession.name}</span>
                 </div>
 
                 <button
@@ -1227,13 +1241,29 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'profile' && activeMember && (
-            <MemberProfileEdit
-              member={activeMember}
-              allMembers={members}
-              onUpdateMember={handleUpdateMember}
-              onAddChild={handleAddChild}
-            />
+          {activeTab === 'profile' && (
+            activeMember ? (
+              <MemberProfileEdit
+                member={activeMember}
+                allMembers={members}
+                onUpdateMember={handleUpdateMember}
+                onAddChild={handleAddChild}
+              />
+            ) : (
+              <div className="bg-white border border-slate-100 rounded-3xl p-8 text-center max-w-lg mx-auto my-8 space-y-4 shadow-sm">
+                <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                  <User size={28} />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800">جاري تحميل بيانات العضو...</h3>
+                <p className="text-xs text-slate-500">إذا لم تكن مرتبطاً بفرد محدد في الشجرة بعد، يرجى التواصل مع مسؤول العائلة لربط حسابك.</p>
+                <button
+                  onClick={() => setActiveTab('main')}
+                  className="bg-indigo-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-colors cursor-pointer"
+                >
+                  العودة للرئيسية
+                </button>
+              </div>
+            )
           )}
 
           {activeTab === 'admin' && currentSession.role === 'admin' && (
@@ -1295,21 +1325,6 @@ export default function App() {
         onClose={() => setAuthMode(null)}
         onRegister={handleNewRequest}
         onLogin={handleLogin}
-      />
-
-      {/* User Profile Modal */}
-      <UserProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        currentSession={currentSession}
-        activeMember={activeMember}
-        onLogout={handleLogout}
-        onGoToTree={(id) => {
-          setActiveTab('tree');
-          if (id) setTreeSelectedMemberId(id);
-        }}
-        onGoToProfileEdit={() => setActiveTab('profile')}
-        onGoToAdmin={() => setActiveTab('admin')}
       />
 
       {/* Floating Contact Admin Button - Visible ONLY to Logged-in Members (Hidden for Admin) */}

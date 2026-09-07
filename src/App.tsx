@@ -1273,7 +1273,7 @@ export default function App() {
         isOpen={authMode !== null}
         initialMode={authMode || 'login'}
         onClose={() => setAuthMode(null)}
-        onRegister={handleRegister}
+        onRegister={handleNewRequest}
         onLogin={handleLogin}
       />
 

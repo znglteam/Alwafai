@@ -26,6 +26,7 @@ import {
 import { Reorder } from "motion/react";
 import { GenderUserIcon } from "./GenderIcon";
 import AvatarImage from "./AvatarImage";
+import { PWAInstallButton } from "./PWAInstallButton";
 
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -735,8 +736,15 @@ export default function MemberProfileEdit({
           </div>
         </form>
 
-        {/* Children Management Sidebar */}
+        {/* Sidebar / Extra Settings */}
         <div className="lg:col-span-5 space-y-6">
+          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
+            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">
+              إعدادات التطبيق
+            </h3>
+            <PWAInstallButton />
+          </div>
+
           {member.gender !== 'female' && (
             <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">

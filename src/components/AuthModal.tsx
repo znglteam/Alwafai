@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RegistrationRequest } from '../types';
+import { PWAInstallButton } from "./PWAInstallButton";
 import { X, User, Mail, Lock, Sparkles, LogIn, UserPlus, Upload, FileText, CheckCircle, Plus, Trash2, Users, HelpCircle, Info } from 'lucide-react';
 
 const ARAB_COUNTRIES = [
@@ -89,7 +90,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
       setTimeout(() => {
         setRegSuccess(false);
         onClose();
-      }, 4000);
+      }, 15000);
     } catch (err) {
       setLoginError('نعتذر، لقد نفدت سعة بيانات الموقع المخصصة لهذا اليوم. يرجى إعادة المحاولة غداً بعد الساعة 11:00 صباحاً بتوقيت مكة المكرمة.');
     }
@@ -136,6 +137,9 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                   تم تسجيل طلبك بالاسم الثلاثي: <br />
                   <strong className="font-bold text-emerald-900 text-sm">{name} {gender === 'female' ? 'بنت' : 'بن'} {fatherName} بن {grandfatherName}</strong>
                 </p>
+                <div className="pt-4 border-t border-emerald-200/60 mt-4">
+                  <PWAInstallButton />
+                </div>
                 <p className="text-[11px] text-slate-500">
                   الطلب الآن معروض في لوحة إدارة العائلة لمطابقته وربطه بالوالد المناسب في الشجرة.
                 </p>

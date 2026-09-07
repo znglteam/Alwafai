@@ -467,6 +467,16 @@ export default function App() {
   };
 
   // Approve a request (either linking to existing tree member or creating a new tree node)
+  const formatWelcomePhrase = (fullName: string) => {
+    let clean = fullName.trim();
+    if (clean.startsWith('بـ ') || clean.startsWith('بـ')) {
+      clean = clean.replace(/^بـ\s*/, '');
+    } else if (clean.startsWith('ب ')) {
+      clean = clean.replace(/^ب\s+/, '');
+    }
+    return `نرحب بـ ${clean}`;
+  };
+
   const handleApproveRequest = async (requestId: string, fatherId: string | null, existingMemberId?: string | null) => {
     const req = requests.find(r => r.id === requestId);
     if (!req) return;
@@ -514,10 +524,10 @@ export default function App() {
       const newNewsItem: NewsItem = {
         id: 'news-' + Date.now().toString(),
         type: 'welcome',
-        content: `نرحب بالعضو الجديد في الموقع: ${memberFullName}`,
+        content: formatWelcomePhrase(memberFullName),
         createdAt: new Date().toISOString(),
-      isReadByAdmin: false,
-      isReadByMember: true
+        isReadByAdmin: false,
+        isReadByMember: true
       };
       const updatedNews = [newNewsItem, ...news];
 
@@ -580,10 +590,10 @@ export default function App() {
       const newNewsItem: NewsItem = {
         id: 'news-' + Date.now().toString(),
         type: 'welcome',
-        content: `نرحب بالعضو الجديد في الموقع: ${memberFullName}`,
+        content: formatWelcomePhrase(memberFullName),
         createdAt: new Date().toISOString(),
-      isReadByAdmin: false,
-      isReadByMember: true
+        isReadByAdmin: false,
+        isReadByMember: true
       };
       const updatedNews = [newNewsItem, ...news];
 
@@ -1017,7 +1027,17 @@ export default function App() {
   );
 
   const effectiveNews = useMemo(() => {
-    return (news || []).filter(Boolean);
+    return (news || [])
+      .filter(Boolean)
+      .map(item => {
+        if (item.type === 'welcome' && item.content && item.content.includes('بالعضو الجديد في الموقع:')) {
+          return {
+            ...item,
+            content: item.content.replace(/نرحب بالعضو الجديد في الموقع:\s*/g, 'نرحب بـ ')
+          };
+        }
+        return item;
+      });
   }, [news]);
 
   const hasPendingRequests = (requests || []).some(r => r && r.status === "pending");

@@ -379,15 +379,8 @@ export default function MemberProfileEdit({
           </h2>
           <p className="text-xs text-indigo-100 mt-1">تعديل بياناتك الشخصية، وإدارة أسرتك وأبنائك</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
-          {/* PWA Desktop Install Quick Button */}
-          <PWAInstallButton
-            variant="compact"
-            className="bg-white/20 hover:bg-white/30 text-white border-white/30 shadow-xs"
-            label="تثبيت بسطح المكتب"
-          />
-
-          {onGoToTree && (
+        {onGoToTree && (
+          <div className="flex items-center gap-2.5 self-start md:self-auto">
             <button
               type="button"
               onClick={() => onGoToTree(member.id)}
@@ -398,21 +391,8 @@ export default function MemberProfileEdit({
               <Network size={16} className="text-indigo-600" />
               <span>رؤيتي في الشجرة</span>
             </button>
-          )}
-
-          {onLogout && (
-            <button
-              type="button"
-              onClick={onLogout}
-              className="flex items-center gap-1.5 bg-rose-500/90 hover:bg-rose-600 active:scale-95 text-white font-bold px-3.5 py-2.5 rounded-xl text-xs transition-all shadow-sm border border-rose-400/50 cursor-pointer"
-              id="profile-logout-btn"
-              title="تسجيل الخروج من الحساب"
-            >
-              <LogOut size={15} />
-              <span>تسجيل الخروج</span>
-            </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* PWA Install Notice in Profile Page */}
@@ -783,15 +763,8 @@ export default function MemberProfileEdit({
           </div>
         </form>
 
-        {/* Sidebar / Extra Settings */}
+        {/* Sidebar / Extra Details */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">
-              إعدادات التطبيق
-            </h3>
-            <PWAInstallButton />
-          </div>
-
           {member.gender !== 'female' && (
             <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
@@ -1276,6 +1249,26 @@ export default function MemberProfileEdit({
             </div>
           </div>
         </div>
+
+        {/* Bottom Action: Logout */}
+        {onLogout && (
+          <div className="pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white border border-slate-100 rounded-3xl p-5 shadow-xs">
+            <div>
+              <h4 className="text-sm font-bold text-slate-800">تسجيل الخروج من الحساب</h4>
+              <p className="text-xs text-slate-500 mt-0.5">يمكنك تسجيل الخروج والعودة في أي وقت باستخدام بيانات حسابك.</p>
+            </div>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 hover:text-rose-800 font-bold px-6 py-3 rounded-2xl text-xs md:text-sm transition-all border border-rose-200 cursor-pointer"
+              id="profile-bottom-logout-btn"
+              title="تسجيل الخروج من الحساب"
+            >
+              <LogOut size={16} className="text-rose-600" />
+              <span>تسجيل الخروج</span>
+            </button>
+          </div>
+        )}
       {selectedRelativeForEdit && (
         <EditRelativeModal
           relative={selectedRelativeForEdit}

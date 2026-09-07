@@ -27,7 +27,7 @@ export default function NewsTicker({ news }: NewsTickerProps) {
     switch (type) {
       case 'welcome':
         return {
-          label: 'ترحيب بعضو جديد',
+          label: 'ترحيب',
           color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
           icon: Sparkles
         };
@@ -93,7 +93,7 @@ export default function NewsTicker({ news }: NewsTickerProps) {
 
               {/* News Text */}
               <p className="text-xs md:text-sm font-medium text-white truncate hover:text-white transition-colors flex-1 leading-relaxed">
-                {currentNews.content}
+                {currentNews.content.replace(/نرحب بالعضو الجديد في الموقع:\s*/g, 'نرحب بـ ')}
               </p>
             </motion.div>
           </AnimatePresence>

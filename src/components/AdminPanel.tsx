@@ -1459,7 +1459,7 @@ export default function AdminPanel({
                     className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
                   >
                     <option value="general">تنويه عام / تنبيه</option>
-                    <option value="welcome">ترحيب بعضو جديد</option>
+                    <option value="welcome">ترحيب بفرد من العائلة</option>
                     <option value="baby">تهنئة بمولود جديد</option>
                     <option value="condolence">تعزية ومواساة</option>
                   </select>
@@ -1514,7 +1514,7 @@ export default function AdminPanel({
                       {item.type === 'welcome' ? 'ترحيب' : item.type === 'baby' ? 'تهنئة' : item.type === 'condolence' ? 'تعزية' : 'تنويه'}
                     </span>
                     <p className="text-xs md:text-sm font-medium text-slate-700 leading-normal">
-                      {item.content}
+                      {item.content.replace(/نرحب بالعضو الجديد في الموقع:\s*/g, 'نرحب بـ ')}
                     </p>
                   </div>
 

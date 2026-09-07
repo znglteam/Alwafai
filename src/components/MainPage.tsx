@@ -376,19 +376,19 @@ export default function MainPage({
         )}
 
         {/* Photos Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start justify-items-center">
           {photos.map((photo) => (
             <div 
               key={photo.id}
-              className="group bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 relative"
+              className="group bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 relative w-fit max-w-full flex flex-col justify-self-center"
             >
-              {/* Photo */}
-              <div className="aspect-video w-full overflow-hidden bg-slate-900 relative flex items-center justify-center">
+              {/* Photo Container - matches the exact size of the image */}
+              <div className="relative w-fit max-w-full mx-auto overflow-hidden flex items-center justify-center">
                 <img
                   src={photo.url}
                   alt={photo.caption}
                   referrerPolicy="no-referrer"
-                  className="object-contain w-full h-full group-hover:scale-102 transition-transform duration-500"
+                  className="w-auto h-auto max-h-[460px] max-w-full object-contain block group-hover:scale-[1.02] transition-transform duration-500"
                 />
                 
                 {/* Image Overlay for Delete & Edit */}
@@ -396,14 +396,14 @@ export default function MainPage({
                   <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                     <button
                       onClick={() => handleStartEditPhoto(photo)}
-                      className="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg"
+                      className="bg-indigo-600/90 text-white p-2 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg backdrop-blur-xs"
                       title="تعديل الصورة والبيانات"
                     >
                       <Pencil size={13} />
                     </button>
                     <button
                       onClick={() => onDeletePhoto(photo.id)}
-                      className="bg-rose-600 text-white p-2 rounded-xl hover:bg-rose-700 transition-colors shadow-lg"
+                      className="bg-rose-600/90 text-white p-2 rounded-xl hover:bg-rose-700 transition-colors shadow-lg backdrop-blur-xs"
                       title="حذف الصورة"
                     >
                       <Trash2 size={13} />
@@ -413,7 +413,7 @@ export default function MainPage({
               </div>
 
               {/* Caption & Description */}
-              <div className="p-4 space-y-2">
+              <div className="p-4 space-y-2 max-w-sm">
                 <p className="text-slate-800 text-xs md:text-sm font-bold leading-relaxed">
                   {photo.caption}
                 </p>
@@ -425,7 +425,7 @@ export default function MainPage({
               </div>
 
               {/* Comments Section */}
-              <div className="border-t border-slate-100 bg-slate-50/50 p-4 space-y-3">
+              <div className="border-t border-slate-100 bg-slate-50/50 p-4 space-y-3 max-w-sm">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-500">
                   <span className="flex items-center gap-1.5">
                     <MessageSquare size={13} className="text-slate-400" />

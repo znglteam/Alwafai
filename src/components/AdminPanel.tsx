@@ -5,7 +5,7 @@ import { LiveChangeLog } from '../utils/firebaseService';
 const ARAB_COUNTRIES = [
   "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
 ];
-import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, Mars, Venus, Upload, Activity, History, Link, AlertTriangle, RotateCcw, UserCheck, Search, Send, LogOut } from 'lucide-react';
+import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, Mars, Venus, Upload, Activity, History, Link, AlertTriangle, RotateCcw, UserCheck, Search, Send } from 'lucide-react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
 import { findMatchingMemberInTree, getRankedCandidateMembers, getResolvedMemberLineage } from '../utils/memberMatching';
@@ -348,17 +348,6 @@ export default function AdminPanel({
             </p>
           </div>
         </div>
-        {onLogout && (
-          <button
-            type="button"
-            onClick={onLogout}
-            className="flex items-center gap-1.5 self-start sm:self-auto bg-rose-500/90 hover:bg-rose-600 active:scale-95 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition-all shadow-sm border border-rose-400/50 cursor-pointer shrink-0"
-            title="تسجيل الخروج من حساب الإدارة"
-          >
-            <LogOut size={15} />
-            <span>تسجيل الخروج</span>
-          </button>
-        )}
       </div>
 
       {/* Tabs Menu */}

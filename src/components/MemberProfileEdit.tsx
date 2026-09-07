@@ -447,8 +447,38 @@ export default function MemberProfileEdit({
               />
             </div>
 
-            {/* Country of residence */}
-            {isAlive && (
+            {/* Status (Alive / Deceased) */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1">
+                الحالة (حياة / وفاة)
+              </label>
+              <select
+                value={isAlive ? "alive" : "deceased"}
+                onChange={(e) => setIsAlive(e.target.value === "alive")}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
+              >
+                <option value="alive">على قيد الحياة (حياً)</option>
+                <option value="deceased">متوفى (رحمه الله)</option>
+              </select>
+            </div>
+
+            {/* Gender */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1">
+                الجنس
+              </label>
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value as "male" | "female")}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
+              >
+                <option value="male">ذكر</option>
+                <option value="female">أنثى</option>
+              </select>
+            </div>
+
+            {/* Country of residence (if alive) OR Death date (if deceased) */}
+            {isAlive ? (
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">
                   بلد الإقامة
@@ -464,10 +494,31 @@ export default function MemberProfileEdit({
                   ))}
                 </select>
               </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-bold text-rose-700 mb-1">
+                  تاريخ الوفاة
+                </label>
+                <input
+                  type="date"
+                  value={deathDate}
+                  onChange={(e) => {
+                    const dateVal = e.target.value;
+                    setDeathDate(dateVal);
+                    if (dateVal) {
+                      const yr = new Date(dateVal).getFullYear();
+                      setDeathYear(yr);
+                    } else {
+                      setDeathYear(0);
+                    }
+                  }}
+                  className="w-full border border-rose-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-rose-600 bg-white cursor-pointer"
+                />
+              </div>
             )}
 
             {/* Specialization */}
-            <div className={isAlive ? "" : "md:col-span-2"}>
+            <div>
               <label className="block text-xs font-bold text-slate-500 mb-1">
                 التخصص المهني/العلمي
               </label>
@@ -635,59 +686,6 @@ export default function MemberProfileEdit({
               </div>
             )}
 
-            {/* Status (Alive / Deceased) */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">
-                الحالة (حياة / وفاة)
-              </label>
-              <select
-                value={isAlive ? "alive" : "deceased"}
-                onChange={(e) => setIsAlive(e.target.value === "alive")}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
-              >
-                <option value="alive">على قيد الحياة (حياً)</option>
-                <option value="deceased">متوفى (رحمه الله)</option>
-              </select>
-            </div>
-
-            {/* Gender */}
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">
-                الجنس
-              </label>
-              <select
-                value={gender}
-                onChange={(e) => setGender(e.target.value as "male" | "female")}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
-              >
-                <option value="male">ذكر</option>
-                <option value="female">أنثى</option>
-              </select>
-            </div>
-
-            {/* Death date (conditionally visible) */}
-            {!isAlive && (
-              <div className="md:col-span-2 bg-rose-50/40 p-4 rounded-2xl border border-rose-100 space-y-2">
-                <label className="block text-xs font-bold text-rose-700">
-                  تاريخ الوفاة
-                </label>
-                <input
-                  type="date"
-                  value={deathDate}
-                  onChange={(e) => {
-                    const dateVal = e.target.value;
-                    setDeathDate(dateVal);
-                    if (dateVal) {
-                      const yr = new Date(dateVal).getFullYear();
-                      setDeathYear(yr);
-                    } else {
-                      setDeathYear(0);
-                    }
-                  }}
-                  className="w-full border border-rose-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-rose-600 bg-white cursor-pointer"
-                />
-              </div>
-            )}
 
             {/* Marital Status */}
             <div className="md:col-span-2">

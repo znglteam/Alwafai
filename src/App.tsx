@@ -1081,19 +1081,6 @@ export default function App() {
               </button>
             )}
 
-            {/* Approved Member Tab */}
-            {currentSession.role === 'member' && activeMember && (
-              <button
-                onClick={() => setActiveTab('profile')}
-                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
-                  activeTab === 'profile' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <User size={14} />
-                تعديل عائلتي
-              </button>
-            )}
-
             {/* Admin Tab */}
             {currentSession.role === 'admin' && (
               <button
@@ -1142,12 +1129,18 @@ export default function App() {
                       setActiveTab('admin');
                     }
                   }}
-                  className="relative group p-2.5 rounded-full hover:bg-slate-100 transition-colors border border-slate-200/60 flex items-center justify-center bg-slate-50 text-slate-700 hover:text-indigo-600 cursor-pointer"
+                  className={`relative group p-2.5 rounded-full transition-all border flex items-center justify-center cursor-pointer ${
+                    activeTab === 'profile'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                      : 'bg-slate-50 text-slate-700 hover:text-indigo-600 hover:bg-slate-100 border-slate-200/60'
+                  }`}
                   title={activeMember ? "تعديل الملف الشخصي والبيانات" : (currentSession.role === 'admin' ? "لوحة الإدارة" : `الملف الشخصي: ${currentSession.name}`)}
                 >
                   <User size={18} />
                   <span className={`absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white ${
-                    currentSession.role === 'admin' ? 'bg-emerald-500' : 'bg-indigo-500'
+                    activeTab === 'profile'
+                      ? 'bg-white'
+                      : currentSession.role === 'admin' ? 'bg-emerald-500' : 'bg-indigo-500'
                   }`} />
                 </button>
 

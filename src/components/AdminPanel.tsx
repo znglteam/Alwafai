@@ -533,11 +533,11 @@ export default function AdminPanel({
                             </span>
                           )}
                           <span className="text-[10px] text-slate-400 bg-white px-2 py-0.5 rounded-md border border-slate-100 font-medium">
-                            {req.gender === 'female' ? 'أنثى' : 'ذكر'}
+                            {isMemberFemale(req) ? 'أنثى' : 'ذكر'}
                           </span>
                         </div>
                         <h4 className="font-bold text-slate-800 text-base">
-                          {req.name} {req.fatherName ? (req.gender === 'female' ? `بنت ${req.fatherName}` : `بن ${req.fatherName}`) : ''} {req.grandfatherName ? `بن ${req.grandfatherName}` : ''}
+                          {req.name} {req.fatherName ? (isMemberFemale(req) ? `بنت ${req.fatherName}` : `بن ${req.fatherName}`) : ''} {req.grandfatherName ? `بن ${req.grandfatherName}` : ''}
                         </h4>
                         <p className="text-xs text-slate-500">
                           البريد الإلكتروني: <strong className="text-slate-800 font-mono">{req.email}</strong> {req.createdAt ? ` | سُجّل في: ${new Date(req.createdAt).toLocaleDateString('ar-SA')}` : ''}

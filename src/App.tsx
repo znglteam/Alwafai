@@ -481,7 +481,7 @@ export default function App() {
         birthDate: req.birthDate || existing.birthDate,
         bio: req.bio && req.bio !== 'عضو في العائلة.' ? req.bio : existing.bio,
         avatar: req.avatar || existing.avatar,
-        gender: (isMemberFemale(existing) || req.gender === 'female') ? 'female' : 'male',
+        gender: existing.gender || (isMemberFemale(existing) ? 'female' : 'male'),
         isAlive: req.isAlive !== undefined ? req.isAlive : existing.isAlive
       };
 

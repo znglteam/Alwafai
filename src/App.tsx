@@ -483,7 +483,7 @@ export default function App() {
         birthDate: req.birthDate || existing.birthDate,
         bio: req.bio && req.bio !== 'عضو في العائلة.' ? req.bio : existing.bio,
         avatar: req.avatar || existing.avatar,
-        gender: req.gender || existing.gender,
+        gender: (isMemberFemale(existing) || req.gender === 'female') ? 'female' : 'male',
         isAlive: req.isAlive !== undefined ? req.isAlive : existing.isAlive
       };
 
@@ -534,7 +534,7 @@ export default function App() {
         childrenIds: [],
         registeredUserId: requestId,
         email: req.email,
-        gender: req.gender || 'male'
+        gender: req.gender || (isMemberFemale(req) ? 'female' : 'male')
       };
 
       let updatedMembers = [...members, newMember];
@@ -1285,15 +1285,14 @@ export default function App() {
               setActiveTab('messages');
             }
           }}
-          className={`fixed bottom-6 left-6 z-40 flex items-center gap-2 px-4 py-3 rounded-full shadow-lg border text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer ${
+          className={`fixed bottom-6 left-6 z-40 flex items-center justify-center w-12 h-12 rounded-full shadow-lg border text-xs font-bold transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer ${
             activeTab === 'messages'
               ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-600 shadow-rose-200'
               : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-indigo-100'
           }`}
           id="floating-contact-btn"
         >
-          <Headset size={15} />
-          <span>{activeTab === 'messages' ? 'العودة للرئيسية' : 'خدمة العملاء'}</span>
+          {activeTab === 'messages' ? <LogOut size={20} className="rotate-180" /> : <Headset size={22} />}
         </button>
       )}
 

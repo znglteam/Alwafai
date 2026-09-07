@@ -152,7 +152,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">اسمك الأول *</label>
+                    <div className="col-span-1 md:col-span-3"><label className="block text-[11px] font-bold text-slate-600 mb-1">الجنس *</label><select value={gender} onChange={e => setGender(e.target.value as "male" | "female")} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-600 bg-white"><option value="male">ذكر</option><option value="female">أنثى</option></select></div><label className="block text-[11px] font-bold text-slate-600 mb-1">اسمك الأول *</label>
                     <input
                       type="text" required placeholder="الاسم الأول"
                       value={name} onChange={e => setName(e.target.value)}

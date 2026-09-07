@@ -1803,7 +1803,7 @@ export default function AdminPanel({
               <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-3xl space-y-3">
                 <MessageSquare className="mx-auto text-slate-300" size={44} />
                 <h4 className="text-xs font-bold text-slate-500">صندوق الرسائل فارغ حالياً</h4>
-                <p className="text-[10px] text-slate-400">عندما يقوم الأعضاء بمراسلتك من صفحة "خدمة العملاء" ستظهر جميع رسائلهم ومرفقاتهم هنا.</p>
+                <p className="text-[10px] text-slate-400">عندما يقوم الأعضاء بمراسلتك عبر زر التواصل ستظهر جميع رسائلهم ومرفقاتهم هنا.</p>
               </div>
             ) : (
               <div className="space-y-4">

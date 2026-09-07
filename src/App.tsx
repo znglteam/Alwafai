@@ -203,17 +203,6 @@ export default function App() {
       }
 
       if (cloudMembers && cloudMembers.length > 0) {
-        // If local storage has more members than cloud, merge any missing members and upload them
-        if (localMaxList.length > cloudMembers.length) {
-          const cloudIds = new Set(cloudMembers.map(m => m.id));
-          const missingInCloud = localMaxList.filter(m => !cloudIds.has(m.id));
-          if (missingInCloud.length > 0) {
-            const merged = reconcileLineage([...cloudMembers, ...missingInCloud]);
-            setMembers(merged);
-            seedInitialMembersIfEmpty(missingInCloud);
-            return;
-          }
-        }
         setMembers(reconcileLineage(cloudMembers));
       } else {
         // If Firestore is empty, auto-upload from local backup or INITIAL_MEMBERS

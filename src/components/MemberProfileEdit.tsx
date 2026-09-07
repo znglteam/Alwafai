@@ -27,6 +27,7 @@ import { Reorder } from "motion/react";
 import { GenderUserIcon } from "./GenderIcon";
 import AvatarImage from "./AvatarImage";
 import { PWAInstallButton } from "./PWAInstallButton";
+import { compressImage } from "../utils/imageUtils";
 
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -465,14 +466,15 @@ export default function MemberProfileEdit({
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => {
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                      setAvatar(e.target?.result as string);
-                    };
-                    reader.readAsDataURL(file);
+                    try {
+                      const compressed = await compressImage(file, 0.4);
+                      setAvatar(compressed);
+                    } catch (err) {
+                      console.error("Compression failed", err);
+                    }
                   } else {
                     setAvatar("");
                   }
@@ -865,14 +867,15 @@ export default function MemberProfileEdit({
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                          setChildAvatar(e.target?.result as string);
-                        };
-                        reader.readAsDataURL(file);
+                        try {
+                          const compressed = await compressImage(file, 0.4);
+                          setChildAvatar(compressed);
+                        } catch (err) {
+                          console.error("Compression failed", err);
+                        }
                       } else {
                         setChildAvatar("");
                       }

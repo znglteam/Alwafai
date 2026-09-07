@@ -6,6 +6,7 @@ import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
 import SpouseEditor from './SpouseEditor';
 import ChildrenListEditor from './ChildrenListEditor';
+import { compressImage } from '../utils/imageUtils';
 
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -1834,14 +1835,15 @@ export default function FamilyTreeVisualizer({
                             <input
                               type="file"
                               accept="image/*"
-                              onChange={e => {
+                              onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  const reader = new FileReader();
-                                  reader.onload = (ev) => {
-                                    setEditForm({ ...editForm, avatar: ev.target?.result as string, avatarScale: 1, avatarX: 0, avatarY: 0 });
-                                  };
-                                  reader.readAsDataURL(file);
+                                  try {
+                                    const compressed = await compressImage(file, 0.4);
+                                    setEditForm({ ...editForm, avatar: compressed, avatarScale: 1, avatarX: 0, avatarY: 0 });
+                                  } catch (err) {
+                                    console.error("Compression failed", err);
+                                  }
                                 }
                               }}
                               className="w-full text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 file:cursor-pointer"
@@ -2256,14 +2258,15 @@ export default function FamilyTreeVisualizer({
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={e => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (e) => {
-                        setNewMemAvatar(e.target?.result as string);
-                      };
-                      reader.readAsDataURL(file);
+                      try {
+                        const compressed = await compressImage(file, 0.4);
+                        setNewMemAvatar(compressed);
+                      } catch (err) {
+                        console.error("Compression failed", err);
+                      }
                     } else {
                       setNewMemAvatar('');
                     }

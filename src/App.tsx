@@ -155,10 +155,10 @@ export default function App() {
       } catch (e) {}
     }
     return {
-      userId: 'admin-id',
-      name: 'مدير البوابة (الآدمن)',
-      email: 'admin@family.com',
-      role: 'admin'
+      userId: null,
+      name: 'زائر',
+      email: '',
+      role: 'guest'
     };
   });
 

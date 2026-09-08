@@ -894,6 +894,7 @@ export default function App() {
     
     const changed = getChangedMembers(members, reconciled);
     if (changed.length > 0) {
+      saveMultipleMembersToCloud(changed).catch(err => console.error("Error saving members to cloud:", err));
     }
 
     

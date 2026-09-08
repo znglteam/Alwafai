@@ -27,6 +27,7 @@ export default function AvatarImage({
     <img
       src={src}
       alt={alt}
+      crossOrigin="anonymous"
       referrerPolicy="no-referrer"
       className={`absolute origin-center pointer-events-none select-none max-w-none max-h-none ${className}`}
       style={{

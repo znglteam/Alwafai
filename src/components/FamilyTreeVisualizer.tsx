@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { FamilyMember, SpouseInfo, getMemberSpouses } from '../types';
-import { Search, MapPin, Award, Heart, HelpCircle, Eye, EyeOff, User, GitCommit, ChevronDown, ChevronRight, Share2, CornerDownLeft, Network, LogIn, UserPlus, X, Trash2, Plus, Minus, ZoomIn, ZoomOut, Mars, Venus, Edit2, GripVertical, MessageSquare, Check, UserCheck } from 'lucide-react';
+import { Search, MapPin, Award, Heart, HelpCircle, Eye, EyeOff, User, GitCommit, ChevronDown, ChevronRight, Share2, CornerDownLeft, Network, LogIn, UserPlus, X, Trash2, Plus, Minus, ZoomIn, ZoomOut, Mars, Venus, Edit2, GripVertical, MessageSquare, Check, UserCheck, Download, Printer, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
 import SpouseEditor from './SpouseEditor';
 import ChildrenListEditor from './ChildrenListEditor';
 import { compressImage } from '../utils/imageUtils';
+import jsPDF from 'jspdf';
+import { toJpeg } from 'html-to-image';
 
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -620,6 +622,111 @@ export default function FamilyTreeVisualizer({
     setExpandedBranches(newExpanded);
   };
 
+  const [layoutDirection, setLayoutDirection] = useState<'vertical' | 'horizontal'>('vertical');
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const treeContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadPDF = async () => {
+    if (!treeContainerRef.current) return;
+    setIsExportingPDF(true);
+
+    try {
+      // Small delay to ensure any layout shifts are complete
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      const element = treeContainerRef.current;
+      
+      const width = element.scrollWidth;
+      const height = element.scrollHeight;
+
+      const imgData = await toJpeg(element, {
+        quality: 0.95,
+        backgroundColor: '#f8fafc',
+        pixelRatio: 2, // High resolution
+        width: width,
+        height: height,
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left',
+          width: `${width}px`,
+          height: `${height}px`
+        }
+      });
+      
+      const pxToMm = (px: number) => px * 0.264583;
+      const treeW = pxToMm(width);
+      const treeH = pxToMm(height);
+
+      const paperSizes = [
+        { name: 'a4', w: 210, h: 297 },
+        { name: 'a3', w: 297, h: 420 },
+        { name: 'a2', w: 420, h: 594 },
+        { name: 'a1', w: 594, h: 841 },
+        { name: 'a0', w: 841, h: 1189 }
+      ];
+
+      let selectedFormat: string | number[] = '';
+      let orientation: 'p' | 'l' = 'p';
+      let paperW = 0, paperH = 0;
+
+      for (const size of paperSizes) {
+        if (treeW <= size.w && treeH <= size.h) {
+          selectedFormat = size.name;
+          orientation = 'p';
+          paperW = size.w;
+          paperH = size.h;
+          break;
+        }
+        if (treeW <= size.h && treeH <= size.w) {
+          selectedFormat = size.name;
+          orientation = 'l';
+          paperW = size.h;
+          paperH = size.w;
+          break;
+        }
+      }
+
+      // Fallback to custom size if it exceeds A0
+      if (!selectedFormat) {
+        selectedFormat = [treeW, treeH];
+        orientation = treeW > treeH ? 'l' : 'p';
+        paperW = treeW;
+        paperH = treeH;
+      }
+
+      const pdf = new jsPDF({
+        orientation,
+        unit: 'mm',
+        format: selectedFormat
+      });
+
+      const imgRatio = width / height;
+      const paperRatio = paperW / paperH;
+
+      let drawW = paperW;
+      let drawH = paperH;
+
+      if (imgRatio > paperRatio) {
+        drawW = paperW;
+        drawH = paperW / imgRatio;
+      } else {
+        drawH = paperH;
+        drawW = paperH * imgRatio;
+      }
+
+      const x = (paperW - drawW) / 2;
+      const y = (paperH - drawH) / 2;
+
+      pdf.addImage(imgData, 'JPEG', x, y, drawW, drawH);
+      pdf.save(`شجرة_العائلة_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('حدث خطأ أثناء استخراج ملف الـ PDF. يرجى التأكد من اتصالك بالإنترنت والمحاولة مرة أخرى.');
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   const handleViewInTree = (member: FamilyMember, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
@@ -685,7 +792,7 @@ export default function FamilyTreeVisualizer({
     const isExpanded = Boolean(expandedBranches[node.id]);
 
     return (
-      <div key={node.id} id={`node-card-${node.id}`} className="flex flex-col items-center relative transition-all duration-500">
+      <div key={node.id} id={`node-card-${node.id}`} className={`flex ${layoutDirection === 'horizontal' ? 'flex-row items-center' : 'flex-col items-center'} relative transition-all duration-500`}>
         {/* Compact Node Card */}
         <div className="flex flex-col items-center gap-1.5 relative group/node">
           <div className="relative">
@@ -790,12 +897,12 @@ export default function FamilyTreeVisualizer({
 
         {/* Children Render if expanded */}
         {hasChildren && isExpanded && (
-          <div className="flex flex-col items-center w-full">
-            {/* Vertical connector from parent to horizontal line */}
-            <div className="w-[2px] h-6 bg-indigo-300"></div>
+          <div className={`flex ${layoutDirection === 'horizontal' ? 'flex-row items-center' : 'flex-col items-center'} w-full`}>
+            {/* Connector from parent to children line */}
+            <div className={`bg-indigo-300 ${layoutDirection === 'horizontal' ? 'w-6 h-[2px]' : 'w-[2px] h-6'}`}></div>
 
-            {/* Row of children */}
-            <div className="flex flex-row items-start justify-center relative">
+            {/* Row or Column of children */}
+            <div className={`flex ${layoutDirection === 'horizontal' ? 'flex-col items-end' : 'flex-row items-start'} justify-center relative`}>
               {children.map((child, index) => {
                 const isFirst = index === 0;
                 const isLast = index === children.length - 1;
@@ -808,7 +915,7 @@ export default function FamilyTreeVisualizer({
                     onDrop={(e) => handleDrop(e, child.id)}
                     onDragEnd={handleDragEnd}
                     onDragLeave={handleDragLeave}
-                    className={`flex flex-col items-center relative px-2 md:px-4 shrink-0 pt-6 transition-all duration-300 ${
+                    className={`flex ${layoutDirection === 'horizontal' ? 'flex-row items-center pr-6 py-2 md:py-4' : 'flex-col items-center pt-6 px-2 md:px-4'} relative shrink-0 transition-all duration-300 ${
                       draggedId === child.id ? 'opacity-30 scale-95 blur-xs' : ''
                     } ${
                       dragOverId === child.id ? 'border-2 border-dashed border-indigo-500 rounded-3xl bg-indigo-50/15 ring-4 ring-indigo-500/10' : ''
@@ -817,18 +924,19 @@ export default function FamilyTreeVisualizer({
                     {/* Horizontal connector line */}
                     {children.length > 1 && (
                       <div 
-                        className={`absolute top-0 h-[2px] bg-indigo-300 ${
-                          isFirst 
-                            ? 'right-1/2 left-0' 
-                            : isLast 
-                              ? 'left-1/2 right-0' 
-                              : 'left-0 right-0'
+                        className={`absolute bg-indigo-300 ${
+                          layoutDirection === 'horizontal'
+                            ? `right-0 w-[2px] ${
+                                isFirst ? 'top-1/2 bottom-0' : isLast ? 'top-0 bottom-1/2' : 'top-0 bottom-0'
+                              }`
+                            : `top-0 h-[2px] ${
+                                isFirst ? 'right-1/2 left-0' : isLast ? 'left-1/2 right-0' : 'left-0 right-0'
+                              }`
                         }`}
                       ></div>
                     )}
                     {/* Vertical line to this child */}
-                    <div className="absolute top-0 left-0 right-0 flex justify-center"><div className="w-[2px] h-6 bg-indigo-300"></div></div>
-
+                    <div className={`absolute flex ${layoutDirection === 'horizontal' ? 'right-0 top-0 bottom-0 items-center' : 'top-0 left-0 right-0 justify-center'}`}><div className={`bg-indigo-300 ${layoutDirection === 'horizontal' ? 'w-6 h-[2px]' : 'w-[2px] h-6'}`}></div></div>
                     {renderTreeNode(child, depth + 1)}
                   </div>
                 );
@@ -902,6 +1010,27 @@ export default function FamilyTreeVisualizer({
           {/* Secondary Controls (Reorder, Expand/Collapse) */}
           {viewMode === 'tree' && (
             <>
+              <button
+                onClick={() => setLayoutDirection(prev => prev === 'vertical' ? 'horizontal' : 'vertical')}
+                className="font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0 bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200"
+                title="تغيير اتجاه الشجرة"
+              >
+                <RefreshCw size={14} />
+                تخطيط {layoutDirection === 'vertical' ? 'أفقي' : 'عمودي'}
+              </button>
+              
+              <button
+                onClick={handleDownloadPDF}
+                disabled={isExportingPDF}
+                className="font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0 bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="تحميل الشجرة كملف PDF"
+              >
+                {isExportingPDF ? (
+                  <span className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div> جاري التجهيز...</span>
+                ) : (
+                  <><Printer size={13} /> طباعة الشجرة (PDF)</>
+                )}
+              </button>
               {isApprovedMember && (
                 <button
                   onClick={() => setIsReorderMode(!isReorderMode)}
@@ -1083,7 +1212,7 @@ export default function FamilyTreeVisualizer({
               )}
               
               <div className="overflow-x-auto pb-4">
-                <div className="min-w-max flex justify-center p-4 gap-12">
+                <div ref={treeContainerRef} className={`min-w-max flex ${layoutDirection === 'horizontal' ? 'flex-col items-center justify-start' : 'justify-center'} p-4 gap-12 bg-slate-50`}>
                   {patriarchs.length > 0 ? (
                     patriarchs.map(p => (
                       <div key={p.id}>
@@ -1149,105 +1278,98 @@ export default function FamilyTreeVisualizer({
                     <div
                       key={member.id}
                       onClick={() => setSelectedMember(member)}
-                      className="group bg-slate-50 hover:bg-white border border-slate-100 hover:border-indigo-100 rounded-2xl p-4 cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-between gap-3"
+                      className="group bg-slate-50 hover:bg-white border border-slate-100 hover:border-indigo-100 rounded-2xl p-4 cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md flex items-center gap-3"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="relative shrink-0">
+                      <div className="relative shrink-0">
+                        <div 
+                          onClick={(e) => {
+                            if (member.avatar) {
+                              e.stopPropagation();
+                              setActiveFullscreenMember(member);
+                            }
+                          }}
+                          className={`w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 relative flex items-center justify-center font-bold text-sm hover:scale-105 transition-transform duration-200 cursor-pointer bg-white ${
+                            isFemale 
+                               ? member.isAlive ? 'border-[#bb5791]' : 'border-[#bb5791]/40'
+                               : member.isAlive ? 'border-[#607fc4]' : 'border-[#607fc4]/40'
+                          }`}
+                          title={member.avatar ? `انقر لتكبير صورة ${member.name}` : undefined}
+                        >
+                          {member.avatar ? (
+                            <AvatarImage 
+                              src={member.avatar} 
+                              alt={member.name} 
+                              avatarX={member.avatarX}
+                              avatarY={member.avatarY}
+                              avatarScale={member.avatarScale}
+                            />
+                          ) : (
+                            <span className={isFemale ? 'text-[#bb5791]' : 'text-[#607fc4]'}>
+                              <GenderUserIcon gender={isFemale ? 'female' : 'male'} size={26} className="stroke-[1.5]" isAlive={member.isAlive} />
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Green indicator on Search Result avatar */}
+                        {Boolean(member.registeredUserId) && (
                           <div 
-                            onClick={(e) => {
-                              if (member.avatar) {
-                                e.stopPropagation();
-                                setActiveFullscreenMember(member);
-                              }
-                            }}
-                            className={`w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 relative flex items-center justify-center font-bold text-sm hover:scale-105 transition-transform duration-200 cursor-pointer bg-white ${
-                              isFemale 
-                                ? member.isAlive ? 'border-[#bb5791]' : 'border-[#bb5791]/40' 
-                                : member.isAlive ? 'border-[#607fc4]' : 'border-[#607fc4]/40'
-                            }`}
-                            title={member.avatar ? `انقر لتكبير صورة ${member.name}` : undefined}
+                            className="absolute -top-1 -left-1 bg-emerald-500 border-2 border-white text-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm z-20 ring-1 ring-emerald-500/20"
+                            title="عضو منضم ومسجل في الموقع"
                           >
-                            {member.avatar ? (
-                              <AvatarImage 
-                                src={member.avatar} 
-                                alt={member.name} 
-                                avatarX={member.avatarX}
-                                avatarY={member.avatarY}
-                                avatarScale={member.avatarScale}
-                              />
-                            ) : (
-                              <span className={isFemale ? 'text-[#bb5791]' : 'text-[#607fc4]'}>
-                                <GenderUserIcon gender={isFemale ? 'female' : 'male'} size={26} className="stroke-[1.5]" isAlive={member.isAlive} />
+                            <Check size={8} className="stroke-[3.5] text-white" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="text-right min-w-0 flex-1 flex flex-col justify-center">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">
+                            {getFullName(member)}
+                          </h4>
+                        </div>
+                        
+                        <div className="flex items-end justify-between w-full mt-0.5">
+                          <div>
+                            <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                              {member.isAlive ? (
+                                member.country ? (
+                                  <>
+                                    <MapPin size={11} className="text-slate-400 shrink-0" />
+                                    <span className="truncate">{member.country}</span>
+                                  </>
+                                ) : null
+                              ) : (
+                                <span className="text-rose-600 font-medium">
+                                  {(() => {
+                                    let dYear = member.deathYear;
+                                    if (!dYear && member.deathDate) {
+                                      const d = new Date(member.deathDate);
+                                      if (!isNaN(d.getTime())) dYear = d.getFullYear();
+                                    }
+                                    if (dYear) {
+                                      return `متوفي منذ ${CURRENT_YEAR - dYear} سنة`;
+                                    }
+                                    return 'متوفى (رحمه الله)';
+                                  })()}
+                                </span>
+                              )}
+                            </div>
+                            {calculatedAge !== null && (
+                              <span className="inline-block bg-slate-200/50 text-slate-700 text-[9px] px-1.5 py-0.5 rounded-md mt-1 font-semibold">
+                                {!member.isAlive ? `عن عمر يناهز ${calculatedAge} سنة` : `العمر: ${calculatedAge} سنة`}
                               </span>
                             )}
                           </div>
                           
-                          {/* Green indicator on Search Result avatar */}
-                          {Boolean(member.registeredUserId) && (
-                            <div 
-                              className="absolute -top-1 -left-1 bg-emerald-500 border-2 border-white text-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm z-20 ring-1 ring-emerald-500/20"
-                              title="عضو منضم ومسجل في الموقع"
-                            >
-                              <Check size={8} className="stroke-[3.5] text-white" />
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="text-right min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors truncate">
-                              {getFullName(member)}
-                            </h4>
-                            {Boolean(member.registeredUserId) && (
-                              <span 
-                                className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-full shrink-0 shadow-2xs"
-                                title="عضو منضم ومسجل في الموقع"
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                عضو مسجل
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
-                            {member.isAlive ? (
-                              member.country ? (
-                                <>
-                                  <MapPin size={11} className="text-slate-400 shrink-0" />
-                                  <span className="truncate">{member.country}</span>
-                                </>
-                              ) : null
-                            ) : (
-                              <span className="text-rose-600 font-medium">
-                                {(() => {
-                                  let dYear = member.deathYear;
-                                  if (!dYear && member.deathDate) {
-                                    const d = new Date(member.deathDate);
-                                    if (!isNaN(d.getTime())) dYear = d.getFullYear();
-                                  }
-                                  if (dYear) {
-                                    return `متوفي منذ ${CURRENT_YEAR - dYear} سنة`;
-                                  }
-                                  return 'متوفى (رحمه الله)';
-                                })()}
-                              </span>
-                            )}
-                          </div>
-                          {calculatedAge !== null && (
-                            <span className="inline-block bg-slate-200/50 text-slate-700 text-[9px] px-1.5 py-0.5 rounded-md mt-1 font-semibold">
-                              العمر: {calculatedAge} سنة
-                            </span>
-                          )}
+                          <button
+                            onClick={(e) => handleViewInTree(member, e)}
+                            className="shrink-0 bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 p-2 rounded-xl transition-all flex items-center justify-center border border-indigo-100/30 translate-y-[2px]"
+                            title="رؤية في الشجرة"
+                          >
+                            <Network size={16} />
+                          </button>
                         </div>
                       </div>
-
-                      <button
-                        onClick={(e) => handleViewInTree(member, e)}
-                        className="shrink-0 bg-indigo-50 hover:bg-indigo-100 active:scale-95 text-indigo-700 text-[10px] font-bold px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 border border-indigo-100/30"
-                        title="رؤية في الشجرة"
-                      >
-                        <Network size={12} />
-                        رؤية في الشجرة
-                      </button>
                     </div>
                   );
                 })}

@@ -12,6 +12,9 @@ export default defineConfig(() => {
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'family_logo.png', 'favicon.png'],
+        workbox: {
+          maximumFileSizeToCacheInBytes: 5000000 // 5 MB
+        },
         manifest: {
           id: '/',
           name: 'شجرة العائلة',

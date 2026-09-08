@@ -1,15 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { FamilyMessage, UserSession } from '../types';
-import { Send, Paperclip, Image, Video, CheckCircle, Info, MessageSquare, Edit3, Inbox, MessageCircle, Bell, Heart } from 'lucide-react';
+import { Send, Paperclip, Image, Video, CheckCircle, Info, MessageSquare, Edit3, Inbox, MessageCircle, Bell, Heart, Shield } from 'lucide-react';
 
 interface ContactAdminProps {
   messages: FamilyMessage[];
   currentSession: UserSession;
+  activeMemberId?: string;
   onSendMessage: (message: Omit<FamilyMessage, 'id' | 'createdAt'>) => void;
   onUpdateMessage: (updatedMessage: FamilyMessage) => Promise<void> | void;
 }
 
-export default function ContactAdmin({ messages, currentSession, onSendMessage, onUpdateMessage }: ContactAdminProps) {
+export default function ContactAdmin({ messages, currentSession, activeMemberId, onSendMessage, onUpdateMessage }: ContactAdminProps) {
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const [attachmentType, setAttachmentType] = useState<'none' | 'image' | 'video'>('none');
@@ -30,9 +31,10 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
       if (userCleanEmail && recEmail && recEmail === userCleanEmail) return true;
       if (userCleanEmail && sndEmail && sndEmail === userCleanEmail) return true;
       if (userId && (m.senderId === userId || m.targetMemberId === userId)) return true;
+      if (activeMemberId && m.targetMemberId === activeMemberId) return true;
       return false;
     });
-  }, [messages, userCleanEmail, userId]);
+  }, [messages, userCleanEmail, userId, activeMemberId]);
 
   const unreadCount = useMemo(() => {
     return myMessages.filter(m => m.isReadByMember === false).length;
@@ -237,13 +239,30 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
             myMessages.map(msg => {
               const isReceivedNotification = (msg.recipientEmail && userCleanEmail && msg.recipientEmail.trim().toLowerCase() === userCleanEmail) || msg.messageType === 'profile_comment_member';
               const isProfileComment = msg.messageType === 'profile_comment_member' || msg.subject?.includes('تعليق جديد على ملفك');
+              const isDirectAdminMsg = msg.messageType === 'admin_direct' || 
+                msg.senderEmail === 'admin@family.com' || 
+                msg.senderName?.includes('الآدمن') || 
+                msg.senderName?.includes('إدارة العائلة') || 
+                msg.senderId === 'admin-id';
 
               return (
-              <div key={msg.id} className="bg-white border border-slate-100 rounded-3xl p-5 md:p-6 shadow-sm flex flex-col gap-4">
-                <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+              <div 
+                key={msg.id} 
+                className={`rounded-3xl p-5 md:p-6 shadow-sm flex flex-col gap-4 border transition-all ${
+                  isDirectAdminMsg 
+                    ? 'bg-gradient-to-b from-emerald-50/30 to-white border-emerald-300 ring-1 ring-emerald-200/60 shadow-md' 
+                    : 'bg-white border-slate-100'
+                }`}
+              >
+                <div className={`flex justify-between items-start border-b pb-3 ${isDirectAdminMsg ? 'border-emerald-100' : 'border-slate-100'}`}>
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      {isProfileComment ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {isDirectAdminMsg ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 text-white px-3 py-1 rounded-full font-bold shadow-xs">
+                          <Shield size={13} className="fill-white/20" />
+                          رسالة خاصة من إدارة العائلة (الآدمن)
+                        </span>
+                      ) : isProfileComment ? (
                         <span className="inline-flex items-center gap-1 text-[10px] bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-0.5 rounded-md font-bold">
                           <Heart size={11} className="text-amber-600 fill-amber-600/20" />
                           تعليق على ملفك الشخصي
@@ -258,30 +277,48 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
                           الموضوع الأساسي
                         </span>
                       )}
+                      {msg.isReadByMember === false && (
+                        <span className="text-[10px] bg-[#bb5791] text-white px-2 py-0.5 rounded-full font-extrabold animate-pulse">
+                          جديدة
+                        </span>
+                      )}
                       <span className="text-[10px] text-slate-400 font-bold">{new Date(msg.createdAt).toLocaleDateString('ar-SA')}</span>
                     </div>
-                    <h4 className="font-bold text-sm text-[#414141]">{msg.subject}</h4>
+                    <h4 className={`font-bold text-sm md:text-base ${isDirectAdminMsg ? 'text-emerald-950 font-extrabold' : 'text-[#414141]'}`}>
+                      {msg.subject}
+                    </h4>
                   </div>
                 </div>
                 
                 {/* Initial Message */}
                 <div className="flex flex-col items-start gap-1">
-                  <div className={`w-full max-w-[95%] md:max-w-[90%] p-3.5 rounded-2xl text-xs leading-relaxed ${
-                    isProfileComment 
+                  <div className={`w-full max-w-[95%] md:max-w-[90%] p-4 rounded-2xl text-xs leading-relaxed ${
+                    isDirectAdminMsg
+                      ? 'bg-emerald-50/80 border border-emerald-200/90 text-slate-800 rounded-tr-sm shadow-xs'
+                      : isProfileComment 
                       ? 'bg-amber-50/60 border border-amber-200/70 text-slate-800 rounded-tr-sm' 
                       : isReceivedNotification
                       ? 'bg-slate-50 border border-slate-200 text-slate-800 rounded-tr-sm'
                       : 'bg-indigo-50 border border-indigo-100 text-slate-700 rounded-tr-sm'
                   }`}>
-                    <div className="text-[10px] font-bold text-indigo-600 mb-1 flex items-center justify-between">
-                      <span>{isReceivedNotification ? `المرسل: ${msg.senderName}` : 'أنت'}</span>
-                      {isProfileComment && (
+                    <div className={`text-[10px] font-bold mb-1.5 flex items-center justify-between ${
+                      isDirectAdminMsg ? 'text-emerald-800 border-b border-emerald-200/60 pb-1.5' : 'text-indigo-600'
+                    }`}>
+                      <span className="flex items-center gap-1.5">
+                        {isDirectAdminMsg && <Shield size={12} className="text-emerald-600" />}
+                        <span>{isDirectAdminMsg ? 'إدارة العائلة (الآدمن)' : isReceivedNotification ? `المرسل: ${msg.senderName}` : 'أنت'}</span>
+                      </span>
+                      {isDirectAdminMsg ? (
+                        <span className="text-[9px] text-emerald-800 bg-emerald-100 border border-emerald-200/60 px-2 py-0.5 rounded-md font-bold">
+                          رسالة مباشرة رسمية
+                        </span>
+                      ) : isProfileComment && (
                         <span className="text-[9px] text-amber-700 font-bold bg-amber-100 px-2 py-0.5 rounded-md">
                           شجرة العائلة
                         </span>
                       )}
                     </div>
-                    <div className="whitespace-pre-line font-medium">{msg.content}</div>
+                    <div className="whitespace-pre-line font-medium text-slate-800 leading-relaxed text-xs md:text-sm">{msg.content}</div>
                   </div>
                   {msg.attachmentUrl && (
                     <div className="mt-2 text-[10px] font-bold text-indigo-600 border border-indigo-100 bg-indigo-50 px-2 py-1 rounded-md">
@@ -293,26 +330,31 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
                 {/* Replies Thread */}
                 {msg.replies && msg.replies.map(reply => (
                   <div key={reply.id} className={`flex flex-col gap-1 ${reply.isAdmin ? 'items-start' : 'items-end'}`}>
-                    <div className={`max-w-[90%] p-3 text-xs leading-relaxed ${reply.isAdmin ? 'bg-slate-800 text-white rounded-2xl rounded-tl-sm self-end' : 'bg-indigo-50 border border-indigo-100 text-slate-700 rounded-2xl rounded-tr-sm'}`}>
-                      <div className={`text-[9px] font-bold mb-1 ${reply.isAdmin ? 'text-slate-400' : 'text-indigo-400'}`}>
-                        {reply.isAdmin ? 'إدارة العائلة' : 'أنت'}
+                    <div className={`max-w-[90%] p-3.5 text-xs leading-relaxed ${
+                      reply.isAdmin 
+                        ? 'bg-emerald-900 text-white rounded-2xl rounded-tl-sm self-start shadow-xs' 
+                        : 'bg-indigo-50 border border-indigo-100 text-slate-700 rounded-2xl rounded-tr-sm self-end'
+                    }`}>
+                      <div className={`text-[9px] font-bold mb-1 flex items-center gap-1 ${reply.isAdmin ? 'text-emerald-200' : 'text-indigo-500'}`}>
+                        {reply.isAdmin && <Shield size={10} />}
+                        <span>{reply.isAdmin ? 'إدارة العائلة (الآدمن)' : 'أنت'}</span>
                       </div>
                       <div className="whitespace-pre-line">{reply.content}</div>
                     </div>
-                    <span className={`text-[9px] text-slate-400 px-1 ${reply.isAdmin ? 'self-end' : ''}`}>
+                    <span className={`text-[9px] text-slate-400 px-1 ${reply.isAdmin ? 'self-start' : 'self-end'}`}>
                       {new Date(reply.createdAt).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
                     </span>
                   </div>
                 ))}
 
                 {/* Reply Box */}
-                <div className="mt-2 pt-4 border-t border-slate-100">
+                <div className={`mt-2 pt-4 border-t ${isDirectAdminMsg ? 'border-emerald-100' : 'border-slate-100'}`}>
                   <div className="flex gap-2">
                     <textarea
                       value={replyDrafts[msg.id] || ''}
                       onChange={e => setReplyDrafts(prev => ({...prev, [msg.id]: e.target.value}))}
-                      placeholder="أضف رداً على هذه المحادثة..."
-                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 min-h-[40px] max-h-32 resize-y"
+                      placeholder={isDirectAdminMsg ? "اكتب ردك المباشر على رسالة الآدمن هنا..." : "أضف رداً على هذه المحادثة..."}
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 min-h-[44px] max-h-32 resize-y"
                       rows={2}
                     />
                     <button
@@ -329,18 +371,26 @@ export default function ContactAdmin({ messages, currentSession, onSendMessage, 
                             createdAt: new Date().toISOString(),
                             isAdmin: false
                           };
-                          await onUpdateMessage({ ...msg, replies: [...(msg.replies || []), reply] });
+                          // Mark unread by admin so admin is notified of the member's reply
+                          await onUpdateMessage({ ...msg, replies: [...(msg.replies || []), reply], isReadByAdmin: false });
                           setReplyDrafts(prev => ({...prev, [msg.id]: ''}));
                           setMsgError(null);
                         } catch (err) {
                           setMsgError('Error: ' + String(err));
                         }
                       }}
-                      className="bg-[#414141] hover:bg-slate-800 disabled:bg-slate-300 text-white p-2.5 rounded-xl flex items-center justify-center shrink-0 self-end transition-colors"
+                      className={`${isDirectAdminMsg ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-[#414141] hover:bg-slate-800'} disabled:bg-slate-300 text-white p-3 rounded-xl flex items-center justify-center shrink-0 self-end transition-colors cursor-pointer`}
+                      title="إرسال الرد"
                     >
-                      <Send size={14} className="rtl:rotate-180" />
+                      <Send size={15} className="rtl:rotate-180" />
                     </button>
                   </div>
+                  {isDirectAdminMsg && (
+                    <p className="text-[11px] text-emerald-700 font-medium flex items-center gap-1.5 mt-2 bg-emerald-50/50 p-2 rounded-lg border border-emerald-100">
+                      <Shield size={12} className="shrink-0" />
+                      <span>يمكنك الرد على الآدمن مباشرة وسيتلقى ردك في لوحة التحكم وتنبيهات الإدارة فوراً.</span>
+                    </p>
+                  )}
                   {msgError && <p className="text-[10px] text-rose-500 mt-1 font-bold">{msgError}</p>}
                 </div>
               </div>

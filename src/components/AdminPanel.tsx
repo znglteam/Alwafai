@@ -5,7 +5,7 @@ import { LiveChangeLog } from '../utils/firebaseService';
 const ARAB_COUNTRIES = [
   "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
 ];
-import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, Mars, Venus, Upload, Activity, History, Link, AlertTriangle, RotateCcw, UserCheck, Search, Send } from 'lucide-react';
+import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, Mars, Venus, Upload, Activity, History, Link, AlertTriangle, RotateCcw, UserCheck, Search, Send, Paperclip } from 'lucide-react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
 import { findMatchingMemberInTree, getRankedCandidateMembers, getResolvedMemberLineage } from '../utils/memberMatching';
@@ -34,6 +34,7 @@ interface AdminPanelProps {
   onDeletePhotoComment: (photoId: string, commentId: string) => void;
   onDeleteMessage: (id: string) => void;
   onUpdateMessage: (updatedMessage: FamilyMessage) => Promise<void> | void;
+  onSendMessage?: (message: Omit<FamilyMessage, 'id' | 'createdAt'>) => Promise<void> | void;
   onDeleteAuditLog?: (id: string) => void;
   onClearAuditLogs?: () => void;
   onRestoreMembers?: (members: FamilyMember[]) => void;
@@ -47,6 +48,7 @@ export default function AdminPanel({
   photos,
   messages,
   onUpdateMessage,
+  onSendMessage,
   currentSession,
   auditLogs = [],
   onApproveRequest,
@@ -103,6 +105,149 @@ export default function AdminPanel({
 
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [msgError, setMsgError] = useState<string | null>(null);
+
+  // Direct Admin-to-Member Messaging State
+  const [isDirectMsgModalOpen, setIsDirectMsgModalOpen] = useState(false);
+  const [directMsgRecipient, setDirectMsgRecipient] = useState<{ id: string; name: string; email?: string; memberId?: string } | null>(null);
+  const [directMsgRecipientSearch, setDirectMsgRecipientSearch] = useState('');
+  const [directMsgCustomEmail, setDirectMsgCustomEmail] = useState('');
+  const [directMsgSubject, setDirectMsgSubject] = useState('');
+  const [directMsgContent, setDirectMsgContent] = useState('');
+  const [directMsgAttachmentUrl, setDirectMsgAttachmentUrl] = useState('');
+  const [directMsgAttachmentType, setDirectMsgAttachmentType] = useState<'none' | 'image' | 'video'>('none');
+  const [isSendingDirectMsg, setIsSendingDirectMsg] = useState(false);
+  const [directMsgFeedback, setDirectMsgFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const handleOpenDirectMessage = (member: { id?: string; name: string; email?: string; memberId?: string }) => {
+    setDirectMsgRecipient({
+      id: member.id || member.memberId || 'member-' + Date.now(),
+      name: member.name,
+      email: member.email || '',
+      memberId: member.memberId || member.id
+    });
+    setDirectMsgCustomEmail(member.email || '');
+    setDirectMsgSubject('');
+    setDirectMsgContent('');
+    setDirectMsgAttachmentUrl('');
+    setDirectMsgAttachmentType('none');
+    setDirectMsgFeedback(null);
+    setIsDirectMsgModalOpen(true);
+  };
+
+  const allCandidateRecipients = useMemo(() => {
+    const list: Array<{ id: string; name: string; email?: string; memberId?: string; source: string; subtitle: string }> = [];
+    const seen = new Set<string>();
+
+    // 1. From Registration Requests (active accounts or pending requests)
+    requests.forEach(r => {
+      const key = (r.email || r.name).trim().toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        const linked = members.find(m => m.registeredUserId === r.id || (m.email && r.email && m.email.trim().toLowerCase() === r.email.trim().toLowerCase()));
+        list.push({
+          id: r.id,
+          name: `${r.name} ${r.fatherName ? 'بن ' + r.fatherName : ''}`.trim(),
+          email: r.email,
+          memberId: linked?.id || r.id,
+          source: r.status === 'approved' ? 'حساب معتمد' : 'طلب انتساب',
+          subtitle: `${r.email} • ${r.country || 'العائلة'}`
+        });
+      }
+    });
+
+    // 2. From Tree Members
+    members.forEach(m => {
+      const key = (m.email || (m.name + ' ' + (m.fatherName || ''))).trim().toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        const matchedReq = requests.find(r => r.id === m.registeredUserId || (r.email && m.email && r.email.trim().toLowerCase() === m.email.trim().toLowerCase()) || r.name.trim() === m.name.trim());
+        const email = m.email || matchedReq?.email;
+        list.push({
+          id: m.id,
+          name: `${m.name} ${m.fatherName ? 'بن ' + m.fatherName : ''} ${m.grandfatherName ? 'بن ' + m.grandfatherName : ''}`.trim(),
+          email: email,
+          memberId: m.id,
+          source: 'شجرة العائلة',
+          subtitle: email ? `${email} • ${m.country || 'العائلة'}` : `${m.country || 'العائلة'} • ${m.specialization || ''}`
+        });
+      }
+    });
+
+    return list;
+  }, [requests, members]);
+
+  const filteredRecipients = useMemo(() => {
+    if (!directMsgRecipientSearch.trim()) return allCandidateRecipients.slice(0, 25);
+    const q = directMsgRecipientSearch.toLowerCase().trim();
+    return allCandidateRecipients.filter(r => 
+      r.name.toLowerCase().includes(q) || 
+      (r.email && r.email.toLowerCase().includes(q)) ||
+      r.subtitle.toLowerCase().includes(q)
+    );
+  }, [allCandidateRecipients, directMsgRecipientSearch]);
+
+  const handleSendDirectMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!directMsgRecipient) {
+      setDirectMsgFeedback({ type: 'error', message: 'يرجى اختيار العضو المستلم أولاً.' });
+      return;
+    }
+    const finalEmail = directMsgRecipient.email || directMsgCustomEmail.trim();
+    if (!finalEmail && !directMsgRecipient.memberId) {
+      setDirectMsgFeedback({ type: 'error', message: 'يرجى تحديد البريد الإلكتروني أو هوية العضو ليصل الإشعار إليه.' });
+      return;
+    }
+    if (!directMsgSubject.trim()) {
+      setDirectMsgFeedback({ type: 'error', message: 'يرجى كتابة عنوان الرسالة.' });
+      return;
+    }
+    if (!directMsgContent.trim()) {
+      setDirectMsgFeedback({ type: 'error', message: 'يرجى كتابة نص الرسالة.' });
+      return;
+    }
+
+    setIsSendingDirectMsg(true);
+    setDirectMsgFeedback(null);
+
+    try {
+      if (onSendMessage) {
+        await onSendMessage({
+          senderName: currentSession.name || 'مدير البوابة (الآدمن)',
+          senderEmail: 'admin@family.com',
+          senderId: 'admin-id',
+          recipientEmail: finalEmail || undefined,
+          targetMemberId: directMsgRecipient.memberId || directMsgRecipient.id,
+          messageType: 'admin_direct',
+          subject: directMsgSubject.trim(),
+          content: directMsgContent.trim(),
+          attachmentUrl: directMsgAttachmentUrl.trim() || undefined,
+          attachmentType: directMsgAttachmentType,
+          isReadByAdmin: true,
+          isReadByMember: false,
+          replies: []
+        });
+      }
+
+      setDirectMsgFeedback({ 
+        type: 'success', 
+        message: `تم إرسال الرسالة بنجاح إلى (${directMsgRecipient.name}). ستظهر له كرسالة رسمية من الآدمن مع إشعار مباشر في حسابه.` 
+      });
+      setTimeout(() => {
+        setIsDirectMsgModalOpen(false);
+        setDirectMsgFeedback(null);
+        setDirectMsgSubject('');
+        setDirectMsgContent('');
+        setDirectMsgAttachmentUrl('');
+        setDirectMsgAttachmentType('none');
+        setDirectMsgRecipient(null);
+        setActiveTab('messages');
+      }, 1400);
+    } catch (err) {
+      setDirectMsgFeedback({ type: 'error', message: 'حدث خطأ أثناء إرسال الرسالة: ' + String(err) });
+    } finally {
+      setIsSendingDirectMsg(false);
+    }
+  };
 
   // Helper to determine female gender: explicit gender takes precedence
   const isMemberFemale = (member?: { gender?: string; name?: string } | null): boolean => {
@@ -595,6 +740,25 @@ export default function AdminPanel({
 
                       {/* Top Action Buttons */}
                       <div className="flex flex-wrap items-center gap-2">
+                        {/* Direct Message button for any request */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const linked = members.find(m => m.registeredUserId === req.id || (m.email && req.email && m.email.trim().toLowerCase() === req.email.trim().toLowerCase()));
+                            handleOpenDirectMessage({
+                              id: req.id,
+                              name: `${req.name} ${req.fatherName ? 'بن ' + req.fatherName : ''}`.trim(),
+                              email: req.email,
+                              memberId: linked?.id || req.id
+                            });
+                          }}
+                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 font-bold cursor-pointer"
+                          title="بدء محادثة مباشرة مع العضو"
+                        >
+                          <Send size={13} className="rtl:rotate-180 text-indigo-600" />
+                          <span>مراسلة العضو</span>
+                        </button>
+
                         {isPending && (
                           <>
                             <button
@@ -1445,6 +1609,23 @@ export default function AdminPanel({
 
                   <div className="flex items-center gap-2">
                     <button
+                      type="button"
+                      onClick={() => {
+                        const matchedReq = requests.find(r => r.id === m.registeredUserId || (r.email && m.email && r.email.trim().toLowerCase() === m.email.trim().toLowerCase()) || r.name.trim() === m.name.trim());
+                        handleOpenDirectMessage({
+                          id: m.id,
+                          name: `${m.name} ${m.fatherName ? 'بن ' + m.fatherName : ''}`.trim(),
+                          email: m.email || matchedReq?.email || '',
+                          memberId: m.id
+                        });
+                      }}
+                      className="bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 hover:border-indigo-200 text-xs px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 font-semibold cursor-pointer"
+                      title="إرسال رسالة مباشرة لهذا الفرد"
+                    >
+                      <Send size={12} className="rtl:rotate-180 text-indigo-600" />
+                      مراسلة
+                    </button>
+                    <button
                       onClick={() => handleStartEdit(m)}
                       className="bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-200 hover:border-amber-200 text-xs px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 font-semibold"
                     >
@@ -1847,32 +2028,87 @@ export default function AdminPanel({
         {/* Tab 5: Messages Inbox */}
         {activeTab === 'messages' && (
           <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6">
-            <div className="border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <MessageSquare size={20} className="text-[#71a874]" />
-                بريد رسائل ومرفقات أفراد العائلة
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                تصفح واقرأ الرسائل الواردة من أعضاء العائلة، مع إمكانية عرض واعتماد الصور والفيديوهات المرفقة وتثبيتها في ثوانٍ.
-              </p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <MessageSquare size={20} className="text-[#71a874]" />
+                  بريد رسائل ومحادثات أفراد العائلة
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  تصفح الرسائل الواردة، أو ابدأ محادثة مباشرة مع أي عضو، مع إمكانية إرفاق الصور ومتابعة الردود الفورية.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setDirectMsgRecipient(null);
+                  setDirectMsgRecipientSearch('');
+                  setDirectMsgCustomEmail('');
+                  setDirectMsgSubject('');
+                  setDirectMsgContent('');
+                  setDirectMsgAttachmentUrl('');
+                  setDirectMsgAttachmentType('none');
+                  setDirectMsgFeedback(null);
+                  setIsDirectMsgModalOpen(true);
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-2xl transition-all flex items-center gap-2 shadow-sm cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+              >
+                <Send size={15} className="rtl:rotate-180" />
+                <span>بدء محادثة جديدة مع عضو</span>
+              </button>
             </div>
 
             {adminVisibleMessages.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-3xl space-y-3">
                 <MessageSquare className="mx-auto text-slate-300" size={44} />
                 <h4 className="text-xs font-bold text-slate-500">صندوق الرسائل فارغ حالياً</h4>
-                <p className="text-[10px] text-slate-400">عندما يقوم الأعضاء بمراسلتك أو التعليق على الملفات ستظهر الرسائل والإشعارات هنا.</p>
+                <p className="text-[10px] text-slate-400">عندما يقوم الأعضاء بمراسلتك أو عند بدء محادثات معهم ستظهر الرسائل والإشعارات هنا.</p>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDirectMsgRecipient(null);
+                      setDirectMsgRecipientSearch('');
+                      setDirectMsgCustomEmail('');
+                      setDirectMsgSubject('');
+                      setDirectMsgContent('');
+                      setDirectMsgAttachmentUrl('');
+                      setDirectMsgAttachmentType('none');
+                      setDirectMsgFeedback(null);
+                      setIsDirectMsgModalOpen(true);
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all inline-flex items-center gap-2 cursor-pointer"
+                  >
+                    <Send size={13} className="rtl:rotate-180" />
+                    بدء أول محادثة مع عضو الآن
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
                 {adminVisibleMessages.map(msg => (
-                  <div key={msg.id} className="border border-slate-100 hover:border-indigo-100 bg-slate-50/20 hover:bg-slate-50/50 p-5 rounded-2xl transition-all flex flex-col md:flex-row gap-5">
+                  <div key={msg.id} className={`border p-5 rounded-2xl transition-all flex flex-col md:flex-row gap-5 ${
+                    msg.messageType === 'admin_direct' 
+                      ? 'border-emerald-200 bg-emerald-50/20 hover:bg-emerald-50/40' 
+                      : 'border-slate-100 hover:border-indigo-100 bg-slate-50/20 hover:bg-slate-50/50'
+                  }`}>
                     
                     {/* Message Body Column */}
                     <div className="flex-1 space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
                         <div>
-                          {msg.messageType === 'profile_comment_admin' ? (
+                          {msg.messageType === 'admin_direct' ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[10px] bg-emerald-100 border border-emerald-300 text-emerald-800 px-2.5 py-0.5 rounded-md font-bold flex items-center gap-1">
+                                <Shield size={11} className="text-emerald-700" />
+                                رسالة مباشرة صادرة لعضو
+                              </span>
+                              <span className="text-xs font-bold text-slate-700">
+                                المستلم: {msg.recipientEmail || 'عضو العائلة'}
+                              </span>
+                            </div>
+                          ) : msg.messageType === 'profile_comment_admin' ? (
                             <span className="text-[10px] bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 rounded-md font-bold">
                               إشعار: تعليق على شجرة العائلة
                             </span>
@@ -1881,7 +2117,9 @@ export default function AdminPanel({
                               المرسل: {msg.senderName}
                             </span>
                           )}
-                          <span className="text-[10px] text-slate-400 mr-2" dir="ltr">{msg.senderEmail}</span>
+                          {msg.messageType !== 'admin_direct' && (
+                            <span className="text-[10px] text-slate-400 mr-2" dir="ltr">{msg.senderEmail}</span>
+                          )}
                         </div>
                         <span className="text-[10px] text-slate-400 font-bold">{new Date(msg.createdAt).toLocaleDateString('ar-SA')}</span>
                       </div>
@@ -1956,14 +2194,15 @@ export default function AdminPanel({
                                   createdAt: new Date().toISOString(),
                                   isAdmin: true
                                 };
-                                await onUpdateMessage({ ...msg, replies: [...(msg.replies || []), reply] });
+                                // Mark isReadByMember: false so the member gets alerted to the reply
+                                await onUpdateMessage({ ...msg, replies: [...(msg.replies || []), reply], isReadByMember: false });
                                 setReplyDrafts(prev => ({...prev, [msg.id]: ''}));
                                 setMsgError(null);
                               } catch (err) {
                                 setMsgError('Error: ' + String(err));
                               }
                             }}
-                            className="bg-indigo-600 disabled:bg-slate-300 text-white p-2.5 rounded-xl flex items-center justify-center shrink-0 self-end transition-colors"
+                            className="bg-indigo-600 disabled:bg-slate-300 text-white p-2.5 rounded-xl flex items-center justify-center shrink-0 self-end transition-colors cursor-pointer"
                           >
                             <Send size={14} className="rtl:rotate-180" />
                           </button>
@@ -2151,6 +2390,281 @@ export default function AdminPanel({
                 نعم، احذف الطلب
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Direct Admin-to-Member Messaging Modal */}
+      {isDirectMsgModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 dir-rtl text-right overflow-y-auto">
+          <div className="bg-white rounded-3xl p-5 sm:p-7 w-full max-w-xl shadow-2xl space-y-5 animate-in fade-in zoom-in duration-150 my-auto max-h-[92vh] overflow-y-auto border border-slate-100">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-100 shadow-2xs">
+                  <Shield size={22} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base sm:text-lg">مراسلة مباشرة لعضو في العائلة</h3>
+                  <p className="text-[11px] text-slate-400">ستصل رسالتك مباشرة لحساب العضو مع إشعار رسمي مميز وواضح</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDirectMsgModalOpen(false);
+                  setDirectMsgFeedback(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Recipient Selection Section */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700">
+                المستلم (عضو العائلة) <span className="text-rose-500">*</span>
+              </label>
+
+              {directMsgRecipient ? (
+                <div className="bg-indigo-50/60 border border-indigo-200/80 rounded-2xl p-3.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                      <User size={16} />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-slate-800 text-xs sm:text-sm truncate">
+                        {directMsgRecipient.name}
+                      </h4>
+                      <p className="text-[11px] text-indigo-700 truncate" dir="ltr">
+                        {directMsgRecipient.email || directMsgCustomEmail || 'لا يوجد بريد مسجل'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDirectMsgRecipient(null);
+                      setDirectMsgRecipientSearch('');
+                    }}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-bold bg-white px-3 py-1.5 rounded-xl border border-indigo-200 transition-colors shrink-0 cursor-pointer shadow-2xs"
+                  >
+                    تغيير المستلم
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2 border border-slate-200 rounded-2xl p-3 bg-slate-50/50">
+                  <div className="relative">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <input
+                      type="text"
+                      value={directMsgRecipientSearch}
+                      onChange={e => setDirectMsgRecipientSearch(e.target.value)}
+                      placeholder="ابحث بالاسم أو البريد الإلكتروني لاختيار المستلم..."
+                      className="w-full bg-white border border-slate-200 rounded-xl pr-9 pl-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                  </div>
+
+                  {/* Filtered Candidate Recipient List */}
+                  <div className="max-h-44 overflow-y-auto space-y-1 divide-y divide-slate-100 bg-white rounded-xl border border-slate-200/80 p-1">
+                    {filteredRecipients.length === 0 ? (
+                      <p className="text-[11px] text-slate-400 text-center py-4">لم يتم العثور على أفراد بهذا الاسم</p>
+                    ) : (
+                      filteredRecipients.map(item => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setDirectMsgRecipient({
+                              id: item.id,
+                              name: item.name,
+                              email: item.email,
+                              memberId: item.memberId
+                            });
+                            setDirectMsgCustomEmail(item.email || '');
+                          }}
+                          className="w-full text-right p-2.5 rounded-lg hover:bg-indigo-50/70 transition-colors flex items-center justify-between gap-2 group cursor-pointer"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs text-slate-800 group-hover:text-indigo-700 truncate">
+                                {item.name}
+                              </span>
+                              <span className={`text-[9px] px-2 py-0.5 rounded-md font-bold shrink-0 ${
+                                item.source === 'حساب معتمد' 
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : item.source === 'طلب انتساب'
+                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  : 'bg-slate-100 text-slate-600'
+                              }`}>
+                                {item.source}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-400 block truncate" dir="ltr">{item.subtitle}</span>
+                          </div>
+                          <span className="text-[11px] text-indigo-600 font-bold shrink-0 group-hover:translate-x-[-2px] transition-transform">
+                            اختيار
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* If recipient has no email or custom email is needed */}
+              {directMsgRecipient && !directMsgRecipient.email && (
+                <div className="mt-2">
+                  <label className="block text-[11px] font-bold text-amber-800 mb-1">
+                    البريد الإلكتروني للعضو (اختياري لربط الإشعار المباشر بحسابه):
+                  </label>
+                  <input
+                    type="email"
+                    value={directMsgCustomEmail}
+                    onChange={e => setDirectMsgCustomEmail(e.target.value)}
+                    placeholder="name@example.com"
+                    className="w-full bg-white border border-amber-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    dir="ltr"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Compose Form */}
+            <form onSubmit={handleSendDirectMessage} className="space-y-4 pt-1">
+              {/* Subject */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  عنوان الرسالة <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={directMsgSubject}
+                  onChange={e => setDirectMsgSubject(e.target.value)}
+                  placeholder="مثال: مرحباً بك في بوابة العائلة / تحديث بيانات الملف الشخصي"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                />
+
+                {/* Quick Subject Suggestions */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {[
+                    "مرحباً بك في بوابة العائلة",
+                    "تحديث بيانات الملف الشخصي",
+                    "استفسار بخصوص شجرة العائلة",
+                    "ملاحظة بخصوص طلب الانتساب"
+                  ].map(sug => (
+                    <button
+                      key={sug}
+                      type="button"
+                      onClick={() => setDirectMsgSubject(sug)}
+                      className="text-[10px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                    >
+                      {sug}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Message Content */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  نص الرسالة <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={directMsgContent}
+                  onChange={e => setDirectMsgContent(e.target.value)}
+                  placeholder="اكتب رسالتك وتوجيهاتك أو استفسارك للعضو هنا..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs leading-relaxed focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 resize-y min-h-[100px]"
+                />
+              </div>
+
+              {/* Optional Attachment */}
+              <div className="space-y-2 bg-slate-50/70 p-3 rounded-2xl border border-slate-200/60">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Paperclip size={14} className="text-slate-400" />
+                    مرفق مع الرسالة (اختياري)
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setDirectMsgAttachmentType('none')}
+                      className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-colors ${
+                        directMsgAttachmentType === 'none' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      بدون
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDirectMsgAttachmentType('image')}
+                      className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-colors flex items-center gap-1 ${
+                        directMsgAttachmentType === 'image' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      <Image size={11} />
+                      صورة
+                    </button>
+                  </div>
+                </div>
+
+                {directMsgAttachmentType !== 'none' && (
+                  <input
+                    type="url"
+                    value={directMsgAttachmentUrl}
+                    onChange={e => setDirectMsgAttachmentUrl(e.target.value)}
+                    placeholder="أدخل رابط الصورة (URL)..."
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    dir="ltr"
+                  />
+                )}
+              </div>
+
+              {/* Feedback Alert */}
+              {directMsgFeedback && (
+                <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                  directMsgFeedback.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'bg-rose-50 text-rose-700 border border-rose-200'
+                }`}>
+                  {directMsgFeedback.type === 'success' ? <Check size={16} /> : <AlertTriangle size={16} />}
+                  <span>{directMsgFeedback.message}</span>
+                </div>
+              )}
+
+              {/* Footer Actions */}
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDirectMsgModalOpen(false);
+                    setDirectMsgFeedback(null);
+                  }}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSendingDirectMsg || !directMsgRecipient || !directMsgSubject.trim() || !directMsgContent.trim()}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/20 flex items-center gap-2 cursor-pointer"
+                >
+                  {isSendingDirectMsg ? (
+                    <span>جاري إرسال الرسالة...</span>
+                  ) : (
+                    <>
+                      <Send size={14} className="rtl:rotate-180" />
+                      <span>إرسال الرسالة للعضو الآن</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

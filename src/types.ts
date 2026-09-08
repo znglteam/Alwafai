@@ -125,7 +125,7 @@ export interface FamilyMessage {
   senderId?: string;
   recipientEmail?: string;
   targetMemberId?: string;
-  messageType?: 'contact' | 'profile_comment_member' | 'profile_comment_admin';
+  messageType?: 'contact' | 'profile_comment_member' | 'profile_comment_admin' | 'admin_direct';
   subject: string;
   content: string;
   attachmentUrl?: string;

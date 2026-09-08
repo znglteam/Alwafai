@@ -1040,8 +1040,8 @@ export default function App() {
       ...newMessage,
       id: 'msg-' + Date.now().toString(),
       createdAt: new Date().toISOString(),
-      isReadByAdmin: false,
-      isReadByMember: true
+      isReadByAdmin: newMessage.isReadByAdmin !== undefined ? newMessage.isReadByAdmin : false,
+      isReadByMember: newMessage.isReadByMember !== undefined ? newMessage.isReadByMember : true
     };
     const nextMessages = [message, ...messages];
     setMessages(nextMessages);
@@ -1409,6 +1409,7 @@ export default function App() {
               messages={messages}
               currentSession={currentSession}
               onUpdateMessage={handleUpdateMessage}
+              onSendMessage={handleSendMessage}
               auditLogs={auditLogs}
               onApproveRequest={handleApproveRequest}
               onRejectRequest={handleRejectRequest}
@@ -1436,6 +1437,7 @@ export default function App() {
             <ContactAdmin
               messages={messages}
               currentSession={currentSession}
+              activeMemberId={activeMember?.id}
               onSendMessage={handleSendMessage}
               onUpdateMessage={handleUpdateMessage}
             />

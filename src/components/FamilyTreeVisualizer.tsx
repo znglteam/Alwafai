@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { FamilyMember, SpouseInfo, getMemberSpouses } from '../types';
-import { Search, MapPin, Award, Heart, HelpCircle, Eye, EyeOff, User, GitCommit, ChevronDown, ChevronRight, Share2, CornerDownLeft, Network, LogIn, UserPlus, X, Trash2, Plus, Minus, ZoomIn, ZoomOut, Mars, Venus, Edit2, GripVertical, MessageSquare, Check, UserCheck, Download, Printer, RefreshCw } from 'lucide-react';
+import { Search, MapPin, Award, Heart, HelpCircle, Eye, EyeOff, User, GitCommit, ChevronDown, ChevronRight, Share2, CornerDownLeft, Network, LogIn, UserPlus, X, Trash2, Plus, Minus, ZoomIn, ZoomOut, Mars, Venus, Edit2, GripVertical, MessageSquare, Check, UserCheck, Download, Printer, RefreshCw, ArrowRight, ArrowLeft, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
@@ -85,12 +85,12 @@ export default function FamilyTreeVisualizer({
 
   // Helper to check if logged in user has rights to reorder siblings of a given member
   const canUserReorderSiblingsOf = useCallback((member: FamilyMember) => {
+    const parentId = member.fatherId || member.motherId;
+    if (!parentId) return false; // Root has no parent/siblings
+
     if (!isApprovedMember) return false;
     if (isAdmin) return true; // Admin has the right to reorder any siblings in the tree
     if (!currentSession || !currentSession.userId) return false;
-
-    const parentId = member.fatherId || member.motherId;
-    if (!parentId) return false; // Root has no parent/siblings
 
     const userId = currentSession.userId;
     const userMember = members.find(m => m.id === userId);
@@ -145,6 +145,7 @@ export default function FamilyTreeVisualizer({
   // Drag & Drop Handlers for Siblings
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.stopPropagation();
+    console.log('Drag Start:', id);
     if (!isReorderMode || !isApprovedMember) {
       e.preventDefault();
       return;
@@ -180,6 +181,7 @@ export default function FamilyTreeVisualizer({
   const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('Drop target:', targetId, 'dragged:', draggedId, 'isReorderMode:', isReorderMode);
     setDragOverId(null);
     if (!isReorderMode || !draggedId || draggedId === targetId) return;
 
@@ -187,19 +189,32 @@ export default function FamilyTreeVisualizer({
     const targetMember = members.find(m => m.id === targetId);
 
     if (draggedMember && targetMember && draggedMember.fatherId === targetMember.fatherId && canUserReorderSiblingsOf(draggedMember)) {
-      const draggedIndex = members.findIndex(m => m.id === draggedId);
-      const targetIndex = members.findIndex(m => m.id === targetId);
+      const parentId = draggedMember.fatherId;
+      if (parentId && membersByFather[parentId]) {
+        const siblings = [...membersByFather[parentId]];
+        const draggedIndex = siblings.findIndex(m => m.id === draggedId);
+        const targetIndex = siblings.findIndex(m => m.id === targetId);
 
-      if (draggedIndex !== -1 && targetIndex !== -1) {
-        const newMembers = [...members];
-        const [removed] = newMembers.splice(draggedIndex, 1);
-        
-        // Find new target index in the modified array
-        const newTargetIndex = newMembers.findIndex(m => m.id === targetId);
-        newMembers.splice(newTargetIndex, 0, removed);
+        if (draggedIndex !== -1 && targetIndex !== -1) {
+          const [removed] = siblings.splice(draggedIndex, 1);
+          // find new target index
+          const newTargetIndex = siblings.findIndex(m => m.id === targetId);
+          // if dragged down, place after. if dragged up, place before. 
+          // splice inserts BEFORE the specified index.
+          // let's just use the index of the target
+          siblings.splice(newTargetIndex + (draggedIndex < targetIndex ? 1 : 0), 0, removed);
+          
+          const newMembers = [...members];
+          siblings.forEach((sibling, index) => {
+            const mainIndex = newMembers.findIndex(m => m.id === sibling.id);
+            if (mainIndex !== -1) {
+              newMembers[mainIndex] = { ...newMembers[mainIndex], orderIndex: index };
+            }
+          });
 
-        if (onUpdateMembers) {
-          onUpdateMembers(newMembers);
+          if (onUpdateMembers) {
+            onUpdateMembers(newMembers);
+          }
         }
       }
     }
@@ -798,15 +813,21 @@ export default function FamilyTreeVisualizer({
           <div className="relative">
             {/* Drag Handle for Reordering Siblings */}
             {isReorderMode && canUserReorderSiblingsOf(node) && (
-              <div 
-                onMouseDown={() => setCanDragId(node.id)}
-                onMouseUp={() => setCanDragId(null)}
-                onTouchStart={() => setCanDragId(node.id)}
-                onTouchEnd={() => setCanDragId(null)}
-                className="absolute -top-4 left-1/2 -translate-x-1/2 p-1 bg-amber-500 hover:bg-amber-600 border border-amber-400 text-white rounded-lg shadow-md cursor-grab active:cursor-grabbing z-30 flex items-center justify-center transition-all scale-110"
-                title="اسحب لتغيير ترتيب هذا الأخ"
-              >
-                <GripVertical size={11} />
+              <div className={`absolute ${layoutDirection === 'horizontal' ? '-left-6 top-1/2 -translate-y-1/2 flex-col' : '-top-8 left-1/2 -translate-x-1/2 flex-row'} flex gap-1 z-30 bg-white/90 backdrop-blur-sm p-1 rounded-full shadow-sm border border-amber-200`}>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); moveSibling(node.id, 1); }} 
+                  className="p-1 bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white rounded-full transition-all flex items-center justify-center" 
+                  title="تحريك للأسفل / لليسار"
+                >
+                  {layoutDirection === 'horizontal' ? <ArrowDown size={14} strokeWidth={2.5} /> : <ArrowLeft size={14} strokeWidth={2.5} />}
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); moveSibling(node.id, -1); }} 
+                  className="p-1 bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white rounded-full transition-all flex items-center justify-center" 
+                  title="تحريك للأعلى / لليمين"
+                >
+                  {layoutDirection === 'horizontal' ? <ArrowUp size={14} strokeWidth={2.5} /> : <ArrowRight size={14} strokeWidth={2.5} />}
+                </button>
               </div>
             )}
             <div 
@@ -902,19 +923,14 @@ export default function FamilyTreeVisualizer({
             <div className={`bg-indigo-300 ${layoutDirection === 'horizontal' ? 'w-6 h-[2px]' : 'w-[2px] h-6'}`}></div>
 
             {/* Row or Column of children */}
-            <div className={`flex ${layoutDirection === 'horizontal' ? 'flex-col items-end' : 'flex-row items-start'} justify-center relative`}>
+            <div className={`flex ${layoutDirection === 'horizontal' ? 'flex-col items-start' : 'flex-row items-start'} justify-center relative`}>
               {children.map((child, index) => {
                 const isFirst = index === 0;
                 const isLast = index === children.length - 1;
                 return (
                   <div 
                     key={child.id} 
-                    draggable={canDragId === child.id}
-                    onDragStart={(e) => handleDragStart(e, child.id)}
-                    onDragOver={(e) => handleDragOver(e, child.id)}
-                    onDrop={(e) => handleDrop(e, child.id)}
-                    onDragEnd={handleDragEnd}
-                    onDragLeave={handleDragLeave}
+                    
                     className={`flex ${layoutDirection === 'horizontal' ? 'flex-row items-center pr-6 py-2 md:py-4' : 'flex-col items-center pt-6 px-2 md:px-4'} relative shrink-0 transition-all duration-300 ${
                       draggedId === child.id ? 'opacity-30 scale-95 blur-xs' : ''
                     } ${
@@ -1028,7 +1044,7 @@ export default function FamilyTreeVisualizer({
                 {isExportingPDF ? (
                   <span className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div> جاري التجهيز...</span>
                 ) : (
-                  <><Printer size={13} /> طباعة الشجرة (PDF)</>
+                  <><Printer size={13} /> طباعة</>
                 )}
               </button>
               {isApprovedMember && (

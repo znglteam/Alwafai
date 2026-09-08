@@ -548,6 +548,14 @@ export default function FamilyTreeVisualizer({
           return yearA - yearB;
         });
       });
+    } else {
+      Object.keys(map).forEach(key => {
+        map[key].sort((a, b) => {
+          const indexA = a.orderIndex !== undefined ? a.orderIndex : members.findIndex(m => m.id === a.id);
+          const indexB = b.orderIndex !== undefined ? b.orderIndex : members.findIndex(m => m.id === b.id);
+          return indexA - indexB;
+        });
+      });
     }
 
     return map;
@@ -790,6 +798,39 @@ export default function FamilyTreeVisualizer({
     return `${day} / ${month} / ${year}م`;
   };
 
+
+  const moveSibling = (memberId: string, direction: -1 | 1) => {
+        const member = members.find(m => m.id === memberId);
+    if (!member) return;
+    const parentId = member.fatherId || member.motherId;
+    if (!parentId) return;
+    if (!membersByFather[parentId]) return;
+
+    const siblings = [...membersByFather[parentId]];
+    const currentIndex = siblings.findIndex(m => m.id === memberId);
+    if (currentIndex === -1) return;
+
+    const targetIndex = currentIndex + direction;
+    if (targetIndex < 0 || targetIndex >= siblings.length) return; // Cannot move further
+
+    // Swap
+    const temp = siblings[currentIndex];
+    siblings[currentIndex] = siblings[targetIndex];
+    siblings[targetIndex] = temp;
+
+    const newMembers = [...members];
+    siblings.forEach((sibling, index) => {
+      const mainIndex = newMembers.findIndex(m => m.id === sibling.id);
+      if (mainIndex !== -1) {
+        newMembers[mainIndex] = { ...newMembers[mainIndex], orderIndex: index };
+      }
+    });
+
+    if (onUpdateMembers) {
+      onUpdateMembers(newMembers);
+    }
+  };
+
   const getDescendantsCount = (nodeId: string): number => {
     const children = membersByFather[nodeId] || [];
     let count = children.length;
@@ -812,24 +853,38 @@ export default function FamilyTreeVisualizer({
         <div className="flex flex-col items-center gap-1.5 relative group/node">
           <div className="relative">
             {/* Drag Handle for Reordering Siblings */}
-            {isReorderMode && canUserReorderSiblingsOf(node) && (
-              <div className={`absolute ${layoutDirection === 'horizontal' ? '-left-6 top-1/2 -translate-y-1/2 flex-col' : '-top-8 left-1/2 -translate-x-1/2 flex-row'} flex gap-1 z-30 bg-white/90 backdrop-blur-sm p-1 rounded-full shadow-sm border border-amber-200`}>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); moveSibling(node.id, 1); }} 
-                  className="p-1 bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white rounded-full transition-all flex items-center justify-center" 
-                  title="تحريك للأسفل / لليسار"
-                >
-                  {layoutDirection === 'horizontal' ? <ArrowDown size={14} strokeWidth={2.5} /> : <ArrowLeft size={14} strokeWidth={2.5} />}
-                </button>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); moveSibling(node.id, -1); }} 
-                  className="p-1 bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white rounded-full transition-all flex items-center justify-center" 
-                  title="تحريك للأعلى / لليمين"
-                >
-                  {layoutDirection === 'horizontal' ? <ArrowUp size={14} strokeWidth={2.5} /> : <ArrowRight size={14} strokeWidth={2.5} />}
-                </button>
-              </div>
-            )}
+            {(() => {
+              if (!isReorderMode || !canUserReorderSiblingsOf(node)) return null;
+              const parentId = node.fatherId || node.motherId;
+              if (!parentId) return null;
+              const siblings = membersByFather[parentId] || [];
+              if (siblings.length <= 1) return null; // No need to reorder an only child
+              const nodeIndex = siblings.findIndex(m => m.id === node.id);
+              const isFirst = nodeIndex === 0;
+              const isLast = nodeIndex === siblings.length - 1;
+              return (
+                <div className={`absolute ${layoutDirection === 'horizontal' ? '-left-6 top-1/2 -translate-y-1/2 flex-col' : '-top-8 left-1/2 -translate-x-1/2 flex-row'} flex gap-1 z-30 bg-white/90 backdrop-blur-sm p-1 rounded-full shadow-sm border border-amber-200`}>
+                  {!isLast && (
+                    <button 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveSibling(node.id, 1); }} type="button" 
+                      className="p-1 bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white rounded-full transition-all flex items-center justify-center" 
+                      title="تحريك للأسفل / لليسار"
+                    >
+                      {layoutDirection === 'horizontal' ? <ArrowDown size={14} strokeWidth={2.5} /> : <ArrowLeft size={14} strokeWidth={2.5} />}
+                    </button>
+                  )}
+                  {!isFirst && (
+                    <button 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); moveSibling(node.id, -1); }} type="button" 
+                      className="p-1 bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white rounded-full transition-all flex items-center justify-center" 
+                      title="تحريك للأعلى / لليمين"
+                    >
+                      {layoutDirection === 'horizontal' ? <ArrowUp size={14} strokeWidth={2.5} /> : <ArrowRight size={14} strokeWidth={2.5} />}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
             <div 
               onClick={(e) => {
                 if (node.avatar) {

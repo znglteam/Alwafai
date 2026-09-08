@@ -1099,7 +1099,7 @@ export default function FamilyTreeVisualizer({
                 {isExportingPDF ? (
                   <span className="flex items-center gap-1.5"><div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div> جاري التجهيز...</span>
                 ) : (
-                  <><Printer size={13} /> طباعة</>
+                  <><Printer size={13} /> تصدير</>
                 )}
               </button>
               {isApprovedMember && (

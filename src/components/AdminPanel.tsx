@@ -559,6 +559,20 @@ export default function AdminPanel({
           )}
         </button>
         <button
+          onClick={() => setActiveTab('online')}
+          className={`pb-3 px-6 text-sm font-bold transition-all border-b-2 -mb-[2px] flex items-center gap-1.5 ${
+            activeTab === 'online' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Activity size={14} className={activeTab === 'online' ? 'text-emerald-500' : 'text-slate-400'} />
+          المتواجدون
+          {activeUsers.length > 0 && (
+            <span className="bg-emerald-100 text-emerald-700 text-xs px-1.5 py-0.5 rounded-md font-black animate-pulse">
+              {activeUsers.length}
+            </span>
+          )}
+        </button>
+        <button
           onClick={() => setActiveTab('logs')}
           className={`pb-3 px-6 text-sm font-bold transition-all border-b-2 -mb-[2px] flex items-center gap-1.5 ${
             activeTab === 'logs' ? 'border-amber-500 text-amber-600' : 'border-transparent text-slate-500 hover:text-slate-800'

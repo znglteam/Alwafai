@@ -1366,6 +1366,7 @@ export default function App() {
         <div className="py-2">
           {activeTab === 'main' && (
             <MainPage
+              onlineUsers={onlineUsers}
               familyInfo={familyInfo}
               photos={photos}
               members={members}

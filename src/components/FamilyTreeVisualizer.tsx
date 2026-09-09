@@ -486,7 +486,7 @@ export default function FamilyTreeVisualizer({
       senderName: finalName,
       senderEmail: currentSession?.email || 'guest@family.com',
       content: newCommentContent.trim(),
-      createdAt: new Date().toLocaleDateString('ar-SA') + ' ' + new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
+      createdAt: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
     };
 
     const updatedComments = [...(selectedMember.comments || []), newComment];

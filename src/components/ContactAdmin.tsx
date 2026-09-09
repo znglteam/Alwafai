@@ -282,7 +282,7 @@ export default function ContactAdmin({ messages, currentSession, activeMemberId,
                           جديدة
                         </span>
                       )}
-                      <span className="text-[10px] text-slate-400 font-bold">{new Date(msg.createdAt).toLocaleDateString('ar-SA')}</span>
+                      <span className="text-[10px] text-slate-400 font-bold">{new Date(msg.createdAt).toLocaleDateString('en-GB')}</span>
                     </div>
                     <h4 className={`font-bold text-sm md:text-base ${isDirectAdminMsg ? 'text-emerald-950 font-extrabold' : 'text-[#414141]'}`}>
                       {msg.subject}
@@ -342,7 +342,7 @@ export default function ContactAdmin({ messages, currentSession, activeMemberId,
                       <div className="whitespace-pre-line">{reply.content}</div>
                     </div>
                     <span className={`text-[9px] text-slate-400 px-1 ${reply.isAdmin ? 'self-start' : 'self-end'}`}>
-                      {new Date(reply.createdAt).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
+                      {new Date(reply.createdAt).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
                     </span>
                   </div>
                 ))}

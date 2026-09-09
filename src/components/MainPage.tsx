@@ -442,7 +442,7 @@ export default function MainPage({
                           <div className="flex items-center justify-between font-bold text-slate-700 mb-1">
                             <span>{comment.senderName}</span>
                             <span className="text-[9px] text-slate-400 font-normal">
-                              {new Date(comment.createdAt).toLocaleDateString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(comment.createdAt).toLocaleDateString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
                           <p className="text-slate-600 leading-relaxed font-medium">{comment.content}</p>

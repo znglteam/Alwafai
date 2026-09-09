@@ -715,7 +715,7 @@ export default function AdminPanel({
                           {req.name} {req.fatherName ? (isMemberFemale(req) ? `بنت ${req.fatherName}` : `بن ${req.fatherName}`) : ''} {req.grandfatherName ? `بن ${req.grandfatherName}` : ''}
                         </h4>
                         <p className="text-xs text-slate-500">
-                          البريد الإلكتروني: <strong className="text-slate-800 font-mono">{req.email}</strong> {req.createdAt ? ` | سُجّل في: ${new Date(req.createdAt).toLocaleDateString('ar-SA')}` : ''}
+                          البريد الإلكتروني: <strong className="text-slate-800 font-mono">{req.email}</strong> {req.createdAt ? ` | سُجّل في: ${new Date(req.createdAt).toLocaleDateString('en-GB')}` : ''}
                         </p>
                         {hasDuplicateEmail && (
                           <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-900 flex items-start gap-2 mt-2">
@@ -1974,7 +1974,7 @@ export default function AdminPanel({
                                 <div className="flex items-center justify-between font-bold text-slate-700 mb-0.5">
                                   <span>{comment.senderName}</span>
                                   <span className="text-[8px] text-slate-400 font-normal">
-                                    {new Date(comment.createdAt).toLocaleDateString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(comment.createdAt).toLocaleDateString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                                   </span>
                                 </div>
                                 <p className="text-slate-600 leading-relaxed font-medium pl-6">{comment.content}</p>
@@ -2131,7 +2131,7 @@ export default function AdminPanel({
                             <span className="text-[10px] text-slate-400 mr-2" dir="ltr">{msg.senderEmail}</span>
                           )}
                         </div>
-                        <span className="text-[10px] text-slate-400 font-bold">{new Date(msg.createdAt).toLocaleDateString('ar-SA')}</span>
+                        <span className="text-[10px] text-slate-400 font-bold">{new Date(msg.createdAt).toLocaleDateString('en-GB')}</span>
                       </div>
 
                       <h4 className="font-bold text-xs md:text-sm text-[#414141]">{msg.subject}</h4>
@@ -2172,7 +2172,7 @@ export default function AdminPanel({
                                   <div className="whitespace-pre-line">{reply.content}</div>
                                 </div>
                                 <span className="text-[9px] text-slate-400 mt-1 px-1">
-                                  {new Date(reply.createdAt).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
+                                  {new Date(reply.createdAt).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}
                                 </span>
                               </div>
                             ))}
@@ -2329,7 +2329,7 @@ export default function AdminPanel({
 
                     <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
                       <div className="text-[11px] text-slate-400 font-mono" dir="ltr">
-                        {new Date(log.timestamp).toLocaleString('ar-SA-u-nu-latn', {
+                        {new Date(log.timestamp).toLocaleString('en-GB', {
                           hour: '2-digit',
                           minute: '2-digit',
                           day: 'numeric',

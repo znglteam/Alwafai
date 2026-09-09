@@ -170,7 +170,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
             </div>
           ) : isRegisterMode ? (
             /* Register Form */
-            <form onSubmit={handleRegisterSubmit} className="space-y-4">
+            <form onSubmit={handleGoogleRegister} className="space-y-4">
               {loginError && (
                 <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs p-3.5 rounded-2xl font-bold flex items-start gap-2 shadow-xs">
                   <AlertTriangle size={17} className="text-rose-600 shrink-0 mt-0.5" />

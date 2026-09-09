@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserSession, ForumTopic, ForumReply } from '../types';
 import { db } from '../utils/firebaseService';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
-import { MessageSquareText, Plus, User, Clock, MessageCircle, Send, ArrowRight, CornerDownLeft } from 'lucide-react';
+import { MessageSquareText, Plus, User, Clock, MessageCircle, Send, ArrowRight, CornerDownLeft, ChevronRight } from 'lucide-react';
 
 interface ForumProps {
   currentSession: UserSession;

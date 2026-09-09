@@ -444,13 +444,17 @@ export function subscribeToPresence(onPresence: (presences: UserPresence[]) => v
   return onSnapshot(q, (snapshot) => {
     const presences = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserPresence));
     onPresence(presences);
+  }, (error) => {
+    console.error("Presence subscribe error:", error);
   });
 }
 
 export async function updateUserPresence(presence: UserPresence) {
   try {
-    const docRef = doc(db, 'presence', presence.id);
-    await setDoc(docRef, presence);
+    if (!presence.id) return;
+    const safeId = presence.id.toString().replace(/\//g, '_');
+    const docRef = doc(db, 'presence', safeId);
+    await setDoc(docRef, cleanForFirestore({...presence, id: safeId}), { merge: true });
   } catch(e) {
     console.error("Error updating presence:", e);
   }

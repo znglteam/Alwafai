@@ -52,6 +52,10 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-xs text-slate-500 leading-relaxed">
               حدث خطأ بسيط أثناء تحميل بعض البيانات. يرجى الضغط على زر التحديث لإعادة فتح البوابة بشكل سليم.
             </p>
+            <div className="bg-red-50 text-red-700 text-left text-xs p-3 rounded overflow-auto mt-2 max-h-32">
+              <p><strong>Error:</strong> {this.state.error?.toString()}</p>
+              <pre className="mt-1 text-[10px]">{this.state.error?.stack}</pre>
+            </div>
             <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
               <button
                 onClick={this.handleReload}

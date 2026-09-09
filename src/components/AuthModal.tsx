@@ -3,6 +3,7 @@ import { RegistrationRequest } from '../types';
 import { isMemberFemale } from '../utils/marriageUtils';
 import { PWAInstallButton } from "./PWAInstallButton";
 import { X, User, Mail, Lock, Sparkles, LogIn, UserPlus, Upload, FileText, CheckCircle, Plus, Trash2, Users, HelpCircle, Info, AlertTriangle } from 'lucide-react';
+import { signInWithGoogleProvider } from '../utils/firebaseService';
 
 const ARAB_COUNTRIES = [
   "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
@@ -40,6 +41,21 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
 
   if (!isOpen) return null;
 
+  const handleGoogleLogin = async () => {
+    setLoginError('');
+    const result = await signInWithGoogleProvider();
+    if (result.success && result.user?.email) {
+      const loginResult = onLogin(result.user.email);
+      if (loginResult.success) {
+        onClose();
+      } else {
+        setLoginError(loginResult.message || 'البريد الإلكتروني غير مسجل.');
+      }
+    } else {
+      setLoginError(result.message || 'فشل تسجيل الدخول بواسطة جوجل.');
+    }
+  };
+
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
@@ -57,41 +73,49 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
     }
   };
 
-  const handleRegisterSubmit = async (e: React.FormEvent) => {
+  const handleGoogleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
-    if (!name.trim() || !fatherName.trim() || !grandfatherName.trim() || !email.trim()) return;
+    if (!name.trim() || !fatherName.trim() || !grandfatherName.trim()) {
+      setLoginError('يرجى تعبئة الاسم الثلاثي أولاً');
+      return;
+    }
 
-    try {
-      const result = await onRegister({
-        name: name.trim(),
-        fatherName: fatherName.trim(),
-        grandfatherName: grandfatherName.trim(),
-        email: email.trim().toLowerCase(),
-        password: password || '',
-        birthYear: 0,
-        birthDate: '',
-        country: 'غير محدد',
-        specialization: 'غير محدد',
-        bio: 'عضو في العائلة.',
-        avatar: '',
-        isAlive: true,
-        siblings: [],
-        unclesAndAunts: []
-      });
+    const result = await signInWithGoogleProvider();
+    if (result.success && result.user?.email) {
+      try {
+        const regResult = await onRegister({
+          name: name.trim(),
+          fatherName: fatherName.trim(),
+          grandfatherName: grandfatherName.trim(),
+          email: result.user.email.toLowerCase(),
+          password: '',
+          birthYear: 0,
+          birthDate: '',
+          country: 'غير محدد',
+          specialization: 'غير محدد',
+          bio: 'عضو في العائلة.',
+          avatar: result.user.photoURL || '',
+          isAlive: true,
+          siblings: [],
+          unclesAndAunts: []
+        });
 
-      if (result && result.success === false) {
-        setLoginError(result.message || 'حدث خطأ أثناء إرسال الطلب.');
-        return;
+        if (regResult && regResult.success === false) {
+          setLoginError(regResult.message || 'حدث خطأ أثناء إرسال الطلب.');
+          return;
+        }
+
+        setRegSuccess(true);
+        setTimeout(() => {
+          setRegSuccess(false);
+          onClose();
+        }, 15000);
+      } catch (err) {
+        setLoginError('حدث خطأ أثناء إرسال الطلب.');
       }
-
-      setRegSuccess(true);
-      setTimeout(() => {
-        setRegSuccess(false);
-        onClose();
-      }, 15000);
-    } catch (err) {
-      setLoginError('نعتذر، لقد نفدت سعة بيانات الموقع المخصصة لهذا اليوم. يرجى إعادة المحاولة غداً بعد الساعة 11:00 صباحاً بتوقيت مكة المكرمة.');
+    } else {
+      setLoginError(result.message || 'فشل توثيق الحساب بواسطة جوجل.');
     }
   };
 
@@ -211,48 +235,48 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                 </div>
               </div>
 
-              {/* Login Credentials Section */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">البريد الإلكتروني *</label>
-                  <div className="relative">
-                    <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                    <input
-                      type="email" required placeholder="name@example.com"
-                      value={email} onChange={e => setEmail(e.target.value)}
-                      className="w-full pr-8 pl-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 bg-white"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">كلمة المرور للحساب *</label>
-                  <div className="relative">
-                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                    <input
-                      type="password" required placeholder="••••••••"
-                      value={password} onChange={e => setPassword(e.target.value)}
-                      className="w-full pr-8 pl-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 bg-white"
-                    />
-                  </div>
-                </div>
-              </div>
-
               <button
-                type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs md:text-sm py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                type="button"
+                onClick={handleGoogleRegister}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs md:text-sm py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
-                <UserPlus size={16} />
-                تقديم طلب الانضمام للشجرة
+                <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.16v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.16C1.43 8.55 1 10.22 1 12s.43 3.45 1.16 4.93l3.68-2.84z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.16 7.07l3.68 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                توثيق الحساب وإرسال الطلب بواسطة جوجل
               </button>
             </form>
           ) : (
             /* Login Form */
             <form onSubmit={handleLoginSubmit} className="space-y-4 pt-2">
               {loginError && (
-                <div className="bg-rose-50 border border-rose-100 text-rose-700 text-xs p-3 rounded-xl font-medium">
+                <div className="bg-rose-50 border border-rose-100 text-rose-700 text-xs p-3 rounded-xl font-medium mb-3">
                   {loginError}
                 </div>
               )}
+
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs md:text-sm py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer mb-4"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.16v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.16C1.43 8.55 1 10.22 1 12s.43 3.45 1.16 4.93l3.68-2.84z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.16 7.07l3.68 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                الدخول باستخدام حساب جوجل
+              </button>
+
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-slate-200"></div>
+                <span className="shrink-0 mx-4 text-slate-400 text-[10px] font-bold uppercase tracking-wider">أو إيميل الإدارة (بديل)</span>
+                <div className="flex-grow border-t border-slate-200"></div>
+              </div>
 
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-slate-600">البريد الإلكتروني المسجل *</label>

@@ -5,13 +5,12 @@ import { LiveChangeLog } from '../utils/firebaseService';
 const ARAB_COUNTRIES = [
   "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
 ];
-import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, Mars, Venus, Upload, Activity, History, Link, AlertTriangle, RotateCcw, UserCheck, Search, Send, Paperclip } from 'lucide-react';
+import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, Mars, Venus, Upload, Activity, History, Link, AlertTriangle, RotateCcw, UserCheck, Search, Send, Paperclip, Mail, LogOut } from 'lucide-react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
 import { findMatchingMemberInTree, getRankedCandidateMembers, getResolvedMemberLineage } from '../utils/memberMatching';
 
 interface AdminPanelProps {
-  onlineUsers?: UserPresence[];
   requests: RegistrationRequest[];
   members: FamilyMember[];
   news: NewsItem[];
@@ -43,7 +42,6 @@ interface AdminPanelProps {
 }
 
 export default function AdminPanel({
-  onlineUsers = [],
   requests,
   members,
   news,
@@ -76,8 +74,7 @@ export default function AdminPanel({
   const [memberToDelete, setMemberToDelete] = useState<string | null>(null);
   const [requestToDelete, setRequestToDelete] = useState<{ id: string; name: string } | null>(null);
   const [validationError, setValidationError] = useState<{ reqId: string; msg: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<'requests' | 'tree' | 'news' | 'photos' | 'messages' | 'logs' | 'online'>('requests');
-  const activeUsers = onlineUsers.filter(u => (new Date().getTime() - new Date(u.lastActive).getTime()) < (5 * 60 * 1000));
+  const [activeTab, setActiveTab] = useState<'requests' | 'tree' | 'news' | 'photos' | 'messages' | 'logs'>('requests');
 
   // Filter messages intended for the Admin: exclude automated personal notifications sent to members
   const adminVisibleMessages = useMemo(() => {
@@ -511,6 +508,16 @@ export default function AdminPanel({
             </p>
           </div>
         </div>
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="flex items-center justify-center gap-2 bg-indigo-700 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-colors shrink-0"
+            title="تسجيل الخروج من لوحة الإدارة"
+          >
+            <LogOut size={16} />
+            <span>تسجيل الخروج</span>
+          </button>
+        )}
       </div>
 
       {/* Tabs Menu */}
@@ -556,20 +563,6 @@ export default function AdminPanel({
           <span>الرسائل والمرفقات ({adminVisibleMessages.length})</span>
           {unreadAdminMessages.length > 0 && (
             <span className="w-2 h-2 rounded-full bg-[#bb5791] animate-pulse inline-block"></span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab('online')}
-          className={`pb-3 px-6 text-sm font-bold transition-all border-b-2 -mb-[2px] flex items-center gap-1.5 ${
-            activeTab === 'online' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Activity size={14} className={activeTab === 'online' ? 'text-emerald-500' : 'text-slate-400'} />
-          المتواجدون
-          {activeUsers.length > 0 && (
-            <span className="bg-emerald-100 text-emerald-700 text-xs px-1.5 py-0.5 rounded-md font-black animate-pulse">
-              {activeUsers.length}
-            </span>
           )}
         </button>
         <button
@@ -2300,43 +2293,6 @@ export default function AdminPanel({
         )}
 
         {/* Tab 6: Real-time Member Change Logs */}
-        {activeTab === 'online' && (
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-            <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-              <Activity size={24} className="text-emerald-500" />
-              الأعضاء المتواجدون حالياً
-            </h3>
-            
-            {activeUsers.length === 0 ? (
-              <div className="text-center py-10 text-slate-400">
-                <Users size={32} className="mx-auto mb-3 opacity-50" />
-                <p>لا يوجد أي أعضاء نشطين في هذه اللحظة.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activeUsers.map(user => {
-                  const isActive = (new Date().getTime() - new Date(user.lastActive).getTime()) < (5 * 60 * 1000); // 5 mins
-                  return (
-                    <div key={user.id} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-4">
-                      <div className="relative">
-                        <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-lg font-bold">
-                          {user.name.charAt(0)}
-                        </div>
-                        <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${isActive ? 'bg-emerald-500' : 'bg-slate-400'}`}></div>
-                      </div>
-                      <div>
-                        <div className="font-bold text-slate-800">{user.name}</div>
-                        <div className="text-xs text-slate-500">{user.role === 'admin' ? 'مدير' : 'عضو'}</div>
-                        <div className="text-[10px] text-slate-400 mt-1">آخر نشاط: {new Date(user.lastActive).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-        
         {activeTab === 'logs' && (
           <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6 animate-fade-in">
             <div className="border-b border-slate-100 pb-3 flex items-center justify-between gap-3">

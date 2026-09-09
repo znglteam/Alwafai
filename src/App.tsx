@@ -7,8 +7,7 @@ import {
   FamilyInfo, 
   UserSession, 
   FamilyMessage,
-  MemberComment,
-  UserPresence
+  MemberComment
 } from './types';
 import { 
   INITIAL_MEMBERS, 
@@ -25,8 +24,6 @@ import {
   subscribeToRequests,
   subscribeToMessages,
   subscribeToAuditLogs,
-  subscribeToPresence,
-  updateUserPresence,
   seedInitialMembersIfEmpty,
   syncAllLocalToCloud,
   saveMemberToCloud,
@@ -172,7 +169,6 @@ export default function App() {
   const [treeSelectedMemberId, setTreeSelectedMemberId] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
   const [auditLogs, setAuditLogs] = useState<LiveChangeLog[]>([]);
-  const [onlineUsers, setOnlineUsers] = useState<UserPresence[]>([]);
   const [liveNotification, setLiveNotification] = useState<string | null>(null);
   const [isUploadingToCloud, setIsUploadingToCloud] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -242,10 +238,6 @@ export default function App() {
       setMessages(cloudMessages || []);
     });
 
-    const unsubPresence = subscribeToPresence((presences) => {
-      setOnlineUsers(presences || []);
-    });
-
     const unsubLogs = subscribeToAuditLogs((logs) => {
       // Filter logs to ONLY show member modifications (exclude admin, requests, messages)
       const memberLogs = (logs || []).filter(log => {
@@ -284,7 +276,6 @@ export default function App() {
       unsubPhotos();
       unsubRequests();
       unsubMessages();
-      unsubPresence();
       unsubLogs();
     };
   }, []);
@@ -325,28 +316,7 @@ export default function App() {
     } else if (currentSession.role === 'member') {
       if (activeTab === 'admin') setActiveTab('profile');
     }
-
-    // Update presence
-    let interval;
-    const updatePresence = () => {
-      if (currentSession.role === 'admin' || currentSession.role === 'member') {
-        const presenceId = currentSession.userId || currentSession.email;
-        if(presenceId) {
-            updateUserPresence({
-              id: presenceId,
-              name: currentSession.name,
-              role: currentSession.role,
-              lastActive: new Date().toISOString()
-            });
-        }
-      }
-    };
-    
-    updatePresence();
-    interval = setInterval(updatePresence, 30000); // every 30s
-
-    return () => clearInterval(interval);
-  }, [currentSession, activeTab]);
+  }, [currentSession]);
 
   // Handle Manual Force Cloud Sync Button
   const handleForceSyncToCloud = async () => {
@@ -369,16 +339,16 @@ export default function App() {
     // 1. Admin login check
     if (
       cleanEmail === 'admin@family.com' ||
+      cleanEmail === 'zngl.team@gmail.com' ||
       cleanEmail === 'admin' ||
       (password && password.toLowerCase() === 'admin')
     ) {
       setCurrentSession({
         userId: 'admin-id',
         name: 'مدير البوابة (الآدمن)',
-        email: 'admin@family.com',
+        email: cleanEmail === 'zngl.team@gmail.com' ? cleanEmail : 'admin@family.com',
         role: 'admin'
       });
-      setIsAdminSession(true);
       setActiveTab('admin');
       return { success: true };
     }
@@ -418,7 +388,6 @@ export default function App() {
             email: req.email,
             role: 'member'
           });
-          setIsAdminSession(false);
           setActiveTab('tree');
           return { success: true };
         } else {
@@ -429,7 +398,6 @@ export default function App() {
             email: req.email,
             role: 'member'
           });
-          setIsAdminSession(false);
           setActiveTab('tree');
           return { success: true };
         }
@@ -445,7 +413,6 @@ export default function App() {
         email: directMember.email || email,
         role: 'member'
       });
-      setIsAdminSession(false);
       setActiveTab('tree');
       return { success: true };
     }
@@ -463,7 +430,6 @@ export default function App() {
       email: '',
       role: 'guest'
     });
-    setIsAdminSession(false);
     setActiveTab('main');
   };
 
@@ -1338,6 +1304,14 @@ export default function App() {
                   <span className="block text-[9px] text-slate-400 font-bold leading-none">مرحباً بك</span>
                   <span className="text-xs font-bold text-slate-700 truncate max-w-[120px] block hover:text-indigo-600 transition-colors">{currentSession.name}</span>
                 </div>
+
+                <button
+                  onClick={handleLogout}
+                  className="bg-rose-50 text-rose-600 hover:bg-rose-100 p-2.5 rounded-full border border-rose-100 transition-colors cursor-pointer mr-2"
+                  title="تسجيل الخروج"
+                >
+                  <LogOut size={18} />
+                </button>
               </>
             )}
           </div>
@@ -1366,7 +1340,6 @@ export default function App() {
         <div className="py-2">
           {activeTab === 'main' && (
             <MainPage
-              onlineUsers={onlineUsers}
               familyInfo={familyInfo}
               photos={photos}
               members={members}
@@ -1451,7 +1424,6 @@ export default function App() {
 
           {activeTab === 'admin' && currentSession.role === 'admin' && (
             <AdminPanel
-              onlineUsers={onlineUsers}
               requests={requests}
               members={members}
               news={news}

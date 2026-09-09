@@ -17,8 +17,8 @@ import {
   writeBatch,
   getDocs
 } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { FamilyMember, RegistrationRequest, NewsItem, FamilyPhoto, FamilyInfo, FamilyMessage, UserPresence } from '../types';
+import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { FamilyMember, RegistrationRequest, NewsItem, FamilyPhoto, FamilyInfo, FamilyMessage } from '../types';
 
 const firebaseConfig = {
   projectId: "gen-lang-client-0131349304",
@@ -32,27 +32,19 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-let firestoreInstance;
-try {
-  firestoreInstance = initializeFirestore(
-    app,
-    {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager(),
-      }),
-    },
-    firebaseConfig.firestoreDatabaseId
-  );
-} catch (e) {
-  try {
-    firestoreInstance = initializeFirestore(app, {}, firebaseConfig.firestoreDatabaseId);
-  } catch {
-    firestoreInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-  }
-}
-
-export const db = firestoreInstance;
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+
+export const signInWithGoogleProvider = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return { success: true, user: result.user };
+  } catch (error: any) {
+    console.error('Google sign-in error:', error);
+    return { success: false, message: error.message };
+  }
+};
 
 export interface LiveChangeLog {
   id: string;
@@ -436,26 +428,5 @@ export async function clearAllAuditLogsFromCloud(logs: LiveChangeLog[]) {
   } catch (err) {
     console.error('Error clearing logs:', err);
     throw err;
-  }
-}
-
-export function subscribeToPresence(onPresence: (presences: UserPresence[]) => void) {
-  const q = query(collection(db, 'presence'), orderBy('lastActive', 'desc'));
-  return onSnapshot(q, (snapshot) => {
-    const presences = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserPresence));
-    onPresence(presences);
-  }, (error) => {
-    console.error("Presence subscribe error:", error);
-  });
-}
-
-export async function updateUserPresence(presence: UserPresence) {
-  try {
-    if (!presence.id) return;
-    const safeId = presence.id.toString().replace(/\//g, '_');
-    const docRef = doc(db, 'presence', safeId);
-    await setDoc(docRef, cleanForFirestore({...presence, id: safeId}), { merge: true });
-  } catch(e) {
-    console.error("Error updating presence:", e);
   }
 }

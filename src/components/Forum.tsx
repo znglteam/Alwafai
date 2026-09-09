@@ -64,7 +64,7 @@ export default function Forum({ currentSession }: ForumProps) {
       await addDoc(collection(db, 'forumTopics'), {
         title: newTopicTitle.trim(),
         content: newTopicContent.trim(),
-        authorId: currentSession.memberId || currentSession.email || 'unknown',
+        authorId: currentSession.userId || currentSession.email || 'unknown',
         authorName: currentSession.name,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -92,7 +92,7 @@ export default function Forum({ currentSession }: ForumProps) {
       await addDoc(collection(topicRef, 'replies'), {
         topicId: selectedTopic.id,
         content: newReplyContent.trim(),
-        authorId: currentSession.memberId || currentSession.email || 'unknown',
+        authorId: currentSession.userId || currentSession.email || 'unknown',
         authorName: currentSession.name,
         createdAt: serverTimestamp()
       });

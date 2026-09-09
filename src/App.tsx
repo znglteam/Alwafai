@@ -7,7 +7,8 @@ import {
   FamilyInfo, 
   UserSession, 
   FamilyMessage,
-  MemberComment
+  MemberComment,
+  UserPresence
 } from './types';
 import { 
   INITIAL_MEMBERS, 
@@ -24,6 +25,8 @@ import {
   subscribeToRequests,
   subscribeToMessages,
   subscribeToAuditLogs,
+  subscribeToPresence,
+  updateUserPresence,
   seedInitialMembersIfEmpty,
   syncAllLocalToCloud,
   saveMemberToCloud,
@@ -169,6 +172,7 @@ export default function App() {
   const [treeSelectedMemberId, setTreeSelectedMemberId] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
   const [auditLogs, setAuditLogs] = useState<LiveChangeLog[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<UserPresence[]>([]);
   const [liveNotification, setLiveNotification] = useState<string | null>(null);
   const [isUploadingToCloud, setIsUploadingToCloud] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -238,6 +242,10 @@ export default function App() {
       setMessages(cloudMessages || []);
     });
 
+    const unsubPresence = subscribeToPresence((presences) => {
+      setOnlineUsers(presences || []);
+    });
+
     const unsubLogs = subscribeToAuditLogs((logs) => {
       // Filter logs to ONLY show member modifications (exclude admin, requests, messages)
       const memberLogs = (logs || []).filter(log => {
@@ -276,6 +284,7 @@ export default function App() {
       unsubPhotos();
       unsubRequests();
       unsubMessages();
+      unsubPresence();
       unsubLogs();
     };
   }, []);
@@ -316,7 +325,28 @@ export default function App() {
     } else if (currentSession.role === 'member') {
       if (activeTab === 'admin') setActiveTab('profile');
     }
-  }, [currentSession]);
+
+    // Update presence
+    let interval;
+    const updatePresence = () => {
+      if (currentSession.role === 'admin' || currentSession.role === 'member') {
+        const presenceId = currentSession.userId || currentSession.email;
+        if(presenceId) {
+            updateUserPresence({
+              id: presenceId,
+              name: currentSession.name,
+              role: currentSession.role,
+              lastActive: new Date().toISOString()
+            });
+        }
+      }
+    };
+    
+    updatePresence();
+    interval = setInterval(updatePresence, 30000); // every 30s
+
+    return () => clearInterval(interval);
+  }, [currentSession, activeTab]);
 
   // Handle Manual Force Cloud Sync Button
   const handleForceSyncToCloud = async () => {
@@ -1420,6 +1450,7 @@ export default function App() {
 
           {activeTab === 'admin' && currentSession.role === 'admin' && (
             <AdminPanel
+              onlineUsers={onlineUsers}
               requests={requests}
               members={members}
               news={news}

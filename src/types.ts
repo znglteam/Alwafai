@@ -163,3 +163,10 @@ export interface ForumReply {
   authorName: string;
   createdAt: string;
 }
+
+export interface UserPresence {
+  id: string;
+  name: string;
+  role: string;
+  lastActive: string;
+}

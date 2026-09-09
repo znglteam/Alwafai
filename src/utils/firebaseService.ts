@@ -18,7 +18,7 @@ import {
   getDocs
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { FamilyMember, RegistrationRequest, NewsItem, FamilyPhoto, FamilyInfo, FamilyMessage } from '../types';
+import { FamilyMember, RegistrationRequest, NewsItem, FamilyPhoto, FamilyInfo, FamilyMessage, UserPresence } from '../types';
 
 const firebaseConfig = {
   projectId: "gen-lang-client-0131349304",
@@ -436,5 +436,22 @@ export async function clearAllAuditLogsFromCloud(logs: LiveChangeLog[]) {
   } catch (err) {
     console.error('Error clearing logs:', err);
     throw err;
+  }
+}
+
+export function subscribeToPresence(onPresence: (presences: UserPresence[]) => void) {
+  const q = query(collection(db, 'presence'), orderBy('lastActive', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    const presences = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserPresence));
+    onPresence(presences);
+  });
+}
+
+export async function updateUserPresence(presence: UserPresence) {
+  try {
+    const docRef = doc(db, 'presence', presence.id);
+    await setDoc(docRef, presence);
+  } catch(e) {
+    console.error("Error updating presence:", e);
   }
 }

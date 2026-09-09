@@ -53,8 +53,9 @@ import MemberProfileEdit from './components/MemberProfileEdit';
 import AdminPanel from './components/AdminPanel';
 import AuthModal from './components/AuthModal';
 import ContactAdmin from './components/ContactAdmin';
+import Forum from './components/Forum';
 
-import { Home, Network, User, Shield, LogOut, MessageSquare, Wifi, Bell, CloudUpload, CheckCircle, LogIn, UserPlus, Image, Headset } from 'lucide-react';
+import { Home, Network, User, Shield, LogOut, MessageSquare, MessageSquareText, Wifi, Bell, CloudUpload, CheckCircle, LogIn, UserPlus, Image, Headset } from 'lucide-react';
 import { reconcileLineageAndMarriages, syncSpouseRelationships, isMemberFemale } from './utils/marriageUtils';
 import { findMatchingMemberInTree } from './utils/memberMatching';
 
@@ -164,7 +165,7 @@ export default function App() {
   });
 
   // UI state - default to 'main' so visitors see the main landing page
-  const [activeTab, setActiveTab] = useState<'main' | 'tree' | 'profile' | 'admin' | 'messages'>('main');
+  const [activeTab, setActiveTab] = useState<'main' | 'tree' | 'profile' | 'admin' | 'messages' | 'forum'>('main');
   const [treeSelectedMemberId, setTreeSelectedMemberId] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<'login' | 'register' | null>(null);
   const [auditLogs, setAuditLogs] = useState<LiveChangeLog[]>([]);
@@ -1196,6 +1197,19 @@ export default function App() {
                 شجرة العائلة
               </button>
             )}
+            
+            {/* Forum Tab */}
+            {(currentSession.role === 'member' || currentSession.role === 'admin') && (
+              <button
+                onClick={() => setActiveTab('forum')}
+                className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer ${
+                  activeTab === 'forum' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <MessageSquareText size={14} />
+                المنتدى
+              </button>
+            )}
 
             {/* Admin Tab */}
             {currentSession.role === 'admin' && (
@@ -1345,6 +1359,10 @@ export default function App() {
               onOpenAuth={(mode) => setAuthMode(mode || 'login')}
               onOpenRegister={() => setAuthMode('register')}
             />
+          )}
+
+          {activeTab === 'forum' && (
+            <Forum currentSession={currentSession} />
           )}
 
           {activeTab === 'tree' && (

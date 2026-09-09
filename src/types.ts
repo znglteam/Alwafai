@@ -143,3 +143,23 @@ export interface UserSession {
   role: UserRole;
   requestId?: string; // If pending
 }
+
+export interface ForumTopic {
+  id: string;
+  title: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  createdAt: string;
+  updatedAt: string;
+  repliesCount: number;
+}
+
+export interface ForumReply {
+  id: string;
+  topicId: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  createdAt: string;
+}

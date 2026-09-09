@@ -172,7 +172,6 @@ export default function App() {
   const [liveNotification, setLiveNotification] = useState<string | null>(null);
   const [isUploadingToCloud, setIsUploadingToCloud] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [isAdminSession, setIsAdminSession] = useState<boolean>(() => currentSession.role === 'admin');
 
   // 1. Subscribe to Real-time Collections from Firebase Firestore
   useEffect(() => {
@@ -1465,14 +1464,12 @@ export default function App() {
 
       </main>
 
-      {/* Collapsible interactive role testing simulator - Admin Only */}
-      {isAdminSession && (
-        <RoleSimulator
-          currentSession={currentSession}
-          onChangeSession={setCurrentSession}
-          pendingCount={requests.filter(r => r.status === 'pending').length}
-        />
-      )}
+      {/* Collapsible interactive role testing simulator */}
+      <RoleSimulator
+        currentSession={currentSession}
+        onChangeSession={setCurrentSession}
+        pendingCount={requests.filter(r => r.status === 'pending').length}
+      />
 
       {/* Auth Login/Register Modal */}
       <AuthModal

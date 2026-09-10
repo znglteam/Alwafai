@@ -1412,26 +1412,28 @@ export default function AdminPanel({
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">
-                      اسم الأب <span className="text-[10px] text-amber-700 font-normal">(مربوط بالشجرة)</span>
+                      اسم الأب {editForm.fatherId && <span className="text-[10px] text-amber-700 font-normal">(مربوط بالشجرة)</span>}
                     </label>
                     <input
                       type="text"
                       value={editForm.fatherName}
-                      disabled
-                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-slate-100 text-slate-500 cursor-not-allowed select-none"
-                      title="اسم الأب مرتبط بالشجرة تلقائياً ولا يمكن تعديله يدوياً"
+                      disabled={!!editForm.fatherId}
+                      onChange={e => !editForm.fatherId && setEditForm({ ...editForm, fatherName: e.target.value })}
+                      className={`w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs ${editForm.fatherId ? 'bg-slate-100 text-slate-500 cursor-not-allowed select-none' : 'bg-white'}`}
+                      title={editForm.fatherId ? "اسم الأب مرتبط بالشجرة تلقائياً ولا يمكن تعديله يدوياً" : ""}
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">
-                      اسم الجد <span className="text-[10px] text-amber-700 font-normal">(مربوط بالشجرة)</span>
+                      اسم الجد {editForm.fatherId && <span className="text-[10px] text-amber-700 font-normal">(مربوط بالشجرة)</span>}
                     </label>
                     <input
                       type="text"
                       value={editForm.grandfatherName}
-                      disabled
-                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-slate-100 text-slate-500 cursor-not-allowed select-none"
-                      title="اسم الجد مرتبط بالشجرة تلقائياً ولا يمكن تعديله يدوياً"
+                      disabled={!!editForm.fatherId}
+                      onChange={e => !editForm.fatherId && setEditForm({ ...editForm, grandfatherName: e.target.value })}
+                      className={`w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs ${editForm.fatherId ? 'bg-slate-100 text-slate-500 cursor-not-allowed select-none' : 'bg-white'}`}
+                      title={editForm.fatherId ? "اسم الجد مرتبط بالشجرة تلقائياً ولا يمكن تعديله يدوياً" : ""}
                     />
                   </div>
                 </div>

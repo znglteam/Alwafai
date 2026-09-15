@@ -19,6 +19,15 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRegister, onLogin }: AuthModalProps) {
   const [currentMode, setCurrentMode] = useState<'login' | 'register'>(initialMode);
+  
+  // Detect Facebook/Instagram in-app browsers
+  const [isInAppBrowser, setIsInAppBrowser] = useState(false);
+  useEffect(() => {
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+    if (/FBAN|FBAV|Instagram/i.test(userAgent)) {
+      setIsInAppBrowser(true);
+    }
+  }, []);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -151,6 +160,21 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
 
         {/* Scrollable Form Body */}
         <div className="p-6 overflow-y-auto space-y-4 flex-1">
+          {isInAppBrowser && (
+            <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs p-4 rounded-2xl font-bold flex flex-col items-start gap-2 shadow-xs mb-2">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={20} className="text-rose-600 shrink-0" />
+                <span className="text-sm">تنبيه: أنت تستخدم متصفح فيسبوك الداخلي</span>
+              </div>
+              <p className="leading-relaxed font-normal text-rose-700 mt-1">
+                نظام الأمان يمنع تسجيل الدخول بواسطة جوجل من داخل هذا المتصفح. 
+                <strong className="font-bold block mt-2 text-rose-900 bg-rose-200/50 p-2 rounded-lg">
+                  يرجى الضغط على النقاط الثلاث بالأعلى واختيار "فتح في المتصفح" (Open in Browser) لتتمكن من الدخول.
+                </strong>
+              </p>
+            </div>
+          )}
+
           {regSuccess ? (
             <div className="text-center py-10 space-y-4">
               <div className="bg-emerald-50 text-emerald-700 border border-emerald-200 p-6 rounded-3xl max-w-md mx-auto space-y-3">

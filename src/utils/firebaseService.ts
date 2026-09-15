@@ -42,7 +42,19 @@ export const signInWithGoogleProvider = async () => {
     return { success: true, user: result.user };
   } catch (error: any) {
     console.error('Google sign-in error:', error);
-    return { success: false, message: error.message };
+    let errorMessage = error.message;
+    
+    if (error.code === 'auth/unauthorized-domain') {
+      errorMessage = 'عذراً، هذا النطاق (الرابط) غير مصرح له بتسجيل الدخول عبر جوجل. يرجى من مدير الموقع إضافته في إعدادات Firebase (Authorized Domains).';
+    } else if (error.code === 'auth/popup-closed-by-user') {
+      errorMessage = 'تم إغلاق نافذة تسجيل الدخول قبل اكتمال العملية.';
+    } else if (error.code === 'auth/cancelled-popup-request') {
+      errorMessage = 'تم إلغاء عملية تسجيل الدخول.';
+    } else if (error.code === 'auth/network-request-failed') {
+      errorMessage = 'فشل الاتصال بالإنترنت، يرجى التحقق من الشبكة والمحاولة مجدداً.';
+    }
+
+    return { success: false, message: errorMessage };
   }
 };
 

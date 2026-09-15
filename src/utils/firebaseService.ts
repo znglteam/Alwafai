@@ -52,6 +52,10 @@ export const signInWithGoogleProvider = async () => {
       errorMessage = 'تم إلغاء عملية تسجيل الدخول.';
     } else if (error.code === 'auth/network-request-failed') {
       errorMessage = 'فشل الاتصال بالإنترنت، يرجى التحقق من الشبكة والمحاولة مجدداً.';
+    } else if (error.code === 'auth/popup-blocked') {
+      errorMessage = 'متصفحك قام بحظر نافذة تسجيل الدخول (Popup Blocked). يرجى السماح بالنوافذ المنبثقة لهذا الموقع والمحاولة مجدداً.';
+    } else {
+      errorMessage = `حدث خطأ: ${error.message}`;
     }
 
     return { success: false, message: errorMessage };

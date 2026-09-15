@@ -120,8 +120,9 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
           setRegSuccess(false);
           onClose();
         }, 15000);
-      } catch (err) {
-        setLoginError('حدث خطأ أثناء إرسال الطلب.');
+      } catch (err: any) {
+        console.error("Registration error:", err);
+        setLoginError(err.message || 'حدث خطأ غير معروف أثناء إرسال الطلب.');
       }
     } else {
       setLoginError(result.message || 'فشل توثيق الحساب بواسطة جوجل.');

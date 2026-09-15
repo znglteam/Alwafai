@@ -45,7 +45,7 @@ export const signInWithGoogleProvider = async () => {
     let errorMessage = error.message;
     
     if (error.code === 'auth/unauthorized-domain') {
-      errorMessage = 'عذراً، هذا النطاق (الرابط) غير مصرح له بتسجيل الدخول عبر جوجل. يرجى من مدير الموقع إضافته في إعدادات Firebase (Authorized Domains).';
+      errorMessage = 'نعتذر، لم يتم تفعيل تسجيل الدخول من هذا الرابط بعد. يرجى إبلاغ إدارة الموقع لتحديث الإعدادات.';
     } else if (error.code === 'auth/popup-closed-by-user') {
       errorMessage = 'تم إغلاق نافذة تسجيل الدخول قبل اكتمال العملية.';
     } else if (error.code === 'auth/cancelled-popup-request') {

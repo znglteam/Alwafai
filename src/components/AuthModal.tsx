@@ -270,17 +270,6 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                     <AlertTriangle size={17} className="text-rose-600 shrink-0 mt-0.5" />
                     <span className="leading-relaxed flex-1">{loginError}</span>
                   </div>
-                  {loginErrorCode === 'auth/unauthorized-domain' && (
-                    <div className="bg-rose-100/50 p-2.5 rounded-xl w-full mt-1 border border-rose-200/60 font-normal">
-                      <p className="text-rose-900 leading-relaxed font-bold mb-1">رسالة خاصة لمدير الموقع:</p>
-                      <ul className="list-decimal list-inside space-y-1 text-[11px] text-rose-800">
-                        <li>انسخ الرابط الحالي من شريط المتصفح بالأعلى.</li>
-                        <li>اذهب إلى لوحة تحكم فايربيس الخاصة بك.</li>
-                        <li>Authentication &rarr; Settings &rarr; Authorized domains</li>
-                        <li>أضف الرابط هناك لكي يتمكن زوار موقعك من الدخول.</li>
-                      </ul>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -320,17 +309,6 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                     <AlertTriangle size={17} className="text-rose-600 shrink-0 mt-0.5" />
                     <span className="leading-relaxed flex-1">{loginError}</span>
                   </div>
-                  {loginErrorCode === 'auth/unauthorized-domain' && (
-                    <div className="bg-rose-100/50 p-2.5 rounded-xl w-full mt-1 border border-rose-200/60 font-normal">
-                      <p className="text-rose-900 leading-relaxed font-bold mb-1">رسالة خاصة لمدير الموقع:</p>
-                      <ul className="list-decimal list-inside space-y-1 text-[11px] text-rose-800">
-                        <li>انسخ الرابط الحالي من شريط المتصفح بالأعلى.</li>
-                        <li>اذهب إلى لوحة تحكم فايربيس الخاصة بك.</li>
-                        <li>Authentication &rarr; Settings &rarr; Authorized domains</li>
-                        <li>أضف الرابط هناك لكي يتمكن زوار موقعك من الدخول.</li>
-                      </ul>
-                    </div>
-                  )}
                 </div>
               )}
 

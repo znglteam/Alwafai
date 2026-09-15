@@ -20,6 +20,7 @@ interface AuthModalProps {
 export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRegister, onLogin }: AuthModalProps) {
   const [currentMode, setCurrentMode] = useState<'login' | 'register'>(initialMode);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginErrorCode, setLoginErrorCode] = useState('');
   
   // Detect Facebook/Instagram in-app browsers
   const [isInAppBrowser, setIsInAppBrowser] = useState(false);
@@ -53,6 +54,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
 
   const handleGoogleLogin = async () => {
     setLoginError('');
+    setLoginErrorCode('');
     const result = await signInWithGoogleProvider();
     if (result.success && result.user?.email) {
       const loginResult = onLogin(result.user.email);
@@ -63,12 +65,14 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
       }
     } else {
       setLoginError(result.message || 'فشل تسجيل الدخول بواسطة جوجل.');
+      if (result.code) setLoginErrorCode(result.code);
     }
   };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    setLoginErrorCode('');
 
     if (!loginEmail || !loginPassword) {
       setLoginError('يرجى إدخال البريد الإلكتروني وكلمة المرور');
@@ -86,6 +90,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
   const handleGoogleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    setLoginErrorCode('');
     if (!name.trim() || !fatherName.trim() || !grandfatherName.trim()) {
       setLoginError('يرجى تعبئة الاسم الثلاثي أولاً');
       return;
@@ -129,6 +134,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
       }
     } else {
       setLoginError(result.message || 'فشل توثيق الحساب بواسطة جوجل.');
+      if (result.code) setLoginErrorCode(result.code);
     }
     setIsSubmitting(false);
   };
@@ -259,9 +265,22 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
               </div>
 
               {loginError && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs p-3.5 rounded-2xl font-bold flex items-start gap-2 shadow-xs my-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <AlertTriangle size={17} className="text-rose-600 shrink-0 mt-0.5" />
-                  <span className="leading-relaxed">{loginError}</span>
+                <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs p-3.5 rounded-2xl font-bold flex flex-col items-start gap-2 shadow-xs my-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex items-start gap-2 w-full">
+                    <AlertTriangle size={17} className="text-rose-600 shrink-0 mt-0.5" />
+                    <span className="leading-relaxed flex-1">{loginError}</span>
+                  </div>
+                  {loginErrorCode === 'auth/unauthorized-domain' && (
+                    <div className="bg-rose-100/50 p-2.5 rounded-xl w-full mt-1 border border-rose-200/60 font-normal">
+                      <p className="text-rose-900 leading-relaxed font-bold mb-1">رسالة خاصة لمدير الموقع:</p>
+                      <ul className="list-decimal list-inside space-y-1 text-[11px] text-rose-800">
+                        <li>انسخ الرابط الحالي من شريط المتصفح بالأعلى.</li>
+                        <li>اذهب إلى لوحة تحكم فايربيس الخاصة بك.</li>
+                        <li>Authentication &rarr; Settings &rarr; Authorized domains</li>
+                        <li>أضف الرابط هناك لكي يتمكن زوار موقعك من الدخول.</li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -296,8 +315,22 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
             /* Login Form */
             <form onSubmit={handleLoginSubmit} className="space-y-4 pt-2">
               {loginError && (
-                <div className="bg-rose-50 border border-rose-100 text-rose-700 text-xs p-3 rounded-xl font-medium mb-3">
-                  {loginError}
+                <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs p-3.5 rounded-2xl font-bold flex flex-col items-start gap-2 shadow-xs mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="flex items-start gap-2 w-full">
+                    <AlertTriangle size={17} className="text-rose-600 shrink-0 mt-0.5" />
+                    <span className="leading-relaxed flex-1">{loginError}</span>
+                  </div>
+                  {loginErrorCode === 'auth/unauthorized-domain' && (
+                    <div className="bg-rose-100/50 p-2.5 rounded-xl w-full mt-1 border border-rose-200/60 font-normal">
+                      <p className="text-rose-900 leading-relaxed font-bold mb-1">رسالة خاصة لمدير الموقع:</p>
+                      <ul className="list-decimal list-inside space-y-1 text-[11px] text-rose-800">
+                        <li>انسخ الرابط الحالي من شريط المتصفح بالأعلى.</li>
+                        <li>اذهب إلى لوحة تحكم فايربيس الخاصة بك.</li>
+                        <li>Authentication &rarr; Settings &rarr; Authorized domains</li>
+                        <li>أضف الرابط هناك لكي يتمكن زوار موقعك من الدخول.</li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -58,7 +58,7 @@ export const signInWithGoogleProvider = async () => {
       errorMessage = `حدث خطأ: ${error.message}`;
     }
 
-    return { success: false, message: errorMessage };
+    return { success: false, message: errorMessage, code: error.code };
   }
 };
 

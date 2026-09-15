@@ -46,7 +46,6 @@ import {
 
 // Component Imports
 import NewsTicker from './components/NewsTicker';
-import RoleSimulator from './components/RoleSimulator';
 import MainPage from './components/MainPage';
 import FamilyTreeVisualizer from './components/FamilyTreeVisualizer';
 import MemberProfileEdit from './components/MemberProfileEdit';
@@ -1467,13 +1466,6 @@ export default function App() {
         </div>
 
       </main>
-
-      {/* Collapsible interactive role testing simulator */}
-      <RoleSimulator
-        currentSession={currentSession}
-        onChangeSession={setCurrentSession}
-        pendingCount={requests.filter(r => r.status === 'pending').length}
-      />
 
       {/* Auth Login/Register Modal */}
       <AuthModal

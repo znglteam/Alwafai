@@ -88,7 +88,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
     }
   };
 
-  const handleGoogleRegister = async (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
     setLoginErrorCode('');
@@ -96,46 +96,44 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
       setLoginError('يرجى تعبئة الاسم الثلاثي أولاً');
       return;
     }
+    if (!email.trim() || !password.trim()) {
+      setLoginError('يرجى تعبئة اسم المستخدم وكلمة المرور');
+      return;
+    }
 
     setIsSubmitting(true);
-    const result = await signInWithGoogleProvider();
-    if (result.success && result.user?.email) {
-      try {
-        const regResult = await onRegister({
-          name: name.trim(),
-          fatherName: fatherName.trim(),
-          grandfatherName: grandfatherName.trim(),
-          email: result.user.email.toLowerCase(),
-          password: '',
-          birthYear: 0,
-          birthDate: '',
-          country: 'غير محدد',
-          specialization: 'غير محدد',
-          bio: 'عضو في العائلة.',
-          avatar: result.user.photoURL || '',
-          isAlive: true,
-          siblings: [],
-          unclesAndAunts: []
-        });
+    try {
+      const regResult = await onRegister({
+        name: name.trim(),
+        fatherName: fatherName.trim(),
+        grandfatherName: grandfatherName.trim(),
+        email: email.trim().toLowerCase(),
+        password: password.trim(),
+        birthYear: 0,
+        birthDate: '',
+        country: 'غير محدد',
+        specialization: 'غير محدد',
+        bio: 'عضو في العائلة.',
+        avatar: '',
+        isAlive: true,
+        siblings: [],
+        unclesAndAunts: []
+      });
 
-        if (regResult && regResult.success === false) {
-          setLoginError(regResult.message || 'حدث خطأ أثناء إرسال الطلب.');
-          setIsSubmitting(false);
-          return;
-        }
-
-        setRegSuccess(true);
-        setTimeout(() => {
-          setRegSuccess(false);
-          onClose();
-        }, 15000);
-      } catch (err: any) {
-        console.error("Registration error:", err);
-        setLoginError(err.message || 'حدث خطأ غير معروف أثناء إرسال الطلب.');
+      if (regResult && regResult.success === false) {
+        setLoginError(regResult.message || 'حدث خطأ أثناء إرسال الطلب.');
+        setIsSubmitting(false);
+        return;
       }
-    } else {
-      setLoginError(result.message || 'فشل توثيق الحساب بواسطة جوجل.');
-      if (result.code) setLoginErrorCode(result.code);
+
+      setRegSuccess(true);
+      setTimeout(() => {
+        setRegSuccess(false);
+        onClose();
+      }, 15000);
+    } catch (err: any) {
+      console.error("Registration error:", err);
+      setLoginError(err.message || 'حدث خطأ غير معروف أثناء إرسال الطلب.');
     }
     setIsSubmitting(false);
   };
@@ -206,7 +204,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
             </div>
           ) : isRegisterMode ? (
             /* Register Form */
-            <form onSubmit={handleGoogleRegister} className="space-y-4">
+            <form onSubmit={handleRegisterSubmit} className="space-y-4">
               {/* Prominent Desktop Install Option during registration request */}
               <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-indigo-50 border border-emerald-300 rounded-2xl p-3.5 shadow-xs space-y-2">
                 <div className="flex items-center justify-between gap-2">
@@ -265,6 +263,32 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                 </div>
               </div>
 
+              <div className="bg-indigo-50/70 border border-indigo-100 p-4 rounded-2xl space-y-3">
+                <span className="text-xs font-bold text-indigo-900 block flex items-center gap-1.5">
+                  <Lock size={14} className="text-indigo-600" />
+                  بيانات الدخول لحسابك:
+                </span>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">اسم المستخدم *</label>
+                    <input
+                      type="text" required placeholder="أدخل اسم مستخدم (بالإنجليزي)"
+                      value={email} onChange={e => setEmail(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-600 bg-white text-left dir-ltr"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">كلمة المرور *</label>
+                    <input
+                      type="password" required placeholder="••••••••"
+                      value={password} onChange={e => setPassword(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-600 bg-white text-left dir-ltr"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {loginError && (
                 <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs p-3.5 rounded-2xl font-bold flex flex-col items-start gap-2 shadow-xs my-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="flex items-start gap-2 w-full">
@@ -275,8 +299,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
               )}
 
               <button
-                type="button"
-                onClick={handleGoogleRegister}
+                type="submit"
                 disabled={isSubmitting}
                 className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold text-xs md:text-sm py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
@@ -290,13 +313,8 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                   </div>
                 ) : (
                   <>
-                    <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.16v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.16C1.43 8.55 1 10.22 1 12s.43 3.45 1.16 4.93l3.68-2.84z" fill="#FBBC05"/>
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.16 7.07l3.68 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                    توثيق الحساب وإرسال الطلب بواسطة جوجل
+                    <UserPlus size={18} />
+                    إرسال طلب التسجيل
                   </>
                 )}
               </button>

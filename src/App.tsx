@@ -406,6 +406,18 @@ export default function App() {
     // 3. Check direct tree members with this email
     const directMember = members.find(m => m.email && m.email.trim().toLowerCase() === cleanEmail);
     if (directMember) {
+      if (password) {
+        if (directMember.password && directMember.password !== password) {
+          return { success: false, message: 'كلمة المرور المدخلة غير صحيحة.' };
+        }
+        if (!directMember.password) {
+           return { success: false, message: 'هذا الحساب غير مزود بكلمة مرور. يرجى تسجيل الدخول باستخدام زر (المتابعة بحساب Google).' };
+        }
+      } else if (!password && directMember.password) {
+        // If login form is used without password but member has a password (this happens if they use Google Sign In - wait, google sign in doesn't pass password).
+        // Actually, if it's Google Sign-in, `password` is undefined. It should bypass password check.
+      }
+
       setCurrentSession({
         userId: directMember.id,
         name: `${directMember.name} ${isMemberFemale(directMember) ? 'بنت' : 'بن'} ${directMember.fatherName || ''} بن ${directMember.grandfatherName || ''}`.trim(),

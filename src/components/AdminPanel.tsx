@@ -325,6 +325,7 @@ export default function AdminPanel({
   // Direct Member Form state
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemName, setNewMemName] = useState('');
+  const [newMemEmail, setNewMemEmail] = useState('');
   const [newMemFatherName, setNewMemFatherName] = useState('');
   const [newMemGrandName, setNewMemGrandName] = useState('');
   const [newMemBirth, setNewMemBirth] = useState<number | ''>('');
@@ -424,6 +425,7 @@ export default function AdminPanel({
 
     onAddMemberDirectly({
       name: newMemName,
+      email: newMemEmail ? newMemEmail.trim().toLowerCase() : undefined,
       fatherName: finalFatherName,
       grandfatherName: finalGrandfatherName,
       birthYear: newMemBirth === '' ? 0 : Number(newMemBirth),
@@ -442,6 +444,7 @@ export default function AdminPanel({
 
     // Reset Form
     setNewMemName('');
+    setNewMemEmail('');
     setNewMemFatherName('');
     setNewMemGrandName('');
     setNewMemBirth('');
@@ -482,6 +485,7 @@ export default function AdminPanel({
       const { fatherName: resFather, grandfatherName: resGrandfather } = getResolvedLineage(editForm);
       const updatedForm = {
         ...editForm,
+        email: editForm.email ? editForm.email.trim().toLowerCase() : undefined,
         fatherName: resFather || editForm.fatherName,
         grandfatherName: resGrandfather || editForm.grandfatherName,
         country: editForm.isAlive ? editForm.country : ''
@@ -1179,6 +1183,15 @@ export default function AdminPanel({
                     />
                   </div>
                   <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">البريد الإلكتروني للوصول</label>
+                    <input
+                      type="email" placeholder="example@gmail.com"
+                      value={newMemEmail} onChange={e => setNewMemEmail(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white text-left dir-ltr"
+                      title="إذا أدخلت إيميله، سيتمكن من الدخول مباشرة لحسابه"
+                    />
+                  </div>
+                  <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">اسم الأب *</label>
                     <input
                       type="text" required placeholder="اسم الأب"
@@ -1409,6 +1422,17 @@ export default function AdminPanel({
                       onChange={e => setEditForm({ ...editForm, name: e.target.value })}
                       className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">البريد الإلكتروني للوصول</label>
+                    <input
+                      type="email" placeholder="example@gmail.com"
+                      value={editForm.email || ''}
+                      onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white text-left dir-ltr"
+                    />
+                  </div>
+                  <div>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">

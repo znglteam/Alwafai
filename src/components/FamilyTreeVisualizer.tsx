@@ -329,6 +329,7 @@ export default function FamilyTreeVisualizer({
   const [newMemMaritalStatus, setNewMemMaritalStatus] = useState<string>('');
   const [newMemAvatar, setNewMemAvatar] = useState('');
   const [newMemGender, setNewMemGender] = useState<'male' | 'female'>('male');
+  const [newMemEmail, setNewMemEmail] = useState('');
 
   const [isEditingFemaleFamilyText, setIsEditingFemaleFamilyText] = useState(false);
   const [editingFemaleMember, setEditingFemaleMember] = useState<FamilyMember | null>(null);
@@ -414,7 +415,8 @@ export default function FamilyTreeVisualizer({
       spouses: effectiveSpouses,
       maritalStatus: (newMemMaritalStatus as any) || undefined,
       avatar: newMemAvatar || undefined,
-      gender: newMemGender
+      gender: newMemGender,
+      email: newMemEmail ? newMemEmail.trim().toLowerCase() : undefined,
     });
 
     if (addingFatherTo && onUpdateMember && typeof newId === 'string') {
@@ -443,6 +445,7 @@ export default function FamilyTreeVisualizer({
     setNewMemMaritalStatus('');
     setNewMemAvatar('');
     setNewMemGender('male');
+    setNewMemEmail('');
   };
 
   const handleSaveFemaleFamilyText = (e: React.FormEvent) => {
@@ -506,6 +509,7 @@ export default function FamilyTreeVisualizer({
       const { fatherName: resFather, grandfatherName: resGrandfather } = getResolvedLineage(editForm);
       const updatedForm = {
         ...editForm,
+        email: editForm.email ? editForm.email.trim().toLowerCase() : undefined,
         fatherName: resFather || editForm.fatherName,
         grandfatherName: resGrandfather || editForm.grandfatherName,
         country: editForm.isAlive ? editForm.country : ''
@@ -1863,6 +1867,10 @@ export default function FamilyTreeVisualizer({
                           <label className="block text-[10px] font-bold text-slate-500 mb-0.5">الاسم الأول</label>
                           <input type="text" required value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white" />
                         </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 mb-0.5">البريد الإلكتروني للوصول (للمدير فقط)</label>
+                          <input type="email" value={editForm.email || ''} onChange={e => setEditForm({...editForm, email: e.target.value})} placeholder="example@gmail.com" className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white text-left dir-ltr" />
+                        </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
@@ -2239,6 +2247,20 @@ export default function FamilyTreeVisualizer({
                     className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">البريد الإلكتروني للوصول</label>
+                  <input
+                    type="email"
+                    placeholder="example@gmail.com"
+                    value={newMemEmail}
+                    onChange={e => setNewMemEmail(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-left dir-ltr"
+                    title="إذا أدخلت إيميله هنا، سيتمكن من تسجيل الدخول مباشرة ببريده"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 mb-1">ربطه بالأب في الشجرة</label>
                   <select

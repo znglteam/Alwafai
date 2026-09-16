@@ -41,6 +41,7 @@ export interface FamilyMember {
   childrenIds: string[];
   registeredUserId?: string | null;
   email?: string | null;
+  password?: string | null;
   gender?: 'male' | 'female';
   orderIndex?: number;
   comments?: MemberComment[];

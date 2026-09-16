@@ -326,6 +326,7 @@ export default function AdminPanel({
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemName, setNewMemName] = useState('');
   const [newMemEmail, setNewMemEmail] = useState('');
+  const [newMemPassword, setNewMemPassword] = useState('');
   const [newMemFatherName, setNewMemFatherName] = useState('');
   const [newMemGrandName, setNewMemGrandName] = useState('');
   const [newMemBirth, setNewMemBirth] = useState<number | ''>('');
@@ -426,6 +427,7 @@ export default function AdminPanel({
     onAddMemberDirectly({
       name: newMemName,
       email: newMemEmail ? newMemEmail.trim().toLowerCase() : undefined,
+      password: newMemPassword || undefined,
       fatherName: finalFatherName,
       grandfatherName: finalGrandfatherName,
       birthYear: newMemBirth === '' ? 0 : Number(newMemBirth),
@@ -486,6 +488,7 @@ export default function AdminPanel({
       const updatedForm = {
         ...editForm,
         email: editForm.email ? editForm.email.trim().toLowerCase() : undefined,
+        password: editForm.password || undefined,
         fatherName: resFather || editForm.fatherName,
         grandfatherName: resGrandfather || editForm.grandfatherName,
         country: editForm.isAlive ? editForm.country : ''
@@ -1433,6 +1436,13 @@ export default function AdminPanel({
                     />
                   </div>
                   <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">كلمة المرور</label>
+                    <input
+                      type="text" placeholder="••••••••"
+                      value={editForm.password || ''}
+                      onChange={e => setEditForm({ ...editForm, password: e.target.value })}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white text-left dir-ltr"
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-500 mb-1">

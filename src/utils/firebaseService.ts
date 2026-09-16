@@ -55,7 +55,7 @@ export const signInWithGoogleProvider = async () => {
     } else if (error.code === 'auth/popup-blocked') {
       errorMessage = 'متصفحك قام بحظر نافذة تسجيل الدخول (Popup Blocked). يرجى السماح بالنوافذ المنبثقة لهذا الموقع والمحاولة مجدداً.';
     } else {
-      errorMessage = `حدث خطأ: ${error.message}`;
+      errorMessage = `حدث خطأ أثناء الاتصال بمزود الخدمة (Google). يرجى المحاولة لاحقاً.`;
     }
 
     return { success: false, message: errorMessage, code: error.code };

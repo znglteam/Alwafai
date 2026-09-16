@@ -125,6 +125,11 @@ export default function MemberProfileEdit({
   const [childAvatarY, setChildAvatarY] = useState(0);
   const [childGender, setChildGender] = useState<"male" | "female">("male");
 
+  // Sibling form states
+  const [showAddSibling, setShowAddSibling] = useState(false);
+  const [siblingName, setSiblingName] = useState("");
+  const [siblingGender, setSiblingGender] = useState<"male" | "female">("male");
+
   // Avatar aspect ratios
   const [avatarAspectRatio, setAvatarAspectRatio] = useState<number>(1);
   const [childAvatarAspectRatio, setChildAvatarAspectRatio] = useState<number>(1);
@@ -323,6 +328,36 @@ export default function MemberProfileEdit({
     setChildAvatarY(0);
     setChildGender("male");
     setShowAddChild(false);
+  };
+
+  const handleCreateSibling = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!siblingName) return;
+    if (!member.fatherId) {
+      alert("عذراً، يجب أن يكون لديك أب مرتبط في الشجرة لتتمكن من إضافة إخوة.");
+      return;
+    }
+
+    onAddChild(member.fatherId, {
+      name: siblingName,
+      fatherName: member.fatherName,
+      grandfatherName: member.grandfatherName,
+      birthYear: 0,
+      country: member.country || "غير محدد",
+      specialization: "غير محدد",
+      isAlive: true,
+      bio: siblingGender === "male" ? `أخ ${member.name}.` : `أخت ${member.name}.`,
+      avatar: undefined,
+      avatarScale: 1,
+      avatarX: 0,
+      avatarY: 0,
+      spouseName: null,
+      gender: siblingGender,
+    });
+
+    setSiblingName("");
+    setSiblingGender("male");
+    setShowAddSibling(false);
   };
 
   // Find children of this member for display
@@ -1205,11 +1240,97 @@ export default function MemberProfileEdit({
                   );
                 })}
 
-                {siblings.length > 0 && (
-                  <div className="pt-3 border-t border-slate-100 space-y-3">
+                {member.fatherId && (
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                     <h4 className="text-[10px] font-bold text-slate-500">
                       الإخوة والأخوات ({siblings.length})
                     </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSibling(!showAddSibling)}
+                      className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1 shadow-xs"
+                    >
+                      <Plus size={12} />
+                      إضافة أخ / أخت
+                    </button>
+                  </div>
+                )}
+
+                {showAddSibling && member.fatherId && (
+                  <form
+                    onSubmit={handleCreateSibling}
+                    className="bg-indigo-50/50 border border-indigo-100/60 p-4 rounded-2xl space-y-3 shadow-inner"
+                  >
+                    <span className="text-[11px] font-bold text-indigo-600 block border-b border-indigo-100/60 pb-1">
+                      أخ / أخت جديد
+                    </span>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                        الاسم الأول
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="الاسم الأول للأخ/الأخت"
+                        value={siblingName}
+                        onChange={(e) => setSiblingName(e.target.value)}
+                        className="w-full border border-indigo-200 rounded-xl px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 mb-0.5">
+                        الجنس
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 flex items-center justify-center gap-1 p-2 rounded-xl border border-indigo-100 bg-white cursor-pointer hover:bg-slate-50 transition-colors">
+                          <input
+                            type="radio"
+                            name="siblingGender"
+                            value="male"
+                            checked={siblingGender === "male"}
+                            onChange={() => setSiblingGender("male")}
+                            className="w-3 h-3 text-indigo-600"
+                          />
+                          <Mars size={12} className="text-[#607fc4]" />
+                          <span className="text-xs font-bold text-slate-700">أخ</span>
+                        </label>
+                        <label className="flex-1 flex items-center justify-center gap-1 p-2 rounded-xl border border-indigo-100 bg-white cursor-pointer hover:bg-slate-50 transition-colors">
+                          <input
+                            type="radio"
+                            name="siblingGender"
+                            value="female"
+                            checked={siblingGender === "female"}
+                            onChange={() => setSiblingGender("female")}
+                            className="w-3 h-3 text-indigo-600"
+                          />
+                          <Venus size={12} className="text-[#bb5791]" />
+                          <span className="text-xs font-bold text-slate-700">أخت</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="submit"
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[10px] py-1.5 rounded-xl transition-all shadow-md"
+                      >
+                        إضافة
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddSibling(false)}
+                        className="text-[10px] bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded-xl font-bold transition-colors"
+                      >
+                        إلغاء
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {siblings.length > 0 && (
+                  <div className="space-y-3 mt-3">
                     {siblings.map((sibling) => (
                       <div
                         key={sibling.id}

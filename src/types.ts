@@ -35,6 +35,7 @@ export interface FamilyMember {
   spouseId?: string | null;
   spouses?: SpouseInfo[];
   childrenNamesText?: string | null;
+  siblingsText?: string | null;
   maritalStatus?: 'أعزب' | 'مرتبط' | 'متزوج' | 'منفصل/ أرمل' | '( اختر )' | '';
   fatherId?: string | null;
   motherId?: string | null;

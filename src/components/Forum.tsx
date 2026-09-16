@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { UserSession, ForumTopic, ForumReply } from '../types';
+import { UserSession, ForumTopic, ForumReply, FamilyMember } from '../types';
 import { db } from '../utils/firebaseService';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { MessageSquareText, Plus, User, Clock, MessageCircle, Send, ArrowRight, CornerDownLeft, ChevronRight } from 'lucide-react';
+import AvatarImage from './AvatarImage';
 
 interface ForumProps {
   currentSession: UserSession;
+  allMembers: FamilyMember[];
 }
 
-export default function Forum({ currentSession }: ForumProps) {
+export default function Forum({ currentSession, allMembers }: ForumProps) {
   const [topics, setTopics] = useState<ForumTopic[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<ForumTopic | null>(null);
   const [replies, setReplies] = useState<ForumReply[]>([]);
@@ -38,12 +40,14 @@ export default function Forum({ currentSession }: ForumProps) {
 
   // Fetch replies when a topic is selected
   useEffect(() => {
-    if (!selectedTopic) return;
+    if (!selectedTopic) {
+      setReplies([]);
+      return;
+    }
     
-    const q = query(
-      collection(db, 'forumTopics', selectedTopic.id, 'replies'),
-      orderBy('createdAt', 'asc')
-    );
+    const topicRef = doc(db, 'forumTopics', selectedTopic.id);
+    const q = query(collection(topicRef, 'replies'), orderBy('createdAt', 'asc'));
+    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedReplies = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -52,6 +56,7 @@ export default function Forum({ currentSession }: ForumProps) {
       })) as ForumReply[];
       setReplies(fetchedReplies);
     });
+    
     return () => unsubscribe();
   }, [selectedTopic]);
 
@@ -70,12 +75,13 @@ export default function Forum({ currentSession }: ForumProps) {
         updatedAt: serverTimestamp(),
         repliesCount: 0
       });
-      setIsCreatingTopic(false);
+      
       setNewTopicTitle('');
       setNewTopicContent('');
+      setIsCreatingTopic(false);
     } catch (error) {
       console.error("Error creating topic:", error);
-      alert("حدث خطأ أثناء إضافة الموضوع");
+      alert("حدث خطأ أثناء إنشاء الموضوع");
     } finally {
       setIsSubmitting(false);
     }
@@ -114,6 +120,10 @@ export default function Forum({ currentSession }: ForumProps) {
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);
     return `${date.getDate()}-${date.getMonth() + 1}-${date.getFullYear()}`;
+  };
+
+  const getAuthorMember = (authorId: string) => {
+    return allMembers.find(m => m.id === authorId || m.email === authorId || m.registeredUserId === authorId);
   };
 
   return (
@@ -197,7 +207,6 @@ export default function Forum({ currentSession }: ForumProps) {
           </div>
           
         ) : selectedTopic ? (
-          
           <div className="flex flex-col h-full">
             {/* Topic View Header */}
             <div className="bg-slate-50 p-6 border-b border-slate-100 flex items-start gap-4">
@@ -212,9 +221,27 @@ export default function Forum({ currentSession }: ForumProps) {
                 
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-slate-500">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">
-                      {selectedTopic.authorName.charAt(0)}
-                    </div>
+                    {(() => {
+                      const authorMember = getAuthorMember(selectedTopic.authorId);
+                      if (authorMember?.avatar) {
+                        return (
+                          <div className="w-8 h-8 rounded-full overflow-hidden relative border border-indigo-200 shrink-0 bg-white shadow-sm">
+                            <AvatarImage 
+                              src={authorMember.avatar} 
+                              alt={selectedTopic.authorName}
+                              avatarX={authorMember.avatarX}
+                              avatarY={authorMember.avatarY}
+                              avatarScale={authorMember.avatarScale}
+                            />
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold shrink-0">
+                          {selectedTopic.authorName.charAt(0)}
+                        </div>
+                      );
+                    })()}
                     <span className="font-medium text-slate-700">{selectedTopic.authorName}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -252,9 +279,27 @@ export default function Forum({ currentSession }: ForumProps) {
                     <div key={reply.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs">
-                            {reply.authorName.charAt(0)}
-                          </div>
+                          {(() => {
+                            const authorMember = getAuthorMember(reply.authorId);
+                            if (authorMember?.avatar) {
+                              return (
+                                <div className="w-7 h-7 rounded-full overflow-hidden relative border border-slate-200 shrink-0 bg-white shadow-sm">
+                                  <AvatarImage 
+                                    src={authorMember.avatar} 
+                                    alt={reply.authorName}
+                                    avatarX={authorMember.avatarX}
+                                    avatarY={authorMember.avatarY}
+                                    avatarScale={authorMember.avatarScale}
+                                  />
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs shrink-0">
+                                {reply.authorName.charAt(0)}
+                              </div>
+                            );
+                          })()}
                           <span className="font-bold text-sm text-slate-700">{reply.authorName}</span>
                         </div>
                         <span className="text-xs text-slate-400 flex items-center gap-1">
@@ -301,7 +346,6 @@ export default function Forum({ currentSession }: ForumProps) {
                 </form>
               </div>
             </div>
-            
           </div>
           
         ) : (
@@ -328,7 +372,23 @@ export default function Forum({ currentSession }: ForumProps) {
                     </h3>
                     <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500">
                       <span className="flex items-center gap-1.5">
-                        <User size={14} className="text-slate-400" />
+                        {(() => {
+                          const authorMember = getAuthorMember(topic.authorId);
+                          if (authorMember?.avatar) {
+                            return (
+                              <div className="w-5 h-5 rounded-full overflow-hidden relative border border-slate-200 shrink-0 bg-white">
+                                <AvatarImage 
+                                  src={authorMember.avatar} 
+                                  alt={topic.authorName}
+                                  avatarX={authorMember.avatarX}
+                                  avatarY={authorMember.avatarY}
+                                  avatarScale={authorMember.avatarScale}
+                                />
+                              </div>
+                            );
+                          }
+                          return <User size={14} className="text-slate-400" />;
+                        })()}
                         {topic.authorName}
                       </span>
                       <span className="flex items-center gap-1.5">

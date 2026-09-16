@@ -1376,7 +1376,7 @@ export default function App() {
           )}
 
           {activeTab === 'forum' && (
-            <Forum currentSession={currentSession} />
+            <Forum currentSession={currentSession} allMembers={members} />
           )}
 
           {activeTab === 'tree' && (

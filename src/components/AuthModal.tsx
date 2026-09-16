@@ -326,54 +326,6 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose, onRe
                 </svg>
                 المتابعة بحساب Google
               </button>
-
-              <div className="relative flex py-2 items-center cursor-pointer group" onClick={() => setShowAdminLogin(!showAdminLogin)}>
-                <div className="flex-grow border-t border-slate-200 group-hover:border-slate-300"></div>
-                <span className="shrink-0 mx-4 text-slate-400 text-[10px] font-bold tracking-wider group-hover:text-slate-500 transition-colors">
-                  {showAdminLogin ? 'إخفاء الدخول المخصص' : 'هل أنت مدير؟ (تسجيل دخول مخصص)'}
-                </span>
-                <div className="flex-grow border-t border-slate-200 group-hover:border-slate-300"></div>
-              </div>
-
-              {showAdminLogin && (
-                <div className="space-y-4 pt-2 pb-2 animate-in slide-in-from-top-2 duration-200 opacity-90">
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-600">البريد الإلكتروني للإدارة</label>
-                    <div className="relative">
-                      <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                      <input
-                        type="email"
-                        placeholder="admin@example.com"
-                        value={loginEmail}
-                        onChange={e => setLoginEmail(e.target.value)}
-                        className="w-full pr-10 pl-4 py-2 border border-slate-200 rounded-xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-slate-50 focus:bg-white transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-600">كلمة المرور</label>
-                    <div className="relative">
-                      <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                      <input
-                        type="password"
-                        placeholder="••••••••"
-                        value={loginPassword}
-                        onChange={e => setLoginPassword(e.target.value)}
-                        className="w-full pr-10 pl-4 py-2 border border-slate-200 rounded-xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-slate-50 focus:bg-white transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-[#414141] hover:bg-[#333333] text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <LogIn size={16} />
-                    تسجيل دخول الإدارة
-                  </button>
-                </div>
-              )}
             </form>
           )}
         </div>

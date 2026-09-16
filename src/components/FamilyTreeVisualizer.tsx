@@ -612,8 +612,8 @@ export default function FamilyTreeVisualizer({
       const matchesMaritalStatus = selectedMaritalStatus === 'all' || m.maritalStatus === selectedMaritalStatus;
       
       const matchesMembership = selectedMembership === 'all' || 
-        (selectedMembership === 'registered' && Boolean(m.registeredUserId)) || 
-        (selectedMembership === 'unregistered' && !m.registeredUserId);
+        (selectedMembership === 'registered' && (Boolean(m.registeredUserId) || Boolean(m.email))) || 
+        (selectedMembership === 'unregistered' && !m.registeredUserId && !m.email);
 
       return matchesSearch && matchesCountry && matchesStatus && matchesSpecialization && matchesGender && matchesMaritalStatus && matchesMembership;
     });
@@ -933,7 +933,7 @@ export default function FamilyTreeVisualizer({
             )}
 
             {/* Registered Member Green Circle Indicator */}
-            {Boolean(node.registeredUserId) && (
+            {(Boolean(node.registeredUserId) || Boolean(node.email)) && (
               <div 
                 className="absolute -top-1 -left-1 bg-emerald-500 border-2 border-white text-white w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-md z-30 ring-2 ring-emerald-500/20" 
                 title="عضو منضم ومسجل في الموقع"
@@ -1386,7 +1386,7 @@ export default function FamilyTreeVisualizer({
                         </div>
                         
                         {/* Green indicator on Search Result avatar */}
-                        {Boolean(member.registeredUserId) && (
+                        {(Boolean(member.registeredUserId) || Boolean(member.email)) && (
                           <div 
                             className="absolute -top-1 -left-1 bg-emerald-500 border-2 border-white text-white w-4 h-4 rounded-full flex items-center justify-center shadow-sm z-20 ring-1 ring-emerald-500/20"
                             title="عضو منضم ومسجل في الموقع"
@@ -1507,7 +1507,7 @@ export default function FamilyTreeVisualizer({
                       )}
                     </div>
                     {/* Green Registered Member badge on details avatar */}
-                    {Boolean(selectedMember.registeredUserId) && (
+                    {(Boolean(selectedMember.registeredUserId) || Boolean(selectedMember.email)) && (
                       <div 
                         className="absolute top-0 -left-1 bg-emerald-500 border-2 border-white text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md z-30 ring-2 ring-emerald-500/20"
                         title="عضو منضم ومسجل في الموقع"
@@ -1521,7 +1521,8 @@ export default function FamilyTreeVisualizer({
                       <h3 className="text-lg font-bold text-slate-800">
                         {getFullName(selectedMember)}
                       </h3>
-                      {Boolean(selectedMember.registeredUserId) && (
+                      {/* Member Name */}
+                      {(Boolean(selectedMember.registeredUserId) || Boolean(selectedMember.email)) && (
                         <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full shadow-2xs">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                           عضو مسجل في الموقع

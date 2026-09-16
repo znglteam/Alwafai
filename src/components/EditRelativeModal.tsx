@@ -2,6 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { FamilyMember } from '../types';
 import { X } from 'lucide-react';
 
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: 150 }, (_, i) => CURRENT_YEAR - i);
+
+const ARAB_COUNTRIES = [
+  "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
+];
+
+const SPECIALIZATIONS = [
+  "طب وصحة", "هندسة وبرمجة", "تصميم وميديا", "علوم وأبحاث",
+  "تجارة وريادة أعمال", "تعليم وتدريب", "مهن حرفية", "فنون وأعمال يدوية",
+  "أمومة", "طالب جامعي", "متقاعد", "آخر"
+];
+
 interface Props {
   relative: FamilyMember;
   onClose: () => void;
@@ -11,10 +24,18 @@ interface Props {
 export default function EditRelativeModal({ relative, onClose, onSave }: Props) {
   const [name, setName] = useState(relative.name);
   const [birthYear, setBirthYear] = useState<number | ''>(relative.birthYear || '');
+  const [birthDate, setBirthDate] = useState(relative.birthDate || '');
+  
   const [isAlive, setIsAlive] = useState(relative.isAlive);
   const [deathYear, setDeathYear] = useState<number | ''>(relative.deathYear || '');
+  const [deathDate, setDeathDate] = useState(relative.deathDate || '');
+  
   const [gender, setGender] = useState(relative.gender || 'male');
   const [bio, setBio] = useState(relative.bio || '');
+  
+  const [country, setCountry] = useState(relative.country || '');
+  const [specialization, setSpecialization] = useState(relative.specialization || '');
+  const [maritalStatus, setMaritalStatus] = useState<"أعزب" | "مرتبط" | "متزوج" | "منفصل/ أرمل" | "( اختر )" | "">(relative.maritalStatus || "( اختر )");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,83 +43,165 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
       ...relative,
       name: name.trim() || relative.name,
       birthYear: birthYear !== '' ? Number(birthYear) : relative.birthYear,
+      birthDate: birthDate || undefined,
+      country: country || 'غير محدد',
+      specialization: specialization || 'طالب مرحلي',
       isAlive,
       deathYear: !isAlive && deathYear !== '' ? Number(deathYear) : null,
+      deathDate: !isAlive ? (deathDate || undefined) : undefined,
       gender: gender as 'male' | 'female',
+      maritalStatus: maritalStatus && maritalStatus !== "( اختر )" ? maritalStatus : relative.maritalStatus,
       bio: bio !== '' ? bio : (relative.bio || '')
     });
   };
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col relative" onClick={(e) => e.stopPropagation()}>
-        <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl flex flex-col relative max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between rounded-t-3xl shrink-0">
           <h3 className="text-sm font-bold text-slate-800">تعديل بيانات: {relative.name}</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
-          <div>
-            <label className="block font-bold text-slate-500 mb-1">الاسم الأول</label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
+        
+        <div className="overflow-y-auto p-6">
+          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div>
-              <label className="block font-bold text-slate-500 mb-1">سنة الميلاد</label>
+              <label className="block font-bold text-slate-500 mb-1">الاسم الأول</label>
               <input
-                type="number"
-                value={birthYear}
-                onChange={e => setBirthYear(e.target.value === '' ? '' : Number(e.target.value))}
-                placeholder="مثال: 1960"
+                type="text"
+                required
+                value={name}
+                onChange={e => setName(e.target.value)}
                 className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none"
               />
             </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-500 mb-1">تاريخ الميلاد الكامل (اختياري)</label>
+                <input
+                  type="date"
+                  value={birthDate}
+                  onChange={(e) => {
+                    setBirthDate(e.target.value);
+                    if (e.target.value) {
+                      const year = new Date(e.target.value).getFullYear();
+                      setBirthYear(year);
+                    }
+                  }}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 font-sans"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-500 mb-1">سنة الميلاد</label>
+                <input
+                  type="number"
+                  value={birthYear}
+                  onChange={e => setBirthYear(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="مثال: 1960"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-500 mb-1">بلد الإقامة</label>
+                <select
+                  value={country}
+                  onChange={e => setCountry(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                >
+                  <option value="">-- اختر البلد --</option>
+                  {ARAB_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block font-bold text-slate-500 mb-1">مجال العمل / التخصص</label>
+                <select
+                  value={specialization}
+                  onChange={e => setSpecialization(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                >
+                  <option value="">-- اختر التخصص --</option>
+                  {SPECIALIZATIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-bold text-slate-500 mb-1">الحالة الاجتماعية</label>
+                <select
+                  value={maritalStatus}
+                  onChange={e => setMaritalStatus(e.target.value as any)}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                >
+                  <option value="( اختر )">( اختر )</option>
+                  <option value="أعزب">أعزب</option>
+                  <option value="مرتبط">مرتبط</option>
+                  <option value="متزوج">متزوج</option>
+                  <option value="منفصل/ أرمل">منفصل/ أرمل</option>
+                </select>
+              </div>
+              <div>
+                <label className="block font-bold text-slate-500 mb-1">الجنس</label>
+                <select value={gender} onChange={e => setGender(e.target.value as "male" | "female")} className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-600 outline-none">
+                  <option value="male">ذكر</option>
+                  <option value="female">أنثى</option>
+                </select>
+              </div>
+            </div>
+
             <div>
-              <label className="block font-bold text-slate-500 mb-1">الجنس</label>
-              <select value={gender} onChange={e => setGender(e.target.value as "male" | "female")} className="w-full border border-slate-200 rounded-xl px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-600 outline-none">
-                <option value="male">ذكر</option>
-                <option value="female">أنثى</option>
-              </select>
+              <label className="block font-bold text-slate-500 mb-1">الحالة (على قيد الحياة؟)</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="relativeIsAlive" checked={isAlive} onChange={() => setIsAlive(true)} className="accent-indigo-600" />
+                  <span className="font-semibold">حي يرزق</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="relativeIsAlive" checked={!isAlive} onChange={() => setIsAlive(false)} className="accent-indigo-600" />
+                  <span className="font-semibold">متوفى</span>
+                </label>
+              </div>
             </div>
-          </div>
+            
+            {!isAlive && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-500 mb-1">تاريخ الوفاة (اختياري)</label>
+                  <input
+                    type="date"
+                    value={deathDate}
+                    onChange={(e) => {
+                      setDeathDate(e.target.value);
+                      if (e.target.value) {
+                        const year = new Date(e.target.value).getFullYear();
+                        setDeathYear(year);
+                      }
+                    }}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 font-sans"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-500 mb-1">سنة الوفاة</label>
+                  <input type="number" value={deathYear} onChange={e => setDeathYear(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none" />
+                </div>
+              </div>
+            )}
 
-          <div>
-            <label className="block font-bold text-slate-500 mb-1">الحالة (على قيد الحياة؟)</label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="relativeIsAlive" checked={isAlive} onChange={() => setIsAlive(true)} className="accent-indigo-600" />
-                <span className="font-semibold">حي يرزق</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="relativeIsAlive" checked={!isAlive} onChange={() => setIsAlive(false)} className="accent-indigo-600" />
-                <span className="font-semibold">متوفى</span>
-              </label>
-            </div>
-          </div>
-          
-          {!isAlive && (
             <div>
-              <label className="block font-bold text-slate-500 mb-1">سنة الوفاة</label>
-              <input type="number" value={deathYear} onChange={e => setDeathYear(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none" />
+              <label className="block font-bold text-slate-500 mb-1">نبذة شخصية</label>
+              <textarea rows={3} value={bio} onChange={e => setBio(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none" />
             </div>
-          )}
 
-          <div>
-            <label className="block font-bold text-slate-500 mb-1">نبذة شخصية</label>
-            <textarea rows={3} value={bio} onChange={e => setBio(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none" />
-          </div>
-
-          <div className="flex gap-2 pt-2 border-t border-slate-100">
-            <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl">حفظ</button>
-            <button type="button" onClick={onClose} className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2 rounded-xl">إلغاء</button>
-          </div>
-        </form>
+            <div className="flex gap-2 pt-2 border-t border-slate-100">
+              <button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl transition-all shadow-md">حفظ التعديلات</button>
+              <button type="button" onClick={onClose} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2 rounded-xl transition-colors">إلغاء</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

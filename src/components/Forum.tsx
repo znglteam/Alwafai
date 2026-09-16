@@ -4,6 +4,7 @@ import { db } from '../utils/firebaseService';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { MessageSquareText, Plus, User, Clock, MessageCircle, Send, ArrowRight, CornerDownLeft, ChevronRight } from 'lucide-react';
 import AvatarImage from './AvatarImage';
+import { GenderUserIcon } from './GenderIcon';
 
 interface ForumProps {
   currentSession: UserSession;
@@ -237,8 +238,8 @@ export default function Forum({ currentSession, allMembers }: ForumProps) {
                         );
                       }
                       return (
-                        <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold shrink-0">
-                          {selectedTopic.authorName.charAt(0)}
+                        <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+                          <GenderUserIcon gender={authorMember?.gender || 'male'} size={20} isAlive={true} />
                         </div>
                       );
                     })()}
@@ -295,8 +296,8 @@ export default function Forum({ currentSession, allMembers }: ForumProps) {
                               );
                             }
                             return (
-                              <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs shrink-0">
-                                {reply.authorName.charAt(0)}
+                              <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+                                <GenderUserIcon gender={authorMember?.gender || 'male'} size={16} isAlive={true} />
                               </div>
                             );
                           })()}
@@ -387,7 +388,11 @@ export default function Forum({ currentSession, allMembers }: ForumProps) {
                               </div>
                             );
                           }
-                          return <User size={14} className="text-slate-400" />;
+                          return (
+                            <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0">
+                              <GenderUserIcon gender={authorMember?.gender || 'male'} size={12} isAlive={true} />
+                            </div>
+                          );
                         })()}
                         {topic.authorName}
                       </span>

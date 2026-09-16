@@ -1183,9 +1183,9 @@ export default function AdminPanel({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">البريد الإلكتروني للوصول</label>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">اسم المستخدم أو الإيميل</label>
                     <input
-                      type="email" placeholder="example@gmail.com"
+                      type="text" placeholder="example@gmail.com"
                       value={newMemEmail} onChange={e => setNewMemEmail(e.target.value)}
                       className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white text-left dir-ltr"
                       title="إذا أدخلت إيميله، سيتمكن من الدخول مباشرة لحسابه"
@@ -1424,9 +1424,9 @@ export default function AdminPanel({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 mb-1">البريد الإلكتروني للوصول</label>
+                    <label className="block text-xs font-bold text-slate-500 mb-1">اسم المستخدم أو الإيميل</label>
                     <input
-                      type="email" placeholder="example@gmail.com"
+                      type="text" placeholder="example@gmail.com"
                       value={editForm.email || ''}
                       onChange={e => setEditForm({ ...editForm, email: e.target.value })}
                       className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white text-left dir-ltr"
@@ -2567,7 +2567,7 @@ export default function AdminPanel({
                     البريد الإلكتروني للعضو (اختياري لربط الإشعار المباشر بحسابه):
                   </label>
                   <input
-                    type="email"
+                    type="text"
                     value={directMsgCustomEmail}
                     onChange={e => setDirectMsgCustomEmail(e.target.value)}
                     placeholder="name@example.com"

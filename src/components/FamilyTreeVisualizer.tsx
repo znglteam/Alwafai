@@ -1869,8 +1869,8 @@ export default function FamilyTreeVisualizer({
                           <input type="text" required value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white" />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-slate-500 mb-0.5">البريد الإلكتروني للوصول (للمدير فقط)</label>
-                          <input type="email" value={editForm.email || ''} onChange={e => setEditForm({...editForm, email: e.target.value})} placeholder="example@gmail.com" className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white text-left dir-ltr" />
+                          <label className="block text-[10px] font-bold text-slate-500 mb-0.5">اسم المستخدم أو الإيميل (للدخول)</label>
+                          <input type="text" value={editForm.email || ''} onChange={e => setEditForm({...editForm, email: e.target.value})} placeholder="example@gmail.com" className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white text-left dir-ltr" />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
@@ -2249,9 +2249,9 @@ export default function FamilyTreeVisualizer({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">البريد الإلكتروني للوصول</label>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">اسم المستخدم أو الإيميل</label>
                   <input
-                    type="email"
+                    type="text"
                     placeholder="example@gmail.com"
                     value={newMemEmail}
                     onChange={e => setNewMemEmail(e.target.value)}

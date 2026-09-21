@@ -9,6 +9,9 @@ import ChildrenListEditor from './ChildrenListEditor';
 import { compressImage } from '../utils/imageUtils';
 import jsPDF from 'jspdf';
 import { toJpeg } from 'html-to-image';
+import { normalizeArabic } from '../utils/memberMatching';
+
+type SearchMatchType = 'first' | 'father' | 'grandfather' | 'other' | 'none';
 
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -569,16 +572,16 @@ export default function FamilyTreeVisualizer({
   }, [members, isSortedByAge]);
 
   // Helper to resolve lineage (Father and Grandfather) directly from tree hierarchy if connected
-  const getResolvedLineage = (m: FamilyMember) => {
+  const getResolvedLineage = useCallback((m: FamilyMember) => {
     const father = m.fatherId ? members.find(f => f.id === m.fatherId) : null;
     const grandfather = father?.fatherId ? members.find(g => g.id === father.fatherId) : null;
     const resolvedFatherName = (father?.name || m.fatherName || '').trim();
     const resolvedGrandfatherName = ((grandfather?.name || father?.fatherName || m.grandfatherName) || '').trim();
     return { fatherName: resolvedFatherName, grandfatherName: resolvedGrandfatherName };
-  };
+  }, [members]);
 
   // Helper to build full Arabic patrilineal name
-  const getFullName = (m: FamilyMember) => {
+  const getFullName = useCallback((m: FamilyMember) => {
     const { fatherName: fName, grandfatherName: gName } = getResolvedLineage(m);
     const connector = isMemberFemale(m) ? 'بنت' : 'بن';
     return [
@@ -586,20 +589,83 @@ export default function FamilyTreeVisualizer({
       fName ? `${connector} ${fName}` : '',
       gName ? `بن ${gName}` : ''
     ].filter(Boolean).join(' ');
-  };
+  }, [getResolvedLineage]);
 
-  // Filtered directory members
+  // Helper to determine match type and rank score according to user intent:
+  // 1. Matches first name (الاسم الأول) -> Highest priority (scores 1 - 5)
+  // 2. Matches father's name (اسم الأب) -> Second priority (scores 10 - 14)
+  // 3. Matches grandfather's name (اسم الجد) -> Third priority (scores 20 - 23)
+  // 4. Other matches (lineage beyond grandfather, specialization, bio) -> Fourth priority (scores 30 - 99)
+  const getMemberSearchMatch = useCallback((m: FamilyMember, q: string): { score: number; type: SearchMatchType } => {
+    const qNorm = normalizeArabic(q);
+    if (!qNorm) return { score: 0, type: 'none' };
+
+    const { fatherName: fName, grandfatherName: gName } = getResolvedLineage(m);
+    const nameNorm = normalizeArabic(m.name || '');
+    const fNameNorm = normalizeArabic(fName || '');
+    const gNameNorm = normalizeArabic(gName || '');
+    const fullNameNorm = normalizeArabic(getFullName(m));
+    const cleanLineageNorm = normalizeArabic(`${m.name || ''} ${fName || ''} ${gName || ''}`);
+
+    // Tier 1: Matches First Name (المطابق للاسم الأول)
+    if (nameNorm === qNorm) return { score: 1, type: 'first' };
+    const nameWords = nameNorm.split(/\s+/).filter(Boolean);
+    if (nameWords.includes(qNorm)) return { score: 2, type: 'first' };
+    if (nameNorm.startsWith(qNorm)) return { score: 3, type: 'first' };
+    if (nameNorm.includes(qNorm)) return { score: 4, type: 'first' };
+    if (fullNameNorm.startsWith(qNorm) || cleanLineageNorm.startsWith(qNorm)) return { score: 5, type: 'first' };
+
+    // Tier 2: Matches Father's Name (المطابق لاسم الأب)
+    if (fNameNorm === qNorm) return { score: 10, type: 'father' };
+    const fWords = fNameNorm.split(/\s+/).filter(Boolean);
+    if (fWords.includes(qNorm)) return { score: 11, type: 'father' };
+    if (fNameNorm.startsWith(qNorm)) return { score: 12, type: 'father' };
+    if (fNameNorm.includes(qNorm)) return { score: 13, type: 'father' };
+    const fatherLineage = normalizeArabic(`${fName || ''} ${gName || ''}`);
+    if (fatherLineage.startsWith(qNorm)) return { score: 14, type: 'father' };
+
+    // Tier 3: Matches Grandfather's Name (المطابق لاسم الجد)
+    if (gNameNorm === qNorm) return { score: 20, type: 'grandfather' };
+    const gWords = gNameNorm.split(/\s+/).filter(Boolean);
+    if (gWords.includes(qNorm)) return { score: 21, type: 'grandfather' };
+    if (gNameNorm.startsWith(qNorm)) return { score: 22, type: 'grandfather' };
+    if (gNameNorm.includes(qNorm)) return { score: 23, type: 'grandfather' };
+
+    // Tier 4: Other matches (Lineage beyond grandfather, specialization, bio)
+    if (fullNameNorm.includes(qNorm) || cleanLineageNorm.includes(qNorm)) return { score: 30, type: 'other' };
+    const specNorm = normalizeArabic(m.specialization || '');
+    if (specNorm.includes(qNorm)) return { score: 40, type: 'other' };
+    const bioNorm = normalizeArabic(m.bio || '');
+    if (bioNorm.includes(qNorm)) return { score: 50, type: 'other' };
+
+    return { score: 99, type: 'other' };
+  }, [getResolvedLineage, getFullName]);
+
+  // Filtered directory members, ranked according to user request:
+  // First Name match -> Father's Name match -> Grandfather's Name match -> other
   const filteredMembers = useMemo(() => {
-    return members.filter(m => {
-      const fullName = getFullName(m).toLowerCase();
-      
-      const matchesSearch = fullName.includes(searchQuery.toLowerCase()) ||
-        (m.name && m.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (m.fatherName && m.fatherName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (m.grandfatherName && m.grandfatherName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (m.specialization && m.specialization.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (m.bio && m.bio.toLowerCase().includes(searchQuery.toLowerCase()));
-      
+    const qNorm = normalizeArabic(searchQuery);
+
+    const filtered = members.filter(m => {
+      const { fatherName: fName, grandfatherName: gName } = getResolvedLineage(m);
+      const fullName = getFullName(m);
+      const fullNameNorm = normalizeArabic(fullName);
+      const nameNorm = normalizeArabic(m.name || '');
+      const fNameNorm = normalizeArabic(fName || '');
+      const gNameNorm = normalizeArabic(gName || '');
+      const cleanLineageNorm = normalizeArabic(`${m.name || ''} ${fName || ''} ${gName || ''}`);
+      const specNorm = normalizeArabic(m.specialization || '');
+      const bioNorm = normalizeArabic(m.bio || '');
+
+      const matchesSearch = !qNorm || 
+        nameNorm.includes(qNorm) ||
+        fNameNorm.includes(qNorm) ||
+        gNameNorm.includes(qNorm) ||
+        fullNameNorm.includes(qNorm) ||
+        cleanLineageNorm.includes(qNorm) ||
+        specNorm.includes(qNorm) ||
+        bioNorm.includes(qNorm);
+
       const matchesCountry = selectedCountry === 'all' || m.country === selectedCountry;
       const matchesStatus = selectedStatus === 'all' || 
         (selectedStatus === 'alive' && m.isAlive) || 
@@ -620,7 +686,23 @@ export default function FamilyTreeVisualizer({
 
       return matchesSearch && matchesCountry && matchesStatus && matchesSpecialization && matchesGender && matchesMaritalStatus && matchesMembership;
     });
-  }, [members, searchQuery, selectedCountry, selectedStatus, selectedSpecialization, selectedGender, selectedMaritalStatus, selectedMembership]);
+
+    if (!qNorm) {
+      return filtered;
+    }
+
+    return [...filtered].sort((a, b) => {
+      const matchA = getMemberSearchMatch(a, searchQuery);
+      const matchB = getMemberSearchMatch(b, searchQuery);
+
+      if (matchA.score !== matchB.score) {
+        return matchA.score - matchB.score;
+      }
+
+      // Tie-breaker: alphabetical order in Arabic
+      return (a.name || '').localeCompare(b.name || '', 'ar') || getFullName(a).localeCompare(getFullName(b), 'ar');
+    });
+  }, [members, searchQuery, selectedCountry, selectedStatus, selectedSpecialization, selectedGender, selectedMaritalStatus, selectedMembership, getResolvedLineage, getFullName, getMemberSearchMatch]);
 
   const toggleBranch = (id: string, e?: React.MouseEvent) => {
     if (e) {
@@ -1165,8 +1247,18 @@ export default function FamilyTreeVisualizer({
                 placeholder="ابحث بالاسم بالكامل، التخصص، أو السيرة..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full pr-10 pl-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition-all"
+                className="w-full pr-10 pl-10 py-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:bg-white transition-all"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-200/60 transition-colors cursor-pointer"
+                  title="مسح نص البحث"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
 
             {/* Directory Search Filters */}
@@ -1404,6 +1496,31 @@ export default function FamilyTreeVisualizer({
                           <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">
                             {getFullName(member)}
                           </h4>
+                          {searchQuery.trim() && (() => {
+                            const match = getMemberSearchMatch(member, searchQuery);
+                            if (match.type === 'first') {
+                              return (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/70 shrink-0 shadow-xs">
+                                  مطابق للاسم الأول
+                                </span>
+                              );
+                            }
+                            if (match.type === 'father') {
+                              return (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70 shrink-0 shadow-xs">
+                                  مطابق لاسم الأب
+                                </span>
+                              );
+                            }
+                            if (match.type === 'grandfather') {
+                              return (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200/70 shrink-0 shadow-xs">
+                                  مطابق لاسم الجد
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
                         </div>
                         
                         <div className="flex items-end justify-between w-full mt-0.5">

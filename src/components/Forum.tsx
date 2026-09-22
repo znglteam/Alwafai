@@ -247,7 +247,7 @@ export default function Forum({ currentSession, allMembers }: ForumProps) {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock size={16} />
-                    <span>{formatDate(selectedTopic.createdAt)}</span>
+                    <span dir="ltr">{formatDate(selectedTopic.createdAt)}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <MessageCircle size={16} />
@@ -305,7 +305,7 @@ export default function Forum({ currentSession, allMembers }: ForumProps) {
                         </div>
                         <span className="text-xs text-slate-400 flex items-center gap-1">
                           <Clock size={12} />
-                          {formatDate(reply.createdAt)}
+                          <span dir="ltr">{formatDate(reply.createdAt)}</span>
                         </span>
                       </div>
                       <div className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap pr-10">
@@ -398,7 +398,7 @@ export default function Forum({ currentSession, allMembers }: ForumProps) {
                       </span>
                       <span className="flex items-center gap-1.5">
                         <Clock size={14} className="text-slate-400" />
-                        {formatDate(topic.createdAt)}
+                        <span dir="ltr">{formatDate(topic.createdAt)}</span>
                       </span>
                     </div>
                   </div>

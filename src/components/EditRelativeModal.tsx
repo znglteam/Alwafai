@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FamilyMember } from '../types';
 import { X } from 'lucide-react';
 
-const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_YEAR = 2025;
 const YEARS = Array.from({ length: 150 }, (_, i) => CURRENT_YEAR - i);
 
 const ARAB_COUNTRIES = [
@@ -81,6 +81,7 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
                 <label className="block font-bold text-slate-500 mb-1">تاريخ الميلاد الكامل (اختياري)</label>
                 <input
                   type="date"
+                  max="2025-12-31"
                   value={birthDate}
                   onChange={(e) => {
                     setBirthDate(e.target.value);
@@ -90,16 +91,20 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
                     }
                   }}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 font-sans"
+                  dir="ltr"
                 />
               </div>
               <div>
                 <label className="block font-bold text-slate-500 mb-1">سنة الميلاد</label>
                 <input
                   type="number"
+                  min={1800}
+                  max={2025}
                   value={birthYear}
                   onChange={e => setBirthYear(e.target.value === '' ? '' : Number(e.target.value))}
                   placeholder="مثال: 1960"
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none text-left"
+                  dir="ltr"
                 />
               </div>
             </div>
@@ -173,6 +178,7 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
                   <label className="block font-bold text-slate-500 mb-1">تاريخ الوفاة (اختياري)</label>
                   <input
                     type="date"
+                    max="2025-12-31"
                     value={deathDate}
                     onChange={(e) => {
                       setDeathDate(e.target.value);
@@ -182,11 +188,20 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
                       }
                     }}
                     className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 font-sans"
+                    dir="ltr"
                   />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-500 mb-1">سنة الوفاة</label>
-                  <input type="number" value={deathYear} onChange={e => setDeathYear(e.target.value === '' ? '' : Number(e.target.value))} className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none" />
+                  <input
+                    type="number"
+                    min={1800}
+                    max={2025}
+                    value={deathYear}
+                    onChange={e => setDeathYear(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none text-left"
+                    dir="ltr"
+                  />
                 </div>
               </div>
             )}

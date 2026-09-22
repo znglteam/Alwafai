@@ -11,10 +11,7 @@ import jsPDF from 'jspdf';
 import { toJpeg } from 'html-to-image';
 import { normalizeArabic } from '../utils/memberMatching';
 
-type SearchMatchType = 'first' | 'father' | 'grandfather' | 'other' | 'none';
-
-
-const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_YEAR = 2025;
 const YEARS = Array.from({ length: 150 }, (_, i) => CURRENT_YEAR - i);
 
 const ARAB_COUNTRIES = [
@@ -591,14 +588,14 @@ export default function FamilyTreeVisualizer({
     ].filter(Boolean).join(' ');
   }, [getResolvedLineage]);
 
-  // Helper to determine match type and rank score according to user intent:
+// Helper to determine match rank score according to user intent:
   // 1. Matches first name (الاسم الأول) -> Highest priority (scores 1 - 5)
   // 2. Matches father's name (اسم الأب) -> Second priority (scores 10 - 14)
   // 3. Matches grandfather's name (اسم الجد) -> Third priority (scores 20 - 23)
   // 4. Other matches (lineage beyond grandfather, specialization, bio) -> Fourth priority (scores 30 - 99)
-  const getMemberSearchMatch = useCallback((m: FamilyMember, q: string): { score: number; type: SearchMatchType } => {
+  const getMemberSearchMatch = useCallback((m: FamilyMember, q: string): number => {
     const qNorm = normalizeArabic(q);
-    if (!qNorm) return { score: 0, type: 'none' };
+    if (!qNorm) return 0;
 
     const { fatherName: fName, grandfatherName: gName } = getResolvedLineage(m);
     const nameNorm = normalizeArabic(m.name || '');
@@ -608,37 +605,37 @@ export default function FamilyTreeVisualizer({
     const cleanLineageNorm = normalizeArabic(`${m.name || ''} ${fName || ''} ${gName || ''}`);
 
     // Tier 1: Matches First Name (المطابق للاسم الأول)
-    if (nameNorm === qNorm) return { score: 1, type: 'first' };
+    if (nameNorm === qNorm) return 1;
     const nameWords = nameNorm.split(/\s+/).filter(Boolean);
-    if (nameWords.includes(qNorm)) return { score: 2, type: 'first' };
-    if (nameNorm.startsWith(qNorm)) return { score: 3, type: 'first' };
-    if (nameNorm.includes(qNorm)) return { score: 4, type: 'first' };
-    if (fullNameNorm.startsWith(qNorm) || cleanLineageNorm.startsWith(qNorm)) return { score: 5, type: 'first' };
+    if (nameWords.includes(qNorm)) return 2;
+    if (nameNorm.startsWith(qNorm)) return 3;
+    if (nameNorm.includes(qNorm)) return 4;
+    if (fullNameNorm.startsWith(qNorm) || cleanLineageNorm.startsWith(qNorm)) return 5;
 
     // Tier 2: Matches Father's Name (المطابق لاسم الأب)
-    if (fNameNorm === qNorm) return { score: 10, type: 'father' };
+    if (fNameNorm === qNorm) return 10;
     const fWords = fNameNorm.split(/\s+/).filter(Boolean);
-    if (fWords.includes(qNorm)) return { score: 11, type: 'father' };
-    if (fNameNorm.startsWith(qNorm)) return { score: 12, type: 'father' };
-    if (fNameNorm.includes(qNorm)) return { score: 13, type: 'father' };
+    if (fWords.includes(qNorm)) return 11;
+    if (fNameNorm.startsWith(qNorm)) return 12;
+    if (fNameNorm.includes(qNorm)) return 13;
     const fatherLineage = normalizeArabic(`${fName || ''} ${gName || ''}`);
-    if (fatherLineage.startsWith(qNorm)) return { score: 14, type: 'father' };
+    if (fatherLineage.startsWith(qNorm)) return 14;
 
     // Tier 3: Matches Grandfather's Name (المطابق لاسم الجد)
-    if (gNameNorm === qNorm) return { score: 20, type: 'grandfather' };
+    if (gNameNorm === qNorm) return 20;
     const gWords = gNameNorm.split(/\s+/).filter(Boolean);
-    if (gWords.includes(qNorm)) return { score: 21, type: 'grandfather' };
-    if (gNameNorm.startsWith(qNorm)) return { score: 22, type: 'grandfather' };
-    if (gNameNorm.includes(qNorm)) return { score: 23, type: 'grandfather' };
+    if (gWords.includes(qNorm)) return 21;
+    if (gNameNorm.startsWith(qNorm)) return 22;
+    if (gNameNorm.includes(qNorm)) return 23;
 
     // Tier 4: Other matches (Lineage beyond grandfather, specialization, bio)
-    if (fullNameNorm.includes(qNorm) || cleanLineageNorm.includes(qNorm)) return { score: 30, type: 'other' };
+    if (fullNameNorm.includes(qNorm) || cleanLineageNorm.includes(qNorm)) return 30;
     const specNorm = normalizeArabic(m.specialization || '');
-    if (specNorm.includes(qNorm)) return { score: 40, type: 'other' };
+    if (specNorm.includes(qNorm)) return 40;
     const bioNorm = normalizeArabic(m.bio || '');
-    if (bioNorm.includes(qNorm)) return { score: 50, type: 'other' };
+    if (bioNorm.includes(qNorm)) return 50;
 
-    return { score: 99, type: 'other' };
+    return 99;
   }, [getResolvedLineage, getFullName]);
 
   // Filtered directory members, ranked according to user request:
@@ -692,11 +689,11 @@ export default function FamilyTreeVisualizer({
     }
 
     return [...filtered].sort((a, b) => {
-      const matchA = getMemberSearchMatch(a, searchQuery);
-      const matchB = getMemberSearchMatch(b, searchQuery);
+      const scoreA = getMemberSearchMatch(a, searchQuery);
+      const scoreB = getMemberSearchMatch(b, searchQuery);
 
-      if (matchA.score !== matchB.score) {
-        return matchA.score - matchB.score;
+      if (scoreA !== scoreB) {
+        return scoreA - scoreB;
       }
 
       // Tie-breaker: alphabetical order in Arabic
@@ -884,7 +881,7 @@ export default function FamilyTreeVisualizer({
     const day = String(dateObj.getDate()).padStart(2, '0');
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const year = dateObj.getFullYear();
-    return `${day} / ${month} / ${year}م`;
+    return `${day} / ${month} / ${year} م`;
   };
 
 
@@ -1496,31 +1493,6 @@ export default function FamilyTreeVisualizer({
                           <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors">
                             {getFullName(member)}
                           </h4>
-                          {searchQuery.trim() && (() => {
-                            const match = getMemberSearchMatch(member, searchQuery);
-                            if (match.type === 'first') {
-                              return (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/70 shrink-0 shadow-xs">
-                                  مطابق للاسم الأول
-                                </span>
-                              );
-                            }
-                            if (match.type === 'father') {
-                              return (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70 shrink-0 shadow-xs">
-                                  مطابق لاسم الأب
-                                </span>
-                              );
-                            }
-                            if (match.type === 'grandfather') {
-                              return (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200/70 shrink-0 shadow-xs">
-                                  مطابق لاسم الجد
-                                </span>
-                              );
-                            }
-                            return null;
-                          })()}
                         </div>
                         
                         <div className="flex items-end justify-between w-full mt-0.5">
@@ -1659,8 +1631,14 @@ export default function FamilyTreeVisualizer({
                     <User className="text-indigo-600 shrink-0" size={16} />
                     <div className="space-y-0.5">
                       <span className="block text-[10px] text-slate-400 font-bold">تاريخ الميلاد</span>
-                      <span className="font-semibold text-slate-700">
-                        {selectedMember.birthDate ? formatDateArabic(selectedMember.birthDate) : (selectedMember.birthYear ? `${selectedMember.birthYear}م` : '-')}
+                      <span className="font-semibold text-slate-700 inline-flex items-center gap-1" dir="ltr">
+                        {selectedMember.birthDate ? (
+                          <span>{formatDateArabic(selectedMember.birthDate)}</span>
+                        ) : selectedMember.birthYear ? (
+                          <span>{selectedMember.birthYear} م</span>
+                        ) : (
+                          <span>-</span>
+                        )}
                       </span>
                     </div>
                   </div>
@@ -1671,8 +1649,14 @@ export default function FamilyTreeVisualizer({
                       <User className="text-slate-500 shrink-0" size={16} />
                       <div className="space-y-0.5">
                         <span className="block text-[10px] text-slate-400 font-bold">تاريخ الوفاة</span>
-                        <span className="font-semibold text-slate-700">
-                          {selectedMember.deathDate ? formatDateArabic(selectedMember.deathDate) : (selectedMember.deathYear ? `${selectedMember.deathYear}م` : '-')}
+                        <span className="font-semibold text-slate-700 inline-flex items-center gap-1" dir="ltr">
+                          {selectedMember.deathDate ? (
+                            <span>{formatDateArabic(selectedMember.deathDate)}</span>
+                          ) : selectedMember.deathYear ? (
+                            <span>{selectedMember.deathYear} م</span>
+                          ) : (
+                            <span>-</span>
+                          )}
                         </span>
                       </div>
                     </div>
@@ -2031,6 +2015,7 @@ export default function FamilyTreeVisualizer({
                             <label className="block text-[10px] font-bold text-slate-500 mb-0.5">تاريخ الميلاد</label>
                             <input
                               type="date"
+                              max="2025-12-31"
                               value={editForm.birthDate || ''}
                               onChange={e => {
                                 const val = e.target.value;
@@ -2042,6 +2027,7 @@ export default function FamilyTreeVisualizer({
                                 }
                               }}
                               className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white cursor-pointer"
+                              dir="ltr"
                             />
                           </div>
                           {!editForm.isAlive && (
@@ -2049,6 +2035,7 @@ export default function FamilyTreeVisualizer({
                               <label className="block text-[10px] font-bold text-slate-500 mb-0.5">تاريخ الوفاة</label>
                               <input
                                 type="date"
+                                max="2025-12-31"
                                 value={editForm.deathDate || ''}
                                 onChange={e => {
                                   const val = e.target.value;
@@ -2060,6 +2047,7 @@ export default function FamilyTreeVisualizer({
                                   }
                                 }}
                                 className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs bg-white cursor-pointer"
+                                dir="ltr"
                               />
                             </div>
                           )}
@@ -2447,6 +2435,7 @@ export default function FamilyTreeVisualizer({
                   <label className="block text-xs font-bold text-slate-600 mb-1">تاريخ الميلاد</label>
                   <input
                     type="date"
+                    max="2025-12-31"
                     value={newMemBirthDate}
                     onChange={e => {
                       const val = e.target.value;
@@ -2458,6 +2447,7 @@ export default function FamilyTreeVisualizer({
                       }
                     }}
                     className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
+                    dir="ltr"
                   />
                 </div>
                 {/* Marital Status */}
@@ -2549,6 +2539,7 @@ export default function FamilyTreeVisualizer({
                   <label className="block text-xs font-bold text-slate-600 mb-1">تاريخ الوفاة</label>
                   <input
                     type="date"
+                    max="2025-12-31"
                     value={newMemDeathDate}
                     onChange={e => {
                       const val = e.target.value;
@@ -2560,6 +2551,7 @@ export default function FamilyTreeVisualizer({
                       }
                     }}
                     className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
+                    dir="ltr"
                   />
                 </div>
               )}

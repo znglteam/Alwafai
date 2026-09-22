@@ -890,7 +890,7 @@ export default function AdminPanel({
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-slate-600 bg-white p-3.5 rounded-xl border border-slate-100">
                       <div>
                         <span className="block text-[10px] text-slate-400 font-bold mb-0.5">سنة الميلاد</span>
-                        <span className="font-semibold text-slate-800">{req.birthYear ? `${req.birthYear}م` : "-"}</span>
+                        <span className="font-semibold text-slate-800">{req.birthYear ? <span dir="ltr">{req.birthYear} م</span> : "-"}</span>
                       </div>
                       <div>
                         <span className="block text-[10px] text-slate-400 font-bold mb-0.5">بلد الإقامة</span>
@@ -1049,9 +1049,9 @@ export default function AdminPanel({
                             >
                               <option value="">-- اختر الفرد المسجل في الشجرة لربط حسابه --</option>
                               {candidateExistingMembersInfo.map(info => (
-                                <option key={info.member.id} value={info.member.id}>
-                                  {info.member.name} {info.resolvedFather ? `بن ${info.resolvedFather}` : ''} {info.resolvedGrandfather ? `بن ${info.resolvedGrandfather}` : ''} {info.member.birthYear ? `(مواليد ${info.member.birthYear}م)` : ''} {info.member.registeredUserId ? '✓ مربوط مسبقاً' : ''} {info.score > 70 ? `(⭐ تقارب عالي)` : ''}
-                                </option>
+                                  <option key={info.member.id} value={info.member.id}>
+                                    {info.member.name} {info.resolvedFather ? `بن ${info.resolvedFather}` : ''} {info.resolvedGrandfather ? `بن ${info.resolvedGrandfather}` : ''} {info.member.birthYear ? `(مواليد ${info.member.birthYear})` : ''} {info.member.registeredUserId ? '✓ مربوط مسبقاً' : ''} {info.score > 70 ? `(⭐ تقارب عالي)` : ''}
+                                  </option>
                               ))}
                             </select>
 
@@ -1112,7 +1112,7 @@ export default function AdminPanel({
                               <option value="">-- تركه كفرد مستقل بدون والد (أو تعيينه لاحقاً) --</option>
                               {candidateFathers.map(m => (
                                 <option key={m.id} value={m.id}>
-                                  {m.name} {m.fatherName ? `بن ${m.fatherName}` : ''} {m.grandfatherName ? `بن ${m.grandfatherName}` : ''} {m.birthYear ? `(مواليد ${m.birthYear}م)` : ''}
+                                  {m.name} {m.fatherName ? `بن ${m.fatherName}` : ''} {m.grandfatherName ? `بن ${m.grandfatherName}` : ''} {m.birthYear ? `(مواليد ${m.birthYear})` : ''}
                                 </option>
                               ))}
                             </select>
@@ -1215,9 +1215,12 @@ export default function AdminPanel({
                     <label className="block text-xs font-bold text-slate-500 mb-1">سنة الميلاد</label>
                     <input
                       type="number"
+                      min={1800}
+                      max={2025}
                       value={newMemBirth} onChange={e => setNewMemBirth(e.target.value === '' ? '' : Number(e.target.value))}
                       placeholder="سنة الميلاد"
-                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white"
+                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white text-left"
+                      dir="ltr"
                     />
                   </div>
                   {newMemIsAlive && (
@@ -1376,7 +1379,7 @@ export default function AdminPanel({
                       <option value="">-- تركه كعميد مستقل في قمة الشجرة (بدون والد) --</option>
                       {members.filter(m => !isMemberFemale(m)).map(m => (
                         <option key={m.id} value={m.id}>
-                          {m.name} بن {m.fatherName} بن {m.grandfatherName} (ولد عام {m.birthYear ? `${m.birthYear}م` : "-"})
+                          {m.name} بن {m.fatherName} بن {m.grandfatherName} (ولد عام {m.birthYear ? `${m.birthYear}` : "-"})
                         </option>
                       ))}
                     </select>
@@ -1477,10 +1480,13 @@ export default function AdminPanel({
                     <label className="block text-xs font-bold text-slate-500 mb-1">سنة الميلاد</label>
                     <input
                       type="number"
+                      min={1800}
+                      max={2025}
                       value={editForm.birthYear === 0 ? '' : editForm.birthYear}
                       onChange={e => setEditForm({ ...editForm, birthYear: e.target.value === '' ? 0 : Number(e.target.value) })}
                       placeholder="سنة الميلاد"
-                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white"
+                      className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white text-left"
+                      dir="ltr"
                     />
                   </div>
                   {editForm.isAlive && (
@@ -1658,7 +1664,7 @@ export default function AdminPanel({
                         {m.name} بن {m.fatherName} بن {m.grandfatherName}
                       </h4>
                       <p className="text-xs text-slate-400">
-                        سنة الميلاد: {m.birthYear ? `${m.birthYear}م` : "-"} | الإقامة: {m.country} | التخصص: {m.specialization}
+                        سنة الميلاد: {m.birthYear ? <span dir="ltr">{m.birthYear} م</span> : "-"} | الإقامة: {m.country} | التخصص: {m.specialization}
                       </p>
                     </div>
                   </div>

@@ -32,7 +32,7 @@ import { PWAInstallButton } from "./PWAInstallButton";
 import { compressImage } from "../utils/imageUtils";
 
 
-const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_YEAR = 2025;
 const YEARS = Array.from({ length: 150 }, (_, i) => CURRENT_YEAR - i);
 
 const ARAB_COUNTRIES = [
@@ -467,6 +467,7 @@ export default function MemberProfileEdit({
               </label>
               <input
                 type="date"
+                max="2025-12-31"
                 value={birthDate}
                 onChange={(e) => {
                   const dateVal = e.target.value;
@@ -479,6 +480,7 @@ export default function MemberProfileEdit({
                   }
                 }}
                 className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
+                dir="ltr"
               />
             </div>
 
@@ -536,6 +538,7 @@ export default function MemberProfileEdit({
                 </label>
                 <input
                   type="date"
+                  max="2025-12-31"
                   value={deathDate}
                   onChange={(e) => {
                     const dateVal = e.target.value;
@@ -548,6 +551,7 @@ export default function MemberProfileEdit({
                     }
                   }}
                   className="w-full border border-rose-200 rounded-xl px-3 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-rose-600 bg-white cursor-pointer"
+                  dir="ltr"
                 />
               </div>
             )}
@@ -865,6 +869,7 @@ export default function MemberProfileEdit({
                     </label>
                     <input
                       type="date"
+                      max="2025-12-31"
                       value={childBirthDate}
                       onChange={(e) => {
                         const dateVal = e.target.value;
@@ -877,6 +882,7 @@ export default function MemberProfileEdit({
                         }
                       }}
                       className="w-full border border-slate-200 rounded-xl px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white cursor-pointer"
+                      dir="ltr"
                     />
                   </div>
                   <div>
@@ -1166,7 +1172,7 @@ export default function MemberProfileEdit({
                         )}
                       </h4>
                       <p className="text-[9px] text-slate-400">
-                        سنة الميلاد: {child.birthYear ? `${child.birthYear}م` : "-"} | الإقامة:{" "}
+                        سنة الميلاد: {child.birthYear ? <span dir="ltr">{child.birthYear} م</span> : "-"} | الإقامة:{" "}
                         {child.country}
                       </p>
                     </div>

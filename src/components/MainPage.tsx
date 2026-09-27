@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FamilyInfo, FamilyPhoto, FamilyMember, MemberComment, UserSession } from '../types';
-import { Image, History, Calendar, Award, MapPin, Users, Plus, Trash2, TrendingUp, BookOpen, Network, LogIn, ChevronDown, Activity, Globe, Upload, MessageSquare, Pencil, X } from 'lucide-react';
+import { Image, History, Calendar, Award, MapPin, Users, Plus, Trash2, TrendingUp, BookOpen, Network, LogIn, ChevronDown, Activity, Globe, Upload, MessageSquare, Pencil, X, Lock, UserPlus } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface MainPageProps {
@@ -281,7 +281,7 @@ export default function MainPage({
             </p>
           </div>
           
-          {isAdmin && (
+          {isAdmin && (currentSession.role === 'member' || currentSession.role === 'admin') && (
             <button
               onClick={() => setShowAddPhoto(!showAddPhoto)}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5 self-start shadow-sm"
@@ -292,238 +292,262 @@ export default function MainPage({
           )}
         </div>
 
-        {/* Add Photo Form (Collapsible, Admin only) */}
-        {isAdmin && showAddPhoto && (
-          <form onSubmit={handlePhotoSubmit} className="bg-slate-50 border border-slate-100 p-5 rounded-2xl space-y-4">
-            <h4 className="text-xs font-extrabold text-slate-700">إضافة صورة جديدة للألبوم العائلي</h4>
-            <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">صورة الألبوم (تحميل من الجهاز)</label>
-              <div className="relative flex items-center justify-center border border-dashed border-slate-300 hover:border-indigo-500 rounded-xl bg-white p-3 cursor-pointer h-[120px] transition-all">
-                <input
-                  type="file"
-                  accept="image/*"
-                  required={!photoUrl}
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onload = (ev) => {
-                        if (ev.target?.result) {
-                          setPhotoUrl(ev.target.result as string);
-                        }
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                  className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
-                />
-                {photoUrl ? (
-                  <div className="flex items-center gap-3 w-full h-full z-0">
-                    <img src={photoUrl} alt="Preview" className="w-16 h-16 rounded-xl object-cover border border-slate-100" />
-                    <div className="text-right">
-                      <span className="block text-xs font-bold text-emerald-600">تم اختيار الصورة بنجاح</span>
-                      <span className="block text-[10px] text-slate-400">انقر أو اسحب لتغييرها</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center gap-2 text-slate-400 text-center z-0">
-                    <Upload size={24} className="text-slate-400 stroke-[1.5]" />
-                    <div className="space-y-0.5">
-                      <span className="block text-xs font-bold text-slate-600">اسحب الصورة هنا أو تصفح جهازك</span>
-                      <span className="block text-[10px] text-slate-400">تدعم ملفات الصور (PNG, JPG, JPEG)</span>
-                    </div>
-                  </div>
-                )}
-              </div>
+        {!(currentSession.role === 'member' || currentSession.role === 'admin') ? (
+          /* Private Gallery Banner for Non-Registered Members */
+          <div className="bg-gradient-to-br from-slate-50 to-indigo-50/40 border border-indigo-100/80 rounded-3xl p-8 md:p-12 text-center space-y-4 shadow-xs">
+            <div className="w-16 h-16 bg-white shadow-xs border border-indigo-100 rounded-2xl flex items-center justify-center mx-auto text-indigo-600">
+              <Lock size={28} />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">وصف مختصر أو عنوان الصورة *</label>
-              <input
-                type="text"
-                required
-                placeholder="مثال: صورة جماعية من اللقاء العائلي في المدينة المنورة"
-                value={photoCaption}
-                onChange={e => setPhotoCaption(e.target.value)}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
-              />
+            <div className="space-y-2 max-w-lg mx-auto">
+              <h4 className="text-lg md:text-xl font-bold text-slate-800">
+                ألبوم الصور العائلي خاص بالأعضاء المسجلين
+              </h4>
+              <p className="text-xs md:text-sm text-slate-500 leading-relaxed">
+                حفاظاً على خصوصية صور ولقاءات واجتماعات العائلة المباركة، يقتصر تصفح ألبوم الصور ومشاركاتها على أفراد العائلة المسجلين والمعتمدين فقط.
+              </p>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-600 mb-1">النص المرافق أو قصة الصورة</label>
-              <textarea
-                placeholder="اكتب هنا تفاصيل إضافية، أسماء الأشخاص الظاهرين في الصورة، أو قصة هذه المناسبة العائلية..."
-                value={photoDescription}
-                onChange={e => setPhotoDescription(e.target.value)}
-                rows={3}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={() => setShowAddPhoto(false)}
-                className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl"
+                onClick={() => onOpenAuth('login')}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer active:scale-95"
               >
-                إلغاء
+                <LogIn size={15} />
+                تسجيل الدخول للعائلة
               </button>
               <button
-                type="submit"
-                className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold"
+                type="button"
+                onClick={() => (onOpenRegister ? onOpenRegister() : onOpenAuth('register'))}
+                className="bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 text-xs font-bold px-5 py-2.5 rounded-xl transition-all cursor-pointer active:scale-95"
               >
-                تثبيت وإضافة الصورة
+                <UserPlus size={15} />
+                طلب انضمام / حساب جديد
               </button>
             </div>
-          </form>
-        )}
-
-        {/* Photos Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start justify-items-center">
-          {photos.map((photo) => (
-            <div 
-              key={photo.id}
-              className="group bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 relative w-fit max-w-full flex flex-col justify-self-center"
-            >
-              {/* Photo Container - matches the exact size of the image */}
-              <div className="relative w-fit max-w-full mx-auto overflow-hidden flex items-center justify-center">
-                <img
-                  src={photo.url}
-                  alt={photo.caption}
-                  referrerPolicy="no-referrer"
-                  className="w-auto h-auto max-h-[460px] max-w-full object-contain block group-hover:scale-[1.02] transition-transform duration-500"
-                />
-                
-                {/* Image Overlay for Delete & Edit */}
-                {isAdmin && (
-                  <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                    <button
-                      onClick={() => handleStartEditPhoto(photo)}
-                      className="bg-indigo-600/90 text-white p-2 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg backdrop-blur-xs"
-                      title="تعديل الصورة والبيانات"
-                    >
-                      <Pencil size={13} />
-                    </button>
-                    <button
-                      onClick={() => onDeletePhoto(photo.id)}
-                      className="bg-rose-600/90 text-white p-2 rounded-xl hover:bg-rose-700 transition-colors shadow-lg backdrop-blur-xs"
-                      title="حذف الصورة"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Caption & Description */}
-              <div className="p-4 space-y-2 max-w-sm">
-                <p className="text-slate-800 text-xs md:text-sm font-bold leading-relaxed">
-                  {photo.caption}
-                </p>
-                {photo.description && (
-                  <p className="text-slate-500 text-[11px] md:text-xs leading-relaxed whitespace-pre-line border-t border-slate-100 pt-2 font-medium">
-                    {photo.description}
-                  </p>
-                )}
-              </div>
-
-              {/* Comments Section */}
-              <div className="border-t border-slate-100 bg-slate-50/50 p-4 space-y-3 max-w-sm">
-                <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                  <span className="flex items-center gap-1.5">
-                    <MessageSquare size={13} className="text-slate-400" />
-                    التعليقات
-                  </span>
-                </div>
-
-                <div className="space-y-3 pt-1">
-                  {/* Comments List */}
-                  <div className="space-y-2 pr-1">
-                    {(photo.comments && photo.comments.length > 0) ? (
-                      photo.comments.map((comment) => (
-                        <div key={comment.id} className="bg-white p-2.5 rounded-xl border border-slate-100 relative group/comment text-[11px]">
-                          <div className="flex items-center justify-between font-bold text-slate-700 mb-1">
-                            <span>{comment.senderName}</span>
-                            <span className="text-[9px] text-slate-400 font-normal">
-                              {new Date(comment.createdAt).toLocaleDateString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                          <p className="text-slate-600 leading-relaxed font-medium">{comment.content}</p>
-                          
-                          {/* Delete button if Admin */}
-                          {isAdmin && (
-                            <button
-                              onClick={() => onDeletePhotoComment(photo.id, comment.id)}
-                              className="absolute top-2 left-2 text-rose-500 hover:text-rose-700 p-0.5 opacity-0 group-hover/comment:opacity-100 transition-opacity"
-                              title="حذف التعليق"
-                            >
-                              <Trash2 size={11} />
-                            </button>
-                          )}
+          </div>
+        ) : (
+          <>
+            {/* Add Photo Form (Collapsible, Admin only) */}
+            {isAdmin && showAddPhoto && (
+              <form onSubmit={handlePhotoSubmit} className="bg-slate-50 border border-slate-100 p-5 rounded-2xl space-y-4">
+                <h4 className="text-xs font-extrabold text-slate-700">إضافة صورة جديدة للألبوم العائلي</h4>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">صورة الألبوم (تحميل من الجهاز)</label>
+                  <div className="relative flex items-center justify-center border border-dashed border-slate-300 hover:border-indigo-500 rounded-xl bg-white p-3 cursor-pointer h-[120px] transition-all">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      required={!photoUrl}
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            if (ev.target?.result) {
+                              setPhotoUrl(ev.target.result as string);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+                    />
+                    {photoUrl ? (
+                      <div className="flex items-center gap-3 w-full h-full z-0">
+                        <img src={photoUrl} alt="Preview" className="w-16 h-16 rounded-xl object-cover border border-slate-100" />
+                        <div className="text-right">
+                          <span className="block text-xs font-bold text-emerald-600">تم اختيار الصورة بنجاح</span>
+                          <span className="block text-[10px] text-slate-400">انقر أو اسحب لتغييرها</span>
                         </div>
-                      ))
+                      </div>
                     ) : (
-                      <p className="text-center text-[10px] text-slate-400 py-2">لا توجد تعليقات بعد. كن أول من يعلّق!</p>
+                      <div className="flex flex-col items-center justify-center gap-2 text-slate-400 text-center z-0">
+                        <Upload size={24} className="text-slate-400 stroke-[1.5]" />
+                        <div className="space-y-0.5">
+                          <span className="block text-xs font-bold text-slate-600">اسحب الصورة هنا أو تصفح جهازك</span>
+                          <span className="block text-[10px] text-slate-400">تدعم ملفات الصور (PNG, JPG, JPEG)</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">وصف مختصر أو عنوان الصورة *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="مثال: صورة جماعية من اللقاء العائلي في المدينة المنورة"
+                    value={photoCaption}
+                    onChange={e => setPhotoCaption(e.target.value)}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">النص المرافق أو قصة الصورة</label>
+                  <textarea
+                    placeholder="اكتب هنا تفاصيل إضافية، أسماء الأشخاص الظاهرين في الصورة، أو قصة هذه المناسبة العائلية..."
+                    value={photoDescription}
+                    onChange={e => setPhotoDescription(e.target.value)}
+                    rows={3}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddPhoto(false)}
+                    className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-2 rounded-xl"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold"
+                  >
+                    تثبيت وإضافة الصورة
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Photos Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start justify-items-center">
+              {photos.map((photo) => (
+                <div 
+                  key={photo.id}
+                  className="group bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 relative w-fit max-w-full flex flex-col justify-self-center"
+                >
+                  {/* Photo Container - matches the exact size of the image */}
+                  <div className="relative w-fit max-w-full mx-auto overflow-hidden flex items-center justify-center">
+                    <img
+                      src={photo.url}
+                      alt={photo.caption}
+                      referrerPolicy="no-referrer"
+                      className="w-auto h-auto max-h-[460px] max-w-full object-contain block group-hover:scale-[1.02] transition-transform duration-500"
+                    />
+                    
+                    {/* Image Overlay for Delete & Edit */}
+                    {isAdmin && (
+                      <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                        <button
+                          onClick={() => handleStartEditPhoto(photo)}
+                          className="bg-indigo-600/90 text-white p-2 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg backdrop-blur-xs"
+                          title="تعديل الصورة والبيانات"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          onClick={() => onDeletePhoto(photo.id)}
+                          className="bg-rose-600/90 text-white p-2 rounded-xl hover:bg-rose-700 transition-colors shadow-lg backdrop-blur-xs"
+                          title="حذف الصورة"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     )}
                   </div>
 
-                  {/* Add Comment Form */}
-                  <form 
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const commentText = activeComments[photo.id] || '';
-                      if (!commentText.trim()) return;
-                      
-                      const senderName = isGuest ? (guestNames[photo.id] || 'زائر عابر') : currentSession.name;
-                      onAddPhotoComment(photo.id, {
-                        senderName,
-                        senderEmail: currentSession.email || 'guest@family.com',
-                        content: commentText
-                      });
-                      
-                      setActiveComments(prev => ({ ...prev, [photo.id]: '' }));
-                      if (isGuest) {
-                        setGuestNames(prev => ({ ...prev, [photo.id]: '' }));
-                      }
-                    }}
-                    className="space-y-2 pt-2 border-t border-slate-100"
-                  >
-                    {isGuest && (
-                      <input
-                        type="text"
-                        placeholder="اسمك الكريم"
-                        required
-                        value={guestNames[photo.id] || ''}
-                        onChange={(e) => setGuestNames(prev => ({ ...prev, [photo.id]: e.target.value }))}
-                        className="w-full border border-slate-200 rounded-lg px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
-                      />
+                  {/* Caption & Description */}
+                  <div className="p-4 space-y-2 max-w-sm">
+                    <p className="text-slate-800 text-xs md:text-sm font-bold leading-relaxed">
+                      {photo.caption}
+                    </p>
+                    {photo.description && (
+                      <p className="text-slate-500 text-[11px] md:text-xs leading-relaxed whitespace-pre-line border-t border-slate-100 pt-2 font-medium">
+                        {photo.description}
+                      </p>
                     )}
-                    <div className="flex gap-1.5">
-                      <input
-                        type="text"
-                        required
-                        placeholder="اكتب تعليقك هنا..."
-                        value={activeComments[photo.id] || ''}
-                        onChange={(e) => setActiveComments(prev => ({ ...prev, [photo.id]: e.target.value }))}
-                        className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
-                      />
-                      <button
-                        type="submit"
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-3 py-1 rounded-lg transition-colors shrink-0"
-                      >
-                        إرسال
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          ))}
+                  </div>
 
-          {photos.length === 0 && (
-            <div className="col-span-full py-12 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-              <Image className="mx-auto text-slate-300 mb-2" size={40} />
-              <p className="text-sm font-medium">لم يتم رفع أي صور عائلية بعد.</p>
+                  {/* Comments Section */}
+                  <div className="border-t border-slate-100 bg-slate-50/50 p-4 space-y-3 max-w-sm">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                      <span className="flex items-center gap-1.5">
+                        <MessageSquare size={13} className="text-slate-400" />
+                        التعليقات
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 pt-1">
+                      {/* Comments List */}
+                      <div className="space-y-2 pr-1">
+                        {(photo.comments && photo.comments.length > 0) ? (
+                          photo.comments.map((comment) => (
+                            <div key={comment.id} className="bg-white p-2.5 rounded-xl border border-slate-100 relative group/comment text-[11px]">
+                              <div className="flex items-center justify-between font-bold text-slate-700 mb-1">
+                                <span>{comment.senderName}</span>
+                                <span className="text-[9px] text-slate-400 font-normal">
+                                  {new Date(comment.createdAt).toLocaleDateString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <p className="text-slate-600 leading-relaxed font-medium">{comment.content}</p>
+                              
+                              {/* Delete button if Admin */}
+                              {isAdmin && (
+                                <button
+                                  onClick={() => onDeletePhotoComment(photo.id, comment.id)}
+                                  className="absolute top-2 left-2 text-rose-500 hover:text-rose-700 p-0.5 opacity-0 group-hover/comment:opacity-100 transition-opacity"
+                                  title="حذف التعليق"
+                                >
+                                  <Trash2 size={11} />
+                                </button>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-center text-[10px] text-slate-400 py-2">لا توجد تعليقات بعد. كن أول من يعلّق!</p>
+                        )}
+                      </div>
+
+                      {/* Add Comment Form */}
+                      <form 
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const commentText = activeComments[photo.id] || '';
+                          if (!commentText.trim()) return;
+                          
+                          const senderName = currentSession.name;
+                          onAddPhotoComment(photo.id, {
+                            senderName,
+                            senderEmail: currentSession.email || 'member@family.com',
+                            content: commentText
+                          });
+                          
+                          setActiveComments(prev => ({ ...prev, [photo.id]: '' }));
+                        }}
+                        className="space-y-2 pt-2 border-t border-slate-100"
+                      >
+                        <div className="flex gap-1.5">
+                          <input
+                            type="text"
+                            required
+                            placeholder="اكتب تعليقك هنا..."
+                            value={activeComments[photo.id] || ''}
+                            onChange={(e) => setActiveComments(prev => ({ ...prev, [photo.id]: e.target.value }))}
+                            className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
+                          />
+                          <button
+                            type="submit"
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-3 py-1 rounded-lg transition-colors shrink-0 cursor-pointer"
+                          >
+                            إرسال
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {photos.length === 0 && (
+                <div className="col-span-full py-12 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <Image className="mx-auto text-slate-300 mb-2" size={40} />
+                  <p className="text-sm font-medium">لم يتم رفع أي صور عائلية بعد.</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </section>
 
       {/* Edit Photo Modal */}

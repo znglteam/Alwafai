@@ -869,11 +869,6 @@ export default function FamilyTreeVisualizer({
     }, 300);
   };
 
-  // Render initials badge if avatar isn't loaded
-  const renderInitials = (name: string) => {
-    return name.trim().slice(0, 2);
-  };
-
   const formatDateArabic = (dateStr?: string) => {
     if (!dateStr) return '';
     const dateObj = new Date(dateStr);
@@ -980,12 +975,12 @@ export default function FamilyTreeVisualizer({
                   setSelectedMember(node);
                 }
               }}
-              className={`w-14 h-14 rounded-full overflow-hidden border-2 relative flex items-center justify-center font-bold text-sm cursor-pointer shadow-sm transition-all duration-300 hover:scale-105 hover:shadow-md z-10 bg-white ${
+              className={`w-14 h-14 rounded-full overflow-hidden border-2 relative flex items-center justify-center font-bold text-sm cursor-pointer shadow-sm transition-all duration-300 hover:scale-105 hover:shadow-md z-10 ${
                 selectedMember?.id === node.id 
-                  ? 'border-indigo-600 ring-4 ring-indigo-500/20 scale-105' 
+                  ? 'border-indigo-600 ring-4 ring-indigo-500/20 scale-105 bg-white' 
                   : isFemale 
-                    ? node.isAlive ? 'border-[#bb5791]' : 'border-[#bb5791]/40' 
-                    : node.isAlive ? 'border-[#607fc4]' : 'border-[#607fc4]/40'
+                    ? node.isAlive ? 'border-[#bb5791] bg-pink-50/70' : 'border-[#bb5791]/40 bg-pink-50/30' 
+                    : node.isAlive ? 'border-[#607fc4] bg-blue-50/70' : 'border-[#607fc4]/40 bg-blue-50/30'
               }`}
               title={node.avatar ? `انقر لتكبير صورة ${node.name}` : `انقر لمشاهدة تفاصيل ${node.name}`}
             >
@@ -998,8 +993,8 @@ export default function FamilyTreeVisualizer({
                   avatarScale={node.avatarScale}
                 />
               ) : (
-                <div className={`flex items-center justify-center ${isFemale ? 'text-[#bb5791]' : 'text-[#607fc4]'}`}>
-                  <GenderUserIcon gender={isFemale ? 'female' : 'male'} size={32} className="stroke-[1.5]" isAlive={node.isAlive} />
+                <div className={`flex items-center justify-center w-full h-full ${isFemale ? 'text-[#bb5791]' : 'text-[#607fc4]'}`}>
+                  <GenderUserIcon gender={isFemale ? 'female' : 'male'} size={38} isAlive={node.isAlive} />
                 </div>
               )}
             </div>
@@ -1455,10 +1450,10 @@ export default function FamilyTreeVisualizer({
                               setActiveFullscreenMember(member);
                             }
                           }}
-                          className={`w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 relative flex items-center justify-center font-bold text-sm hover:scale-105 transition-transform duration-200 cursor-pointer bg-white ${
+                          className={`w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 relative flex items-center justify-center font-bold text-sm hover:scale-105 transition-transform duration-200 cursor-pointer ${
                             isFemale 
-                               ? member.isAlive ? 'border-[#bb5791]' : 'border-[#bb5791]/40'
-                               : member.isAlive ? 'border-[#607fc4]' : 'border-[#607fc4]/40'
+                               ? member.isAlive ? 'border-[#bb5791] bg-pink-50/70' : 'border-[#bb5791]/40 bg-pink-50/30'
+                               : member.isAlive ? 'border-[#607fc4] bg-blue-50/70' : 'border-[#607fc4]/40 bg-blue-50/30'
                           }`}
                           title={member.avatar ? `انقر لتكبير صورة ${member.name}` : undefined}
                         >
@@ -1472,7 +1467,7 @@ export default function FamilyTreeVisualizer({
                             />
                           ) : (
                             <span className={isFemale ? 'text-[#bb5791]' : 'text-[#607fc4]'}>
-                              <GenderUserIcon gender={isFemale ? 'female' : 'male'} size={26} className="stroke-[1.5]" isAlive={member.isAlive} />
+                              <GenderUserIcon gender={isFemale ? 'female' : 'male'} size={32} isAlive={member.isAlive} />
                             </span>
                           )}
                         </div>
@@ -1575,8 +1570,8 @@ export default function FamilyTreeVisualizer({
                           setActiveFullscreenMember(selectedMember);
                         }
                       }}
-                      className={`w-24 h-24 rounded-full overflow-hidden border-4 relative flex items-center justify-center hover:scale-105 transition-transform duration-200 bg-white ${
-                        selectedMember.avatar ? 'cursor-pointer' : ''
+                      className={`w-24 h-24 rounded-full overflow-hidden border-4 relative flex items-center justify-center hover:scale-105 transition-transform duration-200 ${
+                        selectedMember.avatar ? 'cursor-pointer bg-white' : (isMemberFemale(selectedMember) ? 'bg-pink-50/70' : 'bg-blue-50/70')
                       } ${
                         isMemberFemale(selectedMember) 
                           ? selectedMember.isAlive ? 'border-[#bb5791]' : 'border-[#bb5791]/40'
@@ -1594,7 +1589,7 @@ export default function FamilyTreeVisualizer({
                         />
                       ) : (
                         <span className={`flex items-center justify-center h-full ${isMemberFemale(selectedMember) ? 'text-[#bb5791]' : 'text-[#607fc4]'}`}>
-                          <GenderUserIcon gender={isMemberFemale(selectedMember) ? 'female' : 'male'} size={48} isAlive={selectedMember.isAlive} />
+                          <GenderUserIcon gender={isMemberFemale(selectedMember) ? 'female' : 'male'} size={64} isAlive={selectedMember.isAlive} />
                         </span>
                       )}
                     </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { UserSession, FamilyMember } from '../types';
 import { User, Shield, Mail, CheckCircle, Clock, LogOut, ArrowRight, Sparkles, Network } from 'lucide-react';
 import AvatarImage from './AvatarImage';
+import { GenderUserIcon } from './GenderIcon';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -67,7 +68,11 @@ export default function UserProfileModal({
               />
             ) : (
               <div className="w-full h-full rounded-full bg-white/20 flex items-center justify-center text-white">
-                {isAdmin ? <Shield size={32} /> : <User size={32} />}
+                {isAdmin ? (
+                  <Shield size={32} />
+                ) : (
+                  <GenderUserIcon gender={activeMember?.gender || 'male'} size={52} isAlive={activeMember?.isAlive ?? true} />
+                )}
               </div>
             )}
           </div>

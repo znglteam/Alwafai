@@ -127,7 +127,7 @@ export interface FamilyMessage {
   senderId?: string;
   recipientEmail?: string;
   targetMemberId?: string;
-  messageType?: 'contact' | 'profile_comment_member' | 'profile_comment_admin' | 'admin_direct';
+  messageType?: 'contact' | 'profile_comment_member' | 'profile_comment_admin' | 'admin_direct' | 'photo_comment_admin' | 'forum_reply_admin' | 'forum_reply_member';
   subject: string;
   content: string;
   attachmentUrl?: string;
@@ -152,6 +152,7 @@ export interface ForumTopic {
   content: string;
   authorId: string;
   authorName: string;
+  authorEmail?: string;
   createdAt: string;
   updatedAt: string;
   repliesCount: number;
@@ -163,5 +164,11 @@ export interface ForumReply {
   content: string;
   authorId: string;
   authorName: string;
+  authorEmail?: string;
   createdAt: string;
+  replyToReplyId?: string | null;
+  replyToAuthorName?: string | null;
+  replyToAuthorId?: string | null;
+  replyToAuthorEmail?: string | null;
+  replyToContent?: string | null;
 }

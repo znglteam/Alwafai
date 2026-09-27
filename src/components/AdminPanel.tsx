@@ -2174,6 +2174,16 @@ export default function AdminPanel({
                             <span className="text-[10px] bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 rounded-md font-bold">
                               إشعار: تعليق على شجرة العائلة
                             </span>
+                          ) : msg.messageType === 'photo_comment_admin' ? (
+                            <span className="text-[10px] bg-purple-50 border border-purple-200 text-purple-800 px-2.5 py-0.5 rounded-md font-bold inline-flex items-center gap-1">
+                              <Image size={11} className="text-purple-600" />
+                              إشعار: تعليق على ألبوم الصور
+                            </span>
+                          ) : msg.messageType === 'forum_reply_admin' ? (
+                            <span className="text-[10px] bg-sky-50 border border-sky-200 text-sky-800 px-2.5 py-0.5 rounded-md font-bold inline-flex items-center gap-1">
+                              <MessageSquare size={11} className="text-sky-600" />
+                              إشعار: مشاركة جديدة بالمنتدى
+                            </span>
                           ) : (
                             <span className="text-[10px] bg-indigo-50 border border-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md font-bold">
                               المرسل: {msg.senderName}

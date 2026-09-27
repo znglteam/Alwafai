@@ -237,8 +237,10 @@ export default function ContactAdmin({ messages, currentSession, activeMemberId,
             </div>
           ) : (
             myMessages.map(msg => {
-              const isReceivedNotification = (msg.recipientEmail && userCleanEmail && msg.recipientEmail.trim().toLowerCase() === userCleanEmail) || msg.messageType === 'profile_comment_member';
+              const isReceivedNotification = (msg.recipientEmail && userCleanEmail && msg.recipientEmail.trim().toLowerCase() === userCleanEmail) || msg.messageType === 'profile_comment_member' || msg.messageType === 'forum_reply_member';
               const isProfileComment = msg.messageType === 'profile_comment_member' || msg.subject?.includes('تعليق جديد على ملفك');
+              const isForumReply = msg.messageType === 'forum_reply_member' || msg.subject?.includes('المنتدى');
+              const isPhotoComment = msg.messageType === 'photo_comment_admin' || msg.subject?.includes('ألبوم الصور');
               const isDirectAdminMsg = msg.messageType === 'admin_direct' || 
                 msg.senderEmail === 'admin@family.com' || 
                 msg.senderName?.includes('الآدمن') || 
@@ -266,6 +268,16 @@ export default function ContactAdmin({ messages, currentSession, activeMemberId,
                         <span className="inline-flex items-center gap-1 text-[10px] bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-0.5 rounded-md font-bold">
                           <Heart size={11} className="text-amber-600 fill-amber-600/20" />
                           تعليق على ملفك الشخصي
+                        </span>
+                      ) : isForumReply ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] bg-sky-50 border border-sky-200 text-sky-800 px-2.5 py-0.5 rounded-md font-bold">
+                          <MessageSquare size={11} className="text-sky-600" />
+                          رد جديد في المنتدى
+                        </span>
+                      ) : isPhotoComment ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] bg-purple-50 border border-purple-200 text-purple-800 px-2.5 py-0.5 rounded-md font-bold">
+                          <Image size={11} className="text-purple-600" />
+                          تعليق على ألبوم الصور
                         </span>
                       ) : isReceivedNotification ? (
                         <span className="inline-flex items-center gap-1 text-[10px] bg-indigo-50 border border-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md font-bold">

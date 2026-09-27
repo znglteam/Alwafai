@@ -408,11 +408,26 @@ export default function MemberProfileEdit({
     >
       {/* Intro Heading */}
       <div className="bg-indigo-600 text-white rounded-3xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 border border-indigo-700/10">
-        <div>
-          <h2 className="text-xl md:text-2xl font-bold">
-            الملف الشخصي: {member.name} {member.fatherName ? `بن ${member.fatherName}` : ''}
-          </h2>
-          <p className="text-xs text-indigo-100 mt-1">تعديل بياناتك الشخصية، وإدارة أسرتك وأبنائك</p>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 border-2 border-white/60 bg-white/10 relative flex items-center justify-center text-white">
+            {member.avatar ? (
+              <AvatarImage 
+                src={member.avatar} 
+                alt={member.name} 
+                avatarX={member.avatarX} 
+                avatarY={member.avatarY} 
+                avatarScale={member.avatarScale} 
+              />
+            ) : (
+              <GenderUserIcon gender={member.gender || 'male'} size={40} isAlive={member.isAlive} />
+            )}
+          </div>
+          <div>
+            <h2 className="text-xl md:text-2xl font-bold">
+              الملف الشخصي: {member.name} {member.fatherName ? `بن ${member.fatherName}` : ''}
+            </h2>
+            <p className="text-xs text-indigo-100 mt-1">تعديل بياناتك الشخصية، وإدارة أسرتك وأبنائك</p>
+          </div>
         </div>
         {onGoToTree && (
           <div className="flex items-center gap-2.5 self-start md:self-auto">
@@ -1116,7 +1131,9 @@ export default function MemberProfileEdit({
                     <div className="flex flex-col gap-1 items-center justify-center pl-1 text-slate-300">
                       <GripVertical size={16} />
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 relative flex items-center justify-center font-bold text-[11px] overflow-hidden">
+                    <div className={`w-8 h-8 rounded-full border relative flex items-center justify-center font-bold text-[11px] overflow-hidden ${
+                      child.gender === 'female' ? 'bg-pink-50 border-pink-200 text-[#bb5791]' : 'bg-blue-50 border-blue-200 text-[#607fc4]'
+                    }`}>
                       {child.avatar ? (
                         <AvatarImage 
                           src={child.avatar} 
@@ -1126,7 +1143,7 @@ export default function MemberProfileEdit({
                           avatarScale={child.avatarScale}
                         />
                       ) : (
-                        <GenderUserIcon gender={child.gender} size={22} isAlive={child.isAlive} />
+                        <GenderUserIcon gender={child.gender} size={24} isAlive={child.isAlive} />
                       )}
                     </div>
                     <div>
@@ -1223,8 +1240,12 @@ export default function MemberProfileEdit({
                       className="bg-white border border-slate-100 p-3 rounded-2xl flex items-center justify-between gap-3 relative"
                     >
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-amber-50 border border-amber-100 text-amber-700 flex items-center justify-center font-bold text-[11px] overflow-hidden shrink-0">
-                          <GenderUserIcon gender="male" size={22} isAlive={relative.isAlive} />
+                        <div className="w-8 h-8 rounded-full bg-blue-50 border border-blue-200 text-[#607fc4] flex items-center justify-center font-bold text-[11px] overflow-hidden shrink-0 relative">
+                          {relative.avatar ? (
+                            <AvatarImage src={relative.avatar} alt={relative.name} avatarX={relative.avatarX} avatarY={relative.avatarY} avatarScale={relative.avatarScale} />
+                          ) : (
+                            <GenderUserIcon gender="male" size={18} isAlive={relative.isAlive} />
+                          )}
                         </div>
                         <div>
                           <h4 className="font-bold text-slate-800 text-xs">

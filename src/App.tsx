@@ -1029,6 +1029,39 @@ export default function App() {
     const nextPhotos = photos.map(p => p.id === photoId ? updatedPhoto : p);
     setPhotos(nextPhotos);
     await savePhotoToCloud(updatedPhoto);
+
+    // Notify Admin when someone comments on a photo in the family album
+    const isCommentByAdmin = currentSession.role === 'admin' || 
+      comment.senderEmail === 'admin@family.com' || 
+      comment.senderName?.includes('الآدمن') || 
+      comment.senderName?.includes('مدير');
+
+    if (!isCommentByAdmin) {
+      const adminMsg: FamilyMessage = {
+        id: 'msg-' + Date.now().toString() + '-photo-adm',
+        senderName: comment.senderName || 'عضو في العائلة',
+        senderEmail: comment.senderEmail || 'member@family.com',
+        recipientEmail: 'admin@family.com',
+        targetMemberId: currentSession.userId || undefined,
+        messageType: 'photo_comment_admin',
+        subject: `تعليق جديد من (${comment.senderName}) على ألبوم الصور`,
+        content: `قام "${comment.senderName}" بإضافة تعليق جديد على صورة في ألبوم العائلة بعنوان "${targetPhoto.caption || 'صورة عائلية'}".\n\nنص التعليق:\n"${comment.content}"\n\nتاريخ التعليق: ${new Date(newComment.createdAt).toLocaleDateString('ar-SA')}`,
+        attachmentType: 'none',
+        createdAt: new Date().toISOString(),
+        isReadByAdmin: false,
+        isReadByMember: true,
+        replies: []
+      };
+
+      try {
+        await saveMessageToCloud(adminMsg);
+        setMessages(prev => [adminMsg, ...prev]);
+        setLiveNotification(`تعليق جديد على ألبوم الصور من ${comment.senderName}`);
+        setTimeout(() => setLiveNotification(null), 6000);
+      } catch (e) {
+        console.warn('Could not save photo comment admin notification');
+      }
+    }
   };
 
   const handleDeletePhotoComment = async (photoId: string, commentId: string) => {
@@ -1376,7 +1409,17 @@ export default function App() {
           )}
 
           {activeTab === 'forum' && (
-            <Forum currentSession={currentSession} allMembers={members} />
+            <Forum 
+              currentSession={currentSession} 
+              allMembers={members} 
+              onSendMessage={(msg) => {
+                setMessages(prev => [msg, ...prev]);
+              }}
+              onLiveNotify={(txt) => {
+                setLiveNotification(txt);
+                setTimeout(() => setLiveNotification(null), 6000);
+              }}
+            />
           )}
 
           {activeTab === 'tree' && (

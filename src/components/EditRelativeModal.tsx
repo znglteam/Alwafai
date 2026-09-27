@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FamilyMember } from '../types';
 import { X } from 'lucide-react';
+import { GenderUserIcon } from './GenderIcon';
+import AvatarImage from './AvatarImage';
 
 const CURRENT_YEAR = 2025;
 const YEARS = Array.from({ length: 150 }, (_, i) => CURRENT_YEAR - i);
@@ -59,7 +61,18 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl flex flex-col relative max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
         <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex items-center justify-between rounded-t-3xl shrink-0">
-          <h3 className="text-sm font-bold text-slate-800">تعديل بيانات: {relative.name}</h3>
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-full overflow-hidden shrink-0 border-2 relative flex items-center justify-center ${
+              gender === 'female' ? 'border-pink-200 bg-pink-50/70 text-[#bb5791]' : 'border-blue-200 bg-blue-50/70 text-[#607fc4]'
+            }`}>
+              {relative.avatar ? (
+                <AvatarImage src={relative.avatar} alt={relative.name} avatarX={relative.avatarX} avatarY={relative.avatarY} avatarScale={relative.avatarScale} />
+              ) : (
+                <GenderUserIcon gender={gender as 'male' | 'female'} size={18} isAlive={isAlive} />
+              )}
+            </div>
+            <h3 className="text-sm font-bold text-slate-800">تعديل بيانات: {relative.name}</h3>
+          </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
         </div>
         

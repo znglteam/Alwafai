@@ -5,6 +5,7 @@ import { LiveChangeLog } from '../utils/firebaseService';
 const ARAB_COUNTRIES = [
   "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
 ];
+const CURRENT_YEAR = Math.max(new Date().getFullYear(), 2030);
 import { Shield, Users, User, Check, X, Plus, Trash2, Edit2, Bell, Sparkles, UserPlus, Heart, Volume2, Image, MessageSquare, Calendar, Download, MapPin, BookOpen, Mars, Venus, Upload, Activity, History, Link, AlertTriangle, RotateCcw, UserCheck, Search, Send, Paperclip, Mail, LogOut } from 'lucide-react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
@@ -1216,7 +1217,7 @@ export default function AdminPanel({
                     <input
                       type="number"
                       min={1800}
-                      max={2025}
+                      max={CURRENT_YEAR}
                       value={newMemBirth} onChange={e => setNewMemBirth(e.target.value === '' ? '' : Number(e.target.value))}
                       placeholder="سنة الميلاد"
                       className="w-full border border-slate-200 rounded-xl px-3 py-1.5 text-xs bg-white text-left"
@@ -1481,7 +1482,7 @@ export default function AdminPanel({
                     <input
                       type="number"
                       min={1800}
-                      max={2025}
+                      max={CURRENT_YEAR}
                       value={editForm.birthYear === 0 ? '' : editForm.birthYear}
                       onChange={e => setEditForm({ ...editForm, birthYear: e.target.value === '' ? 0 : Number(e.target.value) })}
                       placeholder="سنة الميلاد"

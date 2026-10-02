@@ -32,8 +32,9 @@ import { PWAInstallButton } from "./PWAInstallButton";
 import { compressImage } from "../utils/imageUtils";
 
 
-const CURRENT_YEAR = 2025;
+const CURRENT_YEAR = Math.max(new Date().getFullYear(), 2030);
 const YEARS = Array.from({ length: 150 }, (_, i) => CURRENT_YEAR - i);
+const MAX_DATE_STR = `${CURRENT_YEAR}-12-31`;
 
 const ARAB_COUNTRIES = [
   "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
@@ -482,7 +483,7 @@ export default function MemberProfileEdit({
               </label>
               <input
                 type="date"
-                max="2025-12-31"
+                max={MAX_DATE_STR}
                 value={birthDate}
                 onChange={(e) => {
                   const dateVal = e.target.value;
@@ -553,7 +554,7 @@ export default function MemberProfileEdit({
                 </label>
                 <input
                   type="date"
-                  max="2025-12-31"
+                  max={MAX_DATE_STR}
                   value={deathDate}
                   onChange={(e) => {
                     const dateVal = e.target.value;
@@ -884,7 +885,7 @@ export default function MemberProfileEdit({
                     </label>
                     <input
                       type="date"
-                      max="2025-12-31"
+                      max={MAX_DATE_STR}
                       value={childBirthDate}
                       onChange={(e) => {
                         const dateVal = e.target.value;

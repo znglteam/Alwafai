@@ -4,8 +4,9 @@ import { X } from 'lucide-react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
 
-const CURRENT_YEAR = 2025;
+const CURRENT_YEAR = Math.max(new Date().getFullYear(), 2030);
 const YEARS = Array.from({ length: 150 }, (_, i) => CURRENT_YEAR - i);
+const MAX_DATE_STR = `${CURRENT_YEAR}-12-31`;
 
 const ARAB_COUNTRIES = [
   "أسبانيا", "استراليا", "الأردن", "الإمارات", "البحرين", "الجزائر", "الدنمارك", "السعودية", "السويد", "الصين", "العراق", "الكويت", "ألمانيا", "المغرب", "المملكة المتحدة", "النرويج", "الولايات المتحدة", "اليابان", "اليمن", "أمريكا الجنوبية", "تركيا", "تونس", "روسيا", "سلطنة عمان", "سوريا", "فرنسا", "فلسطين", "قطر", "كندا", "لبنان", "ليبيا", "ماليزيا", "مصر", "هولندا", "آخر"
@@ -94,7 +95,7 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
                 <label className="block font-bold text-slate-500 mb-1">تاريخ الميلاد الكامل (اختياري)</label>
                 <input
                   type="date"
-                  max="2025-12-31"
+                  max={MAX_DATE_STR}
                   value={birthDate}
                   onChange={(e) => {
                     setBirthDate(e.target.value);
@@ -112,7 +113,7 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
                 <input
                   type="number"
                   min={1800}
-                  max={2025}
+                  max={CURRENT_YEAR}
                   value={birthYear}
                   onChange={e => setBirthYear(e.target.value === '' ? '' : Number(e.target.value))}
                   placeholder="مثال: 1960"
@@ -191,7 +192,7 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
                   <label className="block font-bold text-slate-500 mb-1">تاريخ الوفاة (اختياري)</label>
                   <input
                     type="date"
-                    max="2025-12-31"
+                    max={MAX_DATE_STR}
                     value={deathDate}
                     onChange={(e) => {
                       setDeathDate(e.target.value);
@@ -209,7 +210,7 @@ export default function EditRelativeModal({ relative, onClose, onSave }: Props) 
                   <input
                     type="number"
                     min={1800}
-                    max={2025}
+                    max={CURRENT_YEAR}
                     value={deathYear}
                     onChange={e => setDeathYear(e.target.value === '' ? '' : Number(e.target.value))}
                     className="w-full border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-600 outline-none text-left"

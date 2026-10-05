@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import { GenderUserIcon } from './GenderIcon';
 import AvatarImage from './AvatarImage';
 
-const CURRENT_YEAR = Math.max(new Date().getFullYear(), 2030);
+const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 150 }, (_, i) => CURRENT_YEAR - i);
 const MAX_DATE_STR = `${CURRENT_YEAR}-12-31`;
 

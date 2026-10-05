@@ -11,7 +11,7 @@ import jsPDF from 'jspdf';
 import { toJpeg } from 'html-to-image';
 import { normalizeArabic } from '../utils/memberMatching';
 
-const CURRENT_YEAR = Math.max(new Date().getFullYear(), 2030);
+const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 150 }, (_, i) => CURRENT_YEAR - i);
 const MAX_DATE_STR = `${CURRENT_YEAR}-12-31`;
 
@@ -1519,7 +1519,7 @@ export default function FamilyTreeVisualizer({
                             </div>
                             {calculatedAge !== null && (
                               <span className="inline-block bg-slate-200/50 text-slate-700 text-[9px] px-1.5 py-0.5 rounded-md mt-1 font-semibold">
-                                {!member.isAlive ? `عن عمر يناهز ${calculatedAge} سنة` : `العمر: ${calculatedAge} سنة`}
+                                {!member.isAlive ? `عن عمر يناهز ${calculatedAge} سنة` : (calculatedAge === 0 ? 'العمر: أقل من سنة' : `العمر: ${calculatedAge} سنة`)}
                               </span>
                             )}
                           </div>

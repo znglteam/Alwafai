@@ -62,29 +62,33 @@ export default function MainPage({
 
 
   // Statistics calculations
-  const totalCount = members.length;
-  const aliveCount = members.filter(m => m.isAlive).length;
+  const safeMembers = (members || []).filter(Boolean);
+  const totalCount = safeMembers.length;
+  const aliveCount = safeMembers.filter(m => m?.isAlive).length;
   const deceasedCount = totalCount - aliveCount;
 
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedSpec, setSelectedSpec] = useState<string | null>(null);
 
   const getFullName = (m: FamilyMember) => {
-    const father = m.fatherId ? members.find(f => f.id === m.fatherId) : null;
-    const grandfather = father?.fatherId ? members.find(g => g.id === father.fatherId) : null;
+    if (!m) return '';
+    const father = m.fatherId ? safeMembers.find(f => f?.id === m.fatherId) : null;
+    const grandfather = father?.fatherId ? safeMembers.find(g => g?.id === father.fatherId) : null;
     const resolvedFather = (father?.name || m.fatherName || '').trim();
     const resolvedGrandfather = ((grandfather?.name || father?.fatherName || m.grandfatherName) || '').trim();
     return [m.name, resolvedFather, resolvedGrandfather].filter(Boolean).join(' ');
   };
 
-  const countryStats = members.reduce((acc, member) => {
+  const countryStats = safeMembers.reduce((acc, member) => {
+    if (!member) return acc;
     const c = member.country || 'غير محدد';
     if (!acc[c]) acc[c] = [];
     acc[c].push({ id: member.id, name: getFullName(member) });
     return acc;
   }, {} as Record<string, {id: string, name: string}[]>);
 
-  const specStats = members.reduce((acc, member) => {
+  const specStats = safeMembers.reduce((acc, member) => {
+    if (!member) return acc;
     const s = member.specialization || 'غير محدد';
     if (!acc[s]) acc[s] = [];
     acc[s].push({ id: member.id, name: getFullName(member) });
@@ -92,8 +96,8 @@ export default function MainPage({
   }, {} as Record<string, {id: string, name: string}[]>);
 
   // Specialization counts
-  const specializationCounts = members.reduce((acc, m) => {
-    if (m.specialization && !m.specialization.includes('المرحلة')) {
+  const specializationCounts = safeMembers.reduce((acc, m) => {
+    if (m && m.specialization && !m.specialization.includes('المرحلة')) {
       const cleanSpec = m.specialization.split('(')[0].trim();
       acc[cleanSpec] = (acc[cleanSpec] || 0) + 1;
     }
@@ -412,7 +416,7 @@ export default function MainPage({
 
             {/* Photos Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-start justify-items-center">
-              {photos.map((photo) => (
+              {(photos || []).filter(Boolean).map((photo) => (
                 <div 
                   key={photo.id}
                   className="group bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 relative w-fit max-w-full flex flex-col justify-self-center"
@@ -539,7 +543,7 @@ export default function MainPage({
                 </div>
               ))}
 
-              {photos.length === 0 && (
+              {(!photos || photos.length === 0) && (
                 <div className="col-span-full py-12 text-center text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                   <Image className="mx-auto text-slate-300 mb-2" size={40} />
                   <p className="text-sm font-medium">لم يتم رفع أي صور عائلية بعد.</p>

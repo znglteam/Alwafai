@@ -57,6 +57,7 @@ import Forum from './components/Forum';
 import { Home, Network, User, Shield, LogOut, MessageSquare, MessageSquareText, Wifi, Bell, CloudUpload, CheckCircle, LogIn, UserPlus, Image, Headset } from 'lucide-react';
 import { reconcileLineageAndMarriages, syncSpouseRelationships, isMemberFemale } from './utils/marriageUtils';
 import { findMatchingMemberInTree } from './utils/memberMatching';
+import { safeStorage } from './utils/safeStorage';
 
 // Reconcile fatherName, grandfatherName, childrenIds, and bidirectional spouses across all members
 const reconcileLineage = (list: FamilyMember[]): FamilyMember[] => {
@@ -80,7 +81,7 @@ export default function App() {
     let maxList: FamilyMember[] = [];
     for (const k of backupKeys) {
       try {
-        const saved = localStorage.getItem(k);
+        const saved = safeStorage.getItem(k);
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > maxList.length) {
@@ -96,7 +97,7 @@ export default function App() {
   });
 
   const [requests, setRequests] = useState<RegistrationRequest[]>(() => {
-    const saved = localStorage.getItem('family_requests_v6');
+    const saved = safeStorage.getItem('family_requests_v6');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -106,7 +107,7 @@ export default function App() {
   });
 
   const [news, setNews] = useState<NewsItem[]>(() => {
-    const saved = localStorage.getItem('family_news_v6');
+    const saved = safeStorage.getItem('family_news_v6');
     if (saved) {
       try {
         const p = JSON.parse(saved);
@@ -117,7 +118,7 @@ export default function App() {
   });
 
   const [photos, setPhotos] = useState<FamilyPhoto[]>(() => {
-    const saved = localStorage.getItem('family_photos_v6');
+    const saved = safeStorage.getItem('family_photos_v6');
     if (saved) {
       try {
         const p = JSON.parse(saved);
@@ -128,7 +129,7 @@ export default function App() {
   });
 
   const [familyInfo, setFamilyInfo] = useState<FamilyInfo>(() => {
-    const saved = localStorage.getItem('family_info_v7');
+    const saved = safeStorage.getItem('family_info_v7');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -138,7 +139,7 @@ export default function App() {
   });
 
   const [messages, setMessages] = useState<FamilyMessage[]>(() => {
-    const saved = localStorage.getItem('family_messages_v6');
+    const saved = safeStorage.getItem('family_messages_v6');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -148,7 +149,7 @@ export default function App() {
   });
 
   const [currentSession, setCurrentSession] = useState<UserSession>(() => {
-    const saved = localStorage.getItem('family_session_v6');
+    const saved = safeStorage.getItem('family_session_v6');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -191,7 +192,7 @@ export default function App() {
       let localMaxList: FamilyMember[] = [];
       for (const k of backupKeys) {
         try {
-          const raw = localStorage.getItem(k);
+          const raw = safeStorage.getItem(k);
           if (raw) {
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed) && parsed.length > localMaxList.length) {
@@ -279,35 +280,35 @@ export default function App() {
     };
   }, []);
 
-  // Save to localStorage as quick local cache backup
+  // Save to safeStorage as quick local cache backup
   useEffect(() => {
     if (members && members.length > 0) {
-      localStorage.setItem('family_members_v6', JSON.stringify(members));
+      safeStorage.setItem('family_members_v6', JSON.stringify(members));
     }
   }, [members]);
 
   useEffect(() => {
-    localStorage.setItem('family_messages_v6', JSON.stringify(messages));
+    safeStorage.setItem('family_messages_v6', JSON.stringify(messages));
   }, [messages]);
 
   useEffect(() => {
-    localStorage.setItem('family_requests_v6', JSON.stringify(requests));
+    safeStorage.setItem('family_requests_v6', JSON.stringify(requests));
   }, [requests]);
 
   useEffect(() => {
-    localStorage.setItem('family_news_v6', JSON.stringify(news));
+    safeStorage.setItem('family_news_v6', JSON.stringify(news));
   }, [news]);
 
   useEffect(() => {
-    localStorage.setItem('family_photos_v6', JSON.stringify(photos));
+    safeStorage.setItem('family_photos_v6', JSON.stringify(photos));
   }, [photos]);
 
   useEffect(() => {
-    localStorage.setItem('family_info_v7', JSON.stringify(familyInfo));
+    safeStorage.setItem('family_info_v7', JSON.stringify(familyInfo));
   }, [familyInfo]);
 
   useEffect(() => {
-    localStorage.setItem('family_session_v6', JSON.stringify(currentSession));
+    safeStorage.setItem('family_session_v6', JSON.stringify(currentSession));
     if (currentSession.role === 'guest' || currentSession.role === 'pending') {
       if (activeTab === 'profile' || activeTab === 'admin') {
         setActiveTab('main');
@@ -940,8 +941,8 @@ export default function App() {
   const handleRestoreMembers = async (restoredMembers: FamilyMember[]) => {
     if (!restoredMembers || restoredMembers.length === 0) return;
     setMembers(restoredMembers);
-    localStorage.setItem('family_members_v6', JSON.stringify(restoredMembers));
-    localStorage.setItem('family_tree_backup', JSON.stringify(restoredMembers));
+    safeStorage.setItem('family_members_v6', JSON.stringify(restoredMembers));
+    safeStorage.setItem('family_tree_backup', JSON.stringify(restoredMembers));
     
   };
 

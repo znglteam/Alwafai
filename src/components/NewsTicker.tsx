@@ -22,6 +22,7 @@ export default function NewsTicker({ news }: NewsTickerProps) {
 
   const safeIndex = currentIndex >= news.length ? 0 : currentIndex;
   const currentNews = news[safeIndex];
+  if (!currentNews) return null;
 
   const getNewsBadge = (type: NewsItem['type']) => {
     switch (type) {
@@ -93,7 +94,7 @@ export default function NewsTicker({ news }: NewsTickerProps) {
 
               {/* News Text */}
               <p className="text-xs md:text-sm font-medium text-white truncate hover:text-white transition-colors flex-1 leading-relaxed">
-                {currentNews.content.replace(/نرحب بالعضو الجديد في الموقع:\s*/g, 'نرحب بـ ')}
+                {(currentNews?.content || '').replace(/نرحب بالعضو الجديد في الموقع:\s*/g, 'نرحب بـ ')}
               </p>
             </motion.div>
           </AnimatePresence>

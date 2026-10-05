@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { safeStorage } from '../utils/safeStorage';
 
 interface Props {
   children: ReactNode;
@@ -33,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private handleReset = () => {
     try {
-      localStorage.removeItem('family_session_v6');
+      safeStorage.removeItem('family_session_v6');
     } catch (e) {}
     window.location.href = '/';
   };

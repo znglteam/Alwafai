@@ -140,6 +140,7 @@ export default function MainPage({
   };
 
   const handleStartEditPhoto = (photo: FamilyPhoto) => {
+    if (!isAdmin) return;
     setEditingPhoto(photo);
     setEditPhotoUrl(photo.url);
     setEditPhotoCaption(photo.caption);
@@ -149,19 +150,21 @@ export default function MainPage({
 
   const handleEditPhotoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingPhoto) return;
+    if (!isAdmin || !editingPhoto) return;
     
     let finalUrl = editPhotoUrl;
     if (!editPhotoUrl.startsWith('http') && !editPhotoUrl.startsWith('data:')) {
-      finalUrl = 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800';
+      finalUrl = editingPhoto.url || 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&q=80&w=800';
     }
 
     onUpdatePhoto({
       ...editingPhoto,
       url: finalUrl,
       caption: editPhotoCaption,
-      date: editPhotoDate || new Date().toISOString().split('T')[0],
-      description: editPhotoDescription || undefined
+      date: editPhotoDate || editingPhoto.date || new Date().toISOString().split('T')[0],
+      description: editPhotoDescription || undefined,
+      // Strictly keep all comments intact
+      comments: editingPhoto.comments || []
     });
 
     setEditingPhoto(null);
@@ -432,17 +435,20 @@ export default function MainPage({
                     
                     {/* Image Overlay for Delete & Edit */}
                     {isAdmin && (
-                      <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                      <div className="absolute top-2 right-2 flex gap-1.5 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-20">
                         <button
+                          type="button"
                           onClick={() => handleStartEditPhoto(photo)}
-                          className="bg-indigo-600/90 text-white p-2 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg backdrop-blur-xs"
+                          className="bg-indigo-600 text-white p-2 rounded-xl hover:bg-indigo-700 transition-all shadow-md backdrop-blur-xs flex items-center gap-1 cursor-pointer"
                           title="تعديل الصورة والبيانات"
                         >
                           <Pencil size={13} />
+                          <span className="text-[10px] font-bold sm:hidden">تعديل</span>
                         </button>
                         <button
+                          type="button"
                           onClick={() => onDeletePhoto(photo.id)}
-                          className="bg-rose-600/90 text-white p-2 rounded-xl hover:bg-rose-700 transition-colors shadow-lg backdrop-blur-xs"
+                          className="bg-rose-600 text-white p-2 rounded-xl hover:bg-rose-700 transition-all shadow-md backdrop-blur-xs cursor-pointer"
                           title="حذف الصورة"
                         >
                           <Trash2 size={13} />
@@ -453,9 +459,22 @@ export default function MainPage({
 
                   {/* Caption & Description */}
                   <div className="p-4 space-y-2 max-w-sm">
-                    <p className="text-slate-800 text-xs md:text-sm font-bold leading-relaxed">
-                      {photo.caption}
-                    </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-slate-800 text-xs md:text-sm font-bold leading-relaxed flex-1">
+                        {photo.caption}
+                      </p>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditPhoto(photo)}
+                          className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-2 py-1 rounded-lg transition-colors flex items-center gap-1 text-[11px] font-bold shrink-0 cursor-pointer border border-indigo-100 bg-white shadow-2xs"
+                          title="تعديل الصورة أو النص"
+                        >
+                          <Pencil size={12} />
+                          <span>تعديل</span>
+                        </button>
+                      )}
+                    </div>
                     {photo.description && (
                       <p className="text-slate-500 text-[11px] md:text-xs leading-relaxed whitespace-pre-line border-t border-slate-100 pt-2 font-medium">
                         {photo.description}
@@ -554,8 +573,8 @@ export default function MainPage({
         )}
       </section>
 
-      {/* Edit Photo Modal */}
-      {editingPhoto && (
+      {/* Edit Photo Modal (Admin Only) */}
+      {isAdmin && editingPhoto && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
@@ -574,6 +593,17 @@ export default function MainPage({
 
             {/* Scrollable Form */}
             <form onSubmit={handleEditPhotoSubmit} className="flex-1 overflow-y-auto p-6 space-y-4 text-right">
+              {/* Comments Safe Banner */}
+              <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-3 flex items-center justify-between text-xs text-emerald-800 shadow-2xs">
+                <span className="flex items-center gap-2 font-bold">
+                  <MessageSquare size={16} className="text-emerald-600 shrink-0" />
+                  <span>التعليقات الحالية على الصورة محفوظة بالكامل ولن تتأثر</span>
+                </span>
+                <span className="bg-emerald-100 text-emerald-800 font-extrabold px-2.5 py-0.5 rounded-full text-[11px]">
+                  {(editingPhoto.comments?.length || 0)} تعليق
+                </span>
+              </div>
+
               {/* Image upload / Preview */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 mb-1">تغيير الصورة (تحميل من الجهاز أو اتركها كما هي)</label>
@@ -636,6 +666,17 @@ export default function MainPage({
                   value={editPhotoDescription}
                   onChange={e => setEditPhotoDescription(e.target.value)}
                   rows={4}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                />
+              </div>
+
+              {/* Date */}
+              <div>
+                <label className="block text-xs font-bold text-slate-600 mb-1">تاريخ الصورة / المناسبة</label>
+                <input
+                  type="date"
+                  value={editPhotoDate}
+                  onChange={e => setEditPhotoDate(e.target.value)}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
                 />
               </div>

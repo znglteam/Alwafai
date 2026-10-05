@@ -1002,15 +1002,29 @@ export default function App() {
   };
 
   const handleDeletePhoto = async (id: string) => {
+    if (currentSession.role !== 'admin') {
+      console.warn('Unauthorized: only admin can delete album photos');
+      return;
+    }
     const nextPhotos = photos.filter(p => p.id !== id);
     setPhotos(nextPhotos);
     await deletePhotoFromCloud(id);
   };
 
   const handleUpdatePhoto = async (updatedPhoto: FamilyPhoto) => {
-    const nextPhotos = photos.map(p => p.id === updatedPhoto.id ? updatedPhoto : p);
+    if (currentSession.role !== 'admin') {
+      console.warn('Unauthorized: only admin can edit album photos');
+      return;
+    }
+    const existingPhoto = photos.find(p => p.id === updatedPhoto.id);
+    const photoToSave: FamilyPhoto = {
+      ...updatedPhoto,
+      // Strictly preserve existing comments so they are never deleted on photo update
+      comments: updatedPhoto.comments !== undefined ? updatedPhoto.comments : (existingPhoto?.comments || [])
+    };
+    const nextPhotos = photos.map(p => p.id === photoToSave.id ? photoToSave : p);
     setPhotos(nextPhotos);
-    await savePhotoToCloud(updatedPhoto);
+    await savePhotoToCloud(photoToSave);
   };
 
   const handleAddPhotoComment = async (photoId: string, comment: Omit<MemberComment, 'id' | 'createdAt'>) => {

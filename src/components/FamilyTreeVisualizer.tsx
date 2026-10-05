@@ -968,14 +968,7 @@ export default function FamilyTreeVisualizer({
               );
             })()}
             <div 
-              onClick={(e) => {
-                if (node.avatar) {
-                  e.stopPropagation();
-                  setActiveFullscreenMember(node);
-                } else {
-                  setSelectedMember(node);
-                }
-              }}
+              onClick={() => setSelectedMember(node)}
               className={`w-14 h-14 rounded-full overflow-hidden border-2 relative flex items-center justify-center font-bold text-sm cursor-pointer shadow-sm transition-all duration-300 hover:scale-105 hover:shadow-md z-10 ${
                 selectedMember?.id === node.id 
                   ? 'border-indigo-600 ring-4 ring-indigo-500/20 scale-105 bg-white' 
@@ -983,7 +976,7 @@ export default function FamilyTreeVisualizer({
                     ? node.isAlive ? 'border-[#bb5791] bg-pink-50/70' : 'border-[#bb5791]/40 bg-pink-50/30' 
                     : node.isAlive ? 'border-[#607fc4] bg-blue-50/70' : 'border-[#607fc4]/40 bg-blue-50/30'
               }`}
-              title={node.avatar ? `انقر لتكبير صورة ${node.name}` : `انقر لمشاهدة تفاصيل ${node.name}`}
+              title={`انقر لمشاهدة تفاصيل وبيانات ${node.name}`}
             >
               {node.avatar ? (
                 <AvatarImage 
@@ -1445,12 +1438,6 @@ export default function FamilyTreeVisualizer({
                     >
                       <div className="relative shrink-0">
                         <div 
-                          onClick={(e) => {
-                            if (member.avatar) {
-                              e.stopPropagation();
-                              setActiveFullscreenMember(member);
-                            }
-                          }}
                           className={`w-12 h-12 rounded-full overflow-hidden shrink-0 border-2 relative flex items-center justify-center font-bold text-sm hover:scale-105 transition-transform duration-200 cursor-pointer ${
                             isFemale 
                                ? member.isAlive ? 'border-[#bb5791] bg-pink-50/70' : 'border-[#bb5791]/40 bg-pink-50/30'
@@ -2756,10 +2743,23 @@ export default function FamilyTreeVisualizer({
                 );
               })()}
               
-              <div className="bg-slate-900/60 backdrop-blur-xs px-4 py-2 rounded-2xl border border-white/10 shadow-lg text-center">
-                <p className="text-white text-xs md:text-sm font-bold dir-rtl">
-                  الصورة الشخصية لـ <strong className="text-indigo-300 font-extrabold">{getFullName(activeFullscreenMember)}</strong>
-                </p>
+              <div className="flex flex-col items-center gap-2.5">
+                <div className="bg-slate-900/60 backdrop-blur-xs px-4 py-2 rounded-2xl border border-white/10 shadow-lg text-center">
+                  <p className="text-white text-xs md:text-sm font-bold dir-rtl">
+                    الصورة الشخصية لـ <strong className="text-indigo-300 font-extrabold">{getFullName(activeFullscreenMember)}</strong>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const m = activeFullscreenMember;
+                    setActiveFullscreenMember(null);
+                    setSelectedMember(m);
+                  }}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer"
+                >
+                  <span>عرض بطاقة المعلومات والتفاصيل الكاملة</span>
+                </button>
               </div>
             </motion.div>
           </motion.div>
